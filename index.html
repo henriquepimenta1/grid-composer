@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>GridAI — Grid Composer</title>
+<title>Grid Composer — Grid Composer</title>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="/i18n.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -225,6 +225,16 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
 .pp-caption{padding:0 16px 6px;font-size:13px;line-height:1.5}
 .pp-caption strong{font-weight:700}
 .pp-harmony{padding:0 16px 14px;font-size:12px;color:var(--text3)}
+.ppc.drag-over{outline:2.5px solid var(--blue);outline-offset:-2px}
+.ppc.result-cell{cursor:grab}
+.ppc.result-cell:active{cursor:grabbing}
+.pp-grid-wrap{position:relative}
+.pp-grid-hint{
+  text-align:center;font-size:11px;color:var(--text3);
+  padding:6px 16px;background:var(--bg);
+  border-top:1px solid var(--border-light);
+  display:flex;align-items:center;justify-content:center;gap:6px;
+}
 .detail-panel{background:var(--white);border:1px solid var(--border-light);border-radius:var(--r);box-shadow:var(--shadow);overflow:hidden}
 .detail-hdr{padding:14px 16px;border-bottom:1px solid var(--border-light);font-size:14px;font-weight:700}
 .post-row{display:flex;gap:12px;padding:12px 16px;border-bottom:1px solid var(--border-light);align-items:flex-start}
@@ -261,7 +271,7 @@ canvas{display:none}
 
 <!-- TOPBAR -->
 <div class="topbar">
-  <div class="logo">GridAI</div>
+  <div class="logo">Grid Composer</div>
   <div class="topbar-center">
     <button class="plan-tab active" onclick="setPlan(3,this)">Próximos 3</button>
     <button class="plan-tab" onclick="setPlan(6,this)">Próximos 6</button>

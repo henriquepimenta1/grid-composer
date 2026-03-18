@@ -1,4 +1,4 @@
-// app.js — GridAI Core Logic
+// app.js — Grid Composer Core Logic
 
 // ══ COLOR ENGINE — k-means LAB (Adobe Color method) ══
 function rgbToLab(r,g,b){let R=r/255,G=g/255,B=b/255;R=R>.04045?Math.pow((R+.055)/1.055,2.4):R/12.92;G=G>.04045?Math.pow((G+.055)/1.055,2.4):G/12.92;B=B>.04045?Math.pow((B+.055)/1.055,2.4):B/12.92;let X=R*.4124564+G*.3575761+B*.1804375,Y=R*.2126729+G*.7151522+B*.072175,Z=R*.0193339+G*.119192+B*.9503041;X/=.95047;Z/=1.08883;const f=v=>v>.008856?Math.cbrt(v):(7.787*v)+16/116;return[116*f(Y)-16,500*(f(X)-f(Y)),200*(f(Y)-f(Z))]}
@@ -360,7 +360,34 @@ function buildPrompt(H,P,kw,kc,colorCtx,igCtx,size) {
   const kelvinLine = axis?.useKelvin
     ? `Kelvin-Q=ate${kw}K Kelvin-F=acima${kc}K`
     : '(Kelvin é referência mas não é o eixo principal)'
+
+  // Build grid position map — Instagram fills right→left, bottom→top
+  // slot 1 = first to be posted = top-right position
+  // For 3 posts:  pos [row0][col2]=slot1, [row0][col1]=slot2, [row0][col0]=slot3
+  // For 6 posts:  row0 right→left = slots 1,2,3 | row1 right→left = slots 4,5,6
+  const rows = Math.ceil(size / 3)
+  let gridMap = ''
+  for (let r = 0; r < rows; r++) {
+    const rowSlots = []
+    for (let c = 2; c >= 0; c--) {
+      const slotNum = r * 3 + (2 - c) + 1
+      if (slotNum <= size) rowSlots.push(`col${c+1}=slot${slotNum}`)
+    }
+    gridMap += `Linha ${r+1} (topo→base): ${rowSlots.join(' | ')}\n`
+  }
+
   return `Especialista em color grading e grid Instagram outdoor/adventure.
+
+REGRA CRÍTICA DE ORDEM DO INSTAGRAM:
+O Instagram preenche o grid da DIREITA para ESQUERDA e de BAIXO para CIMA.
+slot 1 = PRIMEIRO a ser postado = posição SUPERIOR DIREITA do grid.
+slot ${size} = ÚLTIMO a ser postado = posição mais à ESQUERDA da linha mais nova.
+
+MAPA DE POSIÇÕES DO GRID (${size} posts, ${rows} linha${rows>1?'s':''}):
+${gridMap}
+Exemplo xadrez correto para 6 posts:
+  Linha 1: [slot3=frio][slot2=quente][slot1=frio]
+  Linha 2: [slot6=quente][slot5=frio][slot4=quente]
 
 CORES K-MEANS LAB (valores reais do pixel — use estes):
 ${colorCtx}${igCtx}
@@ -369,8 +396,10 @@ CONFIG: Harmonia=${H.name} Padrao=${P.name} ${kelvinLine} Posts=${size}
 
 ${axis?.prompt || ''}
 
-Monte o melhor plano de ${size} posts. RETORNE APENAS JSON SEM MARKDOWN:
-{"plan":[{"slot":1,"photo":N,"temp":"cool","kelvin":"7500K","contrast_role":"frio","type":"TIPO","harmony_role":"papel","reason":"max 70 chars","preset":"ajustes PS/LR max 60 chars"}],"overview":"1 frase","harmony_note":"1 frase com eixo usado"}
+Monte o melhor plano considerando as POSIÇÕES REAIS no grid do Instagram.
+O padrão xadrez deve alternar na posição visual, não na ordem de slot.
+RETORNE APENAS JSON SEM MARKDOWN:
+{"plan":[{"slot":1,"photo":N,"grid_position":"top-right","temp":"cool","kelvin":"7500K","contrast_role":"frio","type":"TIPO","harmony_role":"papel na harmonia","reason":"max 70 chars","preset":"ajustes PS/LR max 60 chars"}],"overview":"1 frase","harmony_note":"1 frase com eixo usado"}
 
 Slots: ${Array.from({length:size},(_,i)=>i+1).join(', ')}
 Fotos: 1 a ${photos.length}
@@ -378,41 +407,128 @@ Kelvin: MENOR=quente/laranja MAIOR=frio/azul`
 }
 
 // ══ RENDER RESULTS ═══════════════════════════════════
+// currentPlan is mutable — drag-and-drop updates it without re-calling API
+let currentPlan = []
+let currentHarmony = null
+
 function renderResults(data, H) {
-  const plan    = data.plan || []
-  const results = document.getElementById('results')
+  currentPlan    = data.plan || []
+  currentHarmony = H
+  const results  = document.getElementById('results')
 
   const allColors = []
-  plan.forEach(s => {
+  currentPlan.forEach(s => {
     const p = photos[s.photo-1]
     if (p) (p.colors||[]).slice(0,2).forEach(c => { if (!allColors.includes(c.hex)) allColors.push(c.hex) })
   })
 
-  const gridCells = plan.map(s => {
-    const p = photos[s.photo-1]; const iW = s.temp === 'warm'
-    if (!p) return `<div class="ppc empty"><span>+${s.slot}</span></div>`
-    return `<div class="ppc">
+  const palHtml    = allColors.slice(0,10).map(hex => `<div class="ppal-c" style="background:${hex}"></div>`).join('')
+  const userName   = currentUser?.user_metadata?.name || currentUser?.email?.split('@')[0] || 'user'
+
+  results.innerHTML = `
+    <div class="plan-post">
+      <div class="pp-hdr">
+        <div class="pp-user">
+          <div class="pp-av">${userName[0].toUpperCase()}</div>
+          <div>
+            <div class="pp-name">${userName}</div>
+            <div class="pp-sub">Próximos ${planSize} posts · ${H?.name||''}</div>
+          </div>
+        </div>
+        <div class="pp-more">···</div>
+      </div>
+      <div class="pp-grid-wrap">
+        <div class="pp-grid" id="result-grid"></div>
+        <div class="pp-grid-hint">↕ Arraste para reordenar · sem consumir créditos</div>
+      </div>
+      <div class="pp-actions">
+        <div class="pp-acts"><span class="pp-act">♡</span><span class="pp-act">💬</span><span class="pp-act">↗</span></div>
+        <span class="pp-act">🔖</span>
+      </div>
+      <div class="pp-pal">${palHtml}</div>
+      <div class="pp-caption"><strong>${userName}</strong> ${data.overview||''}</div>
+      <div class="pp-harmony">${data.harmony_note||''}</div>
+    </div>
+    <div class="detail-panel">
+      <div class="detail-hdr" id="detail-hdr-title">Detalhe por post</div>
+      <div id="detail-cards"></div>
+    </div>`
+
+  renderGrid()
+  renderDetails()
+
+  results.classList.add('show')
+  document.querySelector('.main').scrollTo({ top: 0, behavior: 'smooth' })
+}
+
+function renderGrid() {
+  const grid = document.getElementById('result-grid')
+  if (!grid) return
+
+  // Instagram order: slot 1 = top-right, slot N = bottom-left
+  // We need to render slots in reverse visual order (right→left per row)
+  // Grid CSS: 3 columns, we place slot by visual position
+  // slot 1 → col 3 (right), slot 2 → col 2, slot 3 → col 1 (left)
+  // slot 4 → col 3 row 2, etc.
+
+  const size = currentPlan.length
+  // Build visual grid: array of visual positions left→right, top→bottom
+  // Visual position [row][col] maps to slot number:
+  //   col0=left, col1=mid, col2=right
+  //   slot at visual(row,col) = row*3 + (2-col) + 1
+  const visualCells = []
+  const rows = Math.ceil(size / 3)
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < 3; c++) {
+      const slotNum = r * 3 + (2 - c) + 1  // right→left: col2=slot1, col1=slot2, col0=slot3
+      if (slotNum <= size) {
+        const s = currentPlan.find(x => x.slot === slotNum) || currentPlan[slotNum - 1]
+        visualCells.push({ slotNum, s })
+      } else {
+        visualCells.push(null) // empty filler
+      }
+    }
+  }
+
+  grid.innerHTML = visualCells.map((cell, vi) => {
+    if (!cell) return `<div class="ppc empty"><span style="opacity:.2">·</span></div>`
+    const { slotNum, s } = cell
+    if (!s) return `<div class="ppc empty"><span>+${slotNum}</span></div>`
+    const p  = photos[s.photo - 1]
+    const iW = s.temp === 'warm'
+    if (!p) return `<div class="ppc empty" data-slot="${slotNum}"><span>+${slotNum}</span></div>`
+    return `<div class="ppc result-cell"
+      data-slot="${slotNum}"
+      data-vi="${vi}"
+      draggable="true"
+      ondragstart="gridDragStart(event,${slotNum})"
+      ondragover="gridDragOver(event)"
+      ondrop="gridDrop(event,${slotNum})"
+      ondragend="gridDragEnd(event)">
       <img src="${p.dataUrl}">
-      <div class="ppc-badge">+${s.slot}</div>
+      <div class="ppc-badge">+${slotNum}</div>
       <div class="ppc-k">${s.kelvin}</div>
       <div class="ppc-dot" style="background:${iW?'#e8920a':'#1976d2'}"></div>
     </div>`
   }).join('')
+}
 
-  const rows = []; for (let i=0; i<plan.length; i+=3) rows.push(plan.slice(i,i+3))
-  const tempBadges = rows.map(row =>
-    row.map(s => `<span class="rt ${s.temp==='warm'?'rt-w':'rt-c'}">${s.temp==='warm'?'🟠':'🔵'} ${s.kelvin}</span>`).join('')
-  ).join('')
-  const palHtml = allColors.slice(0,10).map(hex => `<div class="ppal-c" style="background:${hex}"></div>`).join('')
+function renderDetails() {
+  const axis    = CONTRAST_AXES.find(a => a.id === selC)
+  const container = document.getElementById('detail-cards')
+  if (!container) return
 
-  const axis = CONTRAST_AXES.find(a => a.id === selC)
-  const details = plan.map(s => {
-    const p = photos[s.photo-1]; if (!p) return ''
+  // Details shown in posting order (slot 1 first)
+  const sorted = [...currentPlan].sort((a,b) => a.slot - b.slot)
+
+  container.innerHTML = sorted.map(s => {
+    const p  = photos[s.photo-1]; if (!p) return ''
     const iW = s.temp === 'warm'
     const palDots = (p.colors||[]).slice(0,5).map(c => `<div class="pr-pc" style="background:${c.hex}"></div>`).join('')
-    const cBadge = s.contrast_role
+    const cBadge  = s.contrast_role
       ? `<span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:100px;background:#f3f4f6;color:#374151;">${axis?.icon||''} ${s.contrast_role}</span>`
       : ''
+    const gridPos = getGridPosition(s.slot, currentPlan.length)
     return `<div class="post-row">
       <div class="pr-thumb"><img src="${p.dataUrl}"></div>
       <div class="pr-body">
@@ -420,6 +536,7 @@ function renderResults(data, H) {
           <span class="pr-slot">+${s.slot}</span>
           <span class="pr-type">${s.type}</span>
           ${cBadge}
+          <span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:100px;background:#f3f4f6;color:#6b7280;">📍 ${gridPos}</span>
           <span class="pr-temp ${iW?'pr-tw':'pr-tc'}">${iW?'Quente':'Frio'}</span>
         </div>
         <div class="pr-reason">${s.reason}</div>
@@ -428,33 +545,60 @@ function renderResults(data, H) {
       </div>
     </div>`
   }).join('')
+}
 
-  const userName = currentUser?.user_metadata?.name || currentUser?.email?.split('@')[0] || 'user'
+// Returns human-readable grid position for a slot
+function getGridPosition(slotNum, total) {
+  const rows = Math.ceil(total / 3)
+  // slot 1 = top-right, fills right→left, top→bottom
+  const row = Math.floor((slotNum - 1) / 3)      // 0=top
+  const colFromRight = (slotNum - 1) % 3          // 0=right, 1=mid, 2=left
+  const colLabels = ['direita', 'centro', 'esquerda']
+  const rowLabel  = row === 0 ? 'topo' : row === rows-1 ? 'base' : `linha ${row+1}`
+  return `${rowLabel} ${colLabels[colFromRight]}`
+}
 
-  results.innerHTML = `
-    <div class="plan-post">
-      <div class="pp-hdr">
-        <div class="pp-user">
-          <div class="pp-av">${userName[0].toUpperCase()}</div>
-          <div><div class="pp-name">${userName}</div><div class="pp-sub">Próximos ${planSize} posts · ${H?.name||''}</div></div>
-        </div>
-        <div class="pp-more">···</div>
-      </div>
-      <div class="pp-grid">${gridCells}</div>
-      <div class="pp-actions">
-        <div class="pp-acts"><span class="pp-act">♡</span><span class="pp-act">💬</span><span class="pp-act">↗</span></div>
-        <span class="pp-act">🔖</span>
-      </div>
-      <div class="pp-pal">${palHtml}</div>
-      <div class="pp-temps">${tempBadges}</div>
-      <div class="pp-caption"><strong>${userName}</strong> ${data.overview||''}</div>
-      <div class="pp-harmony">${data.harmony_note||''}</div>
-    </div>
-    <div class="detail-panel">
-      <div class="detail-hdr">Detalhe por post</div>
-      ${details}
-    </div>`
+// ── Drag-and-drop on result grid (no credits consumed) ──
+let gridDragSlot = null
 
-  results.classList.add('show')
-  document.querySelector('.main').scrollTo({ top: 0, behavior: 'smooth' })
+function gridDragStart(e, slotNum) {
+  gridDragSlot = slotNum
+  e.currentTarget.style.opacity = '.4'
+  e.dataTransfer.effectAllowed = 'move'
+}
+function gridDragOver(e) {
+  e.preventDefault()
+  e.dataTransfer.dropEffect = 'move'
+  e.currentTarget.classList.add('drag-over')
+}
+function gridDragEnd(e) {
+  e.currentTarget.style.opacity = ''
+  document.querySelectorAll('.result-cell').forEach(el => el.classList.remove('drag-over'))
+  gridDragSlot = null
+}
+function gridDrop(e, targetSlot) {
+  e.preventDefault()
+  e.currentTarget.classList.remove('drag-over')
+  if (gridDragSlot === null || gridDragSlot === targetSlot) return
+
+  // Swap photos between the two slots
+  const fromIdx = currentPlan.findIndex(s => s.slot === gridDragSlot)
+  const toIdx   = currentPlan.findIndex(s => s.slot === targetSlot)
+  if (fromIdx === -1 || toIdx === -1) return
+
+  // Swap photo references only (keep slot numbers intact)
+  const tmpPhoto = currentPlan[fromIdx].photo
+  currentPlan[fromIdx].photo = currentPlan[toIdx].photo
+  currentPlan[toIdx].photo   = tmpPhoto
+
+  // Also swap temp/kelvin/contrast info for visual consistency
+  const tmpTemp     = currentPlan[fromIdx].temp
+  const tmpKelvin   = currentPlan[fromIdx].kelvin
+  currentPlan[fromIdx].temp   = currentPlan[toIdx].temp
+  currentPlan[fromIdx].kelvin = currentPlan[toIdx].kelvin
+  currentPlan[toIdx].temp     = tmpTemp
+  currentPlan[toIdx].kelvin   = tmpKelvin
+
+  renderGrid()
+  renderDetails()
 }
