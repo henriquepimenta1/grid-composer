@@ -1,19 +1,38 @@
 import express from 'express';
 import https from 'https';
+import fs from 'fs';
 import { createClient } from '@supabase/supabase-js';
 
 const app = express();
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
-// Supabase admin client (usa a service_role key — nunca exponha no frontend)
+// Supabase admin client
 const sb = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_SERVICE_KEY
 );
 
-// ── Servir arquivos estáticos ──
+// ── Injetar keys nas páginas HTML ──
+app.get('/login', (req, res) => {
+  const html = fs.readFileSync('./login.html', 'utf8')
+    .replace('__SUPABASE_URL__', process.env.SUPABASE_URL)
+    .replace('__SUPABASE_ANON_KEY__', process.env.SUPABASE_ANON_KEY);
+  res.send(html);
+});
+
+app.get('/app', (req, res) => {
+  const html = fs.readFileSync('./index.html', 'utf8')
+    .replace('__SUPABASE_URL__', process.env.SUPABASE_URL)
+    .replace('__SUPABASE_ANON_KEY__', process.env.SUPABASE_ANON_KEY);
+  res.send(html);
+});
+
+// ── Arquivos estáticos (css, js, imagens) ──
 app.use(express.static('.'));
+
+// ── Redirecionar raiz para /login ──
+app.get('/', (req, res) => res.redirect('/login'));
 
 // ── Middleware de autenticação ──
 async function requireAuth(req, res, next) {
@@ -44,7 +63,6 @@ app.post('/api/analyze', requireAuth, async (req, res) => {
   const apiKey = process.env.ANTHROPIC_KEY;
   if (!apiKey) return res.status(500).json({ error: 'API key não configurada' });
 
-  // Verificar créditos
   const { data: userData, error: userErr } = await sb
     .from('users')
     .select('credits')
@@ -52,15 +70,17 @@ app.post('/api/analyze', requireAuth, async (req, res) => {
     .single();
 
   if (userErr || !userData) return res.status(500).json({ error: 'Usuário não encontrado' });
-  if (userData.credits < 1) return res.status(402).json({ error: 'Sem créditos. Compre mais para continuar.', code: 'NO_CREDITS' });
+  if (userData.credits < 1) return res.status(402).json({
+    error: 'Sem créditos. Compre mais para continuar.',
+    code: 'NO_CREDITS'
+  });
 
   const body = JSON.stringify(req.body);
   const bodyBytes = Buffer.byteLength(body);
   if (bodyBytes > 30 * 1024 * 1024) {
-    return res.status(413).json({ error: `Payload muito grande: ${Math.round(bodyBytes/1024/1024)}MB. Reduza o número de fotos.` });
+    return res.status(413).json({ error: `Payload muito grande: ${Math.round(bodyBytes/1024/1024)}MB.` });
   }
 
-  // Chamar Anthropic
   let statusCode = 200;
   let responseData = null;
 
@@ -82,16 +102,20 @@ app.post('/api/analyze', requireAuth, async (req, res) => {
       apiRes.on('data', chunk => data += chunk);
       apiRes.on('end', () => {
         statusCode = apiRes.statusCode;
-        try { responseData = JSON.parse(data); } catch { responseData = { error: 'Resposta inválida da API' }; }
+        try { responseData = JSON.parse(data); }
+        catch { responseData = { error: 'Resposta inválida da API' }; }
         resolve();
       });
     });
-    apiReq.on('error', (e) => { responseData = { error: e.message }; statusCode = 500; resolve(); });
+    apiReq.on('error', (e) => {
+      responseData = { error: e.message };
+      statusCode = 500;
+      resolve();
+    });
     apiReq.write(body);
     apiReq.end();
   });
 
-  // Descontar crédito só se análise foi bem-sucedida
   if (statusCode === 200) {
     await sb.from('users')
       .update({ credits: userData.credits - 1 })
@@ -100,10 +124,6 @@ app.post('/api/analyze', requireAuth, async (req, res) => {
 
   res.status(statusCode).json(responseData);
 });
-
-// ── Redirecionar rotas do app para index.html (SPA) ──
-app.get('/app', (req, res) => res.sendFile('index.html', { root: '.' }));
-app.get('/login', (req, res) => res.sendFile('login.html', { root: '.' }));
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Rodando na porta ${PORT}`));
