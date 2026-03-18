@@ -1,0 +1,12 @@
+{\rtf1\ansi\ansicpg1252\cocoartf2868
+\cocoatextscaling0\cocoaplatform0{\fonttbl\f0\fmodern\fcharset0 Courier;}
+{\colortbl;\red255\green255\blue255;\red27\green36\blue49;\red104\green154\blue169;\red5\green7\blue9;
+\red120\green154\blue169;}
+{\*\expandedcolortbl;;\cssrgb\c14118\c18824\c25098;\cssrgb\c47843\c66667\c72157;\cssrgb\c1569\c2353\c3137;
+\cssrgb\c54118\c66667\c72157;}
+\paperw11900\paperh16840\margl1440\margr1440\vieww11520\viewh8400\viewkind0
+\deftab720
+\pard\pardeftab720\partightenfactor0
+
+\f0\fs22 \cf2 \expnd0\expndtw0\kerning0
+\outl0\strokewidth0 \strokec2 // api/analyze.js \'97 n\'e3o precisa entender, s\'f3 copiar\cf3 \cb4 \strokec3 \'a0export default async function handler(req, res) \{\'a0\cf2 \cb1 \strokec2 // Permite chamadas do seu pr\'f3prio site\cf3 \cb4 \strokec3 \'a0res.setHeader(\cf5 \cb1 \strokec5 'Access-Control-Allow-Origin'\cf3 \cb4 \strokec3 ,\'a0\cf5 \cb1 \strokec5 '*'\cf3 \cb4 \strokec3 ); res.setHeader(\cf5 \cb1 \strokec5 'Access-Control-Allow-Methods'\cf3 \cb4 \strokec3 ,\'a0\cf5 \cb1 \strokec5 'POST, OPTIONS'\cf3 \cb4 \strokec3 ); res.setHeader(\cf5 \cb1 \strokec5 'Access-Control-Allow-Headers'\cf3 \cb4 \strokec3 ,\'a0\cf5 \cb1 \strokec5 'Content-Type'\cf3 \cb4 \strokec3 ); if (req.method ===\'a0\cf5 \cb1 \strokec5 'OPTIONS'\cf3 \cb4 \strokec3 ) \{ return res.status(200).end(); \} if (req.method !==\'a0\cf5 \cb1 \strokec5 'POST'\cf3 \cb4 \strokec3 ) \{ return res.status(405).json(\{ error:\'a0\cf5 \cb1 \strokec5 'M\'e9todo n\'e3o permitido'\cf3 \cb4 \strokec3 \'a0\}); \}\'a0\cf2 \cb1 \strokec2 // Pega a API key das vari\'e1veis de ambiente (configuramos no Vercel)\cf3 \cb4 \strokec3 \'a0const apiKey = process.env.ANTHROPIC_KEY; if (!apiKey) \{ return res.status(500).json(\{ error:\'a0\cf5 \cb1 \strokec5 'API key n\'e3o configurada'\cf3 \cb4 \strokec3 \'a0\}); \} try \{ const body = JSON.stringify(req.body); const response = await fetch(\cf5 \cb1 \strokec5 'https://api.anthropic.com/v1/messages'\cf3 \cb4 \strokec3 , \{ method:\'a0\cf5 \cb1 \strokec5 'POST'\cf3 \cb4 \strokec3 , headers: \{\'a0\cf5 \cb1 \strokec5 'x-api-key'\cf3 \cb4 \strokec3 : apiKey,\'a0\cf5 \cb1 \strokec5 'anthropic-version'\cf3 \cb4 \strokec3 :\'a0\cf5 \cb1 \strokec5 '2023-06-01'\cf3 \cb4 \strokec3 ,\'a0\cf5 \cb1 \strokec5 'Content-Type'\cf3 \cb4 \strokec3 :\'a0\cf5 \cb1 \strokec5 'application/json'\cf3 \cb4 \strokec3 , \}, body: body, \}); const data = await response.json(); return res.status(response.status).json(data); \} catch (error) \{ return res.status(500).json(\{ error: error.message \}); \} \}}
