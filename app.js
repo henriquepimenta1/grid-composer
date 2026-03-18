@@ -154,24 +154,79 @@ const HARMONIES = [
 ]
 
 const PATTERNS = [
-  {id:'checkerboard', name:'Xadrez',    cells:[false,true,false,true,false,true]},
-  {id:'columns',      name:'Colunas',   cells:[false,false,true,false,false,true]},
-  {id:'rows',         name:'Linhas',    cells:[true,true,true,false,false,false]},
-  {id:'diagonal',     name:'Diagonal',  cells:[false,false,true,false,true,false]},
-  {id:'free',         name:'Livre (IA)',cells:[null,null,null,null,null,null]},
+  {
+    id:'checkerboard', name:'Xadrez',
+    cells:[false,true,false,true,false,true],
+    when:'Alterna duas fotos de perfil opostas em cada posição. O padrão mais clássico do Instagram — cria ritmo visual imediato e fácil de executar.',
+    example:'🟠 frio · quente 🔵\n🔵 quente · frio 🟠',
+    feel:'Rítmico · dinâmico · fácil de manter',
+  },
+  {
+    id:'columns', name:'Colunas',
+    cells:[false,false,true,false,false,true],
+    when:'Uma coluna inteira com um perfil, outra coluna com outro. Cria faixas verticais no feed. Exige consistência de cor por coluna.',
+    example:'frio | frio | quente\nfrio | frio | quente',
+    feel:'Estruturado · limpo · editorial',
+  },
+  {
+    id:'rows', name:'Linhas',
+    cells:[true,true,true,false,false,false],
+    when:'Cada linha do grid tem um perfil diferente. Conta uma história por faixa horizontal. Ideal para separar viagens ou momentos distintos.',
+    example:'quente quente quente\nfrio   frio   frio',
+    feel:'Narrativo · por capítulos · bold',
+  },
+  {
+    id:'diagonal', name:'Diagonal',
+    cells:[false,false,true,false,true,false],
+    when:'Contraste em diagonal — mais sofisticado que o xadrez. Cria fluxo visual em zig-zag pelo feed.',
+    example:'frio  · frio  · quente\nfrio  · quente · frio',
+    feel:'Sofisticado · fluido · moderno',
+  },
+  {
+    id:'free', name:'Livre (IA)',
+    cells:[null,null,null,null,null,null],
+    when:'A IA decide o melhor arranjo para o seu conjunto específico de fotos, sem seguir um padrão rígido. Ideal quando as fotos têm paletas variadas.',
+    example:'🤖 arranjo otimizado pela IA',
+    feel:'Flexível · otimizado · adaptativo',
+  },
 ]
 
 const CONTRAST_AXES = [
-  {id:'temperature', icon:'🌡️', name:'Temperatura',     sub:'Quente vs Frio · Kelvin',        useKelvin:true,
-    prompt:'Eixo TEMPERATURA. Alterne slots quentes (Kelvin baixo, laranjas/dourados) e frios (Kelvin alto, teals/azuis).'},
-  {id:'luminance',   icon:'☀️', name:'Luminância',      sub:'Claro vs Escuro',                  useKelvin:false,
-    prompt:'Eixo LUMINANCIA. Alterne fotos claras (céu aberto, areia, highlights) com fotos escuras (florestas, interior, sombras). Funciona mesmo que todas sejam quentes.'},
-  {id:'subject',     icon:'🔭', name:'Plano / Sujeito', sub:'Close · Paisagem · Detalhe',       useKelvin:false,
-    prompt:'Eixo TIPO DE PLANO. Alterne: RETRATO (pessoa próxima), PAISAGEM (ambiente dominante), DETALHE (textura/equipamento).'},
-  {id:'saturation',  icon:'🎨', name:'Saturação',       sub:'Vívido vs Dessaturado',             useKelvin:false,
-    prompt:'Eixo SATURACAO. Alterne fotos vívidas (cores intensas) com fotos dessaturadas (névoa, mist, cinza).'},
-  {id:'combined',    icon:'✦',  name:'Combinado (IA)',  sub:'IA escolhe o melhor eixo',          useKelvin:true,
-    prompt:'Eixo COMBINADO. Analise as fotos e escolha automaticamente o melhor eixo de contraste. Explique a escolha no harmony_note.'},
+  {
+    id:'temperature', icon:'🌡️', name:'Temperatura', sub:'Quente vs Frio · Kelvin',
+    useKelvin:true,
+    info:'Usa a temperatura de cor (Kelvin) como eixo. Fotos quentes têm Kelvin baixo (laranjas, dourados, pôr do sol). Fotos frias têm Kelvin alto (teals, azuis, névoa).\n\nIdeal para feeds com mix de pôr do sol + paisagem fria.',
+    example:'🌅 quente (3200K) ↔ 🌊 frio (7500K)',
+    prompt:'Eixo TEMPERATURA. Alterne slots quentes (Kelvin baixo, laranjas/dourados) e frios (Kelvin alto, teals/azuis).',
+  },
+  {
+    id:'luminance', icon:'☀️', name:'Luminância', sub:'Claro vs Escuro',
+    useKelvin:false,
+    info:'Alterna pela luminosidade — independente de cor. Foto clara (céu aberto, areia, highlights) vs foto escura (gruta, floresta densa, interior).\n\nPerfeito para feeds todos quentes onde temperatura não cria contraste suficiente.',
+    example:'☀️ claro (duna) ↔ 🌑 escuro (gruta)',
+    prompt:'Eixo LUMINANCIA. Alterne fotos claras (céu aberto, areia, highlights) com fotos escuras (florestas, interior, sombras). Funciona mesmo que todas sejam quentes.',
+  },
+  {
+    id:'subject', icon:'🔭', name:'Plano / Sujeito', sub:'Close · Paisagem · Detalhe',
+    useKelvin:false,
+    info:'Alterna pelo tipo de enquadramento. Retrato (pessoa próxima, rosto dominante) vs Paisagem (ambiente, figura pequena ou ausente) vs Detalhe (textura, equipamento).\n\nCria ritmo narrativo no feed sem depender de cor.',
+    example:'🧍 retrato ↔ 🏔️ paisagem ↔ 🔍 detalhe',
+    prompt:'Eixo TIPO DE PLANO. Alterne: RETRATO (pessoa próxima), PAISAGEM (ambiente dominante), DETALHE (textura/equipamento).',
+  },
+  {
+    id:'saturation', icon:'🎨', name:'Saturação', sub:'Vívido vs Dessaturado',
+    useKelvin:false,
+    info:'Alterna entre fotos com cores intensas e saturadas vs fotos mais neutras, dessaturadas ou com névoa.\n\nFunciona muito bem para feeds de aventura com fotos de nevoeiro intercaladas com fotos de cores vivas.',
+    example:'🎨 saturado (pôr do sol) ↔ 🌫️ muted (névoa)',
+    prompt:'Eixo SATURACAO. Alterne fotos vívidas (cores intensas) com fotos dessaturadas (névoa, mist, cinza).',
+  },
+  {
+    id:'combined', icon:'✦', name:'Combinado (IA)', sub:'IA escolhe o melhor eixo',
+    useKelvin:true,
+    info:'A IA analisa todas as fotos e escolhe automaticamente qual eixo de contraste gera o grid mais harmônico — podendo combinar temperatura, luminância e tipo de plano conforme necessário.',
+    example:'🤖 análise automática do conjunto',
+    prompt:'Eixo COMBINADO. Analise as fotos e escolha automaticamente o melhor eixo de contraste. Explique a escolha no harmony_note.',
+  },
 ]
 
 let selH = 'complementary', selP = 'checkerboard', selC = 'temperature'
@@ -185,7 +240,7 @@ function init() {
   setupDrop()
   kUpdate()
   applyTranslations()
-  renderUploadGrid()  // show empty grid slots on load
+  renderUploadGrid()
 }
 
 function renderHarmonies() {
@@ -196,13 +251,18 @@ function renderHarmonies() {
       <button class="hchip-help" onclick="event.stopPropagation();showHarmonyInfo('${h.id}')" title="Saiba mais">?</button>
     </div>`).join('')
 }
+
 function renderPatterns() {
   document.getElementById('pat-list').innerHTML = PATTERNS.map(p => {
     const cells = p.cells.map(v => `<div class="pm ${v===true?'w':''}"></div>`).join('')
     return `<div class="pchip ${p.id===selP?'on':''}" onclick="selPattern('${p.id}')">
-      <div class="pg-mini">${cells}</div>${p.name}</div>`
+      <div class="pg-mini">${cells}</div>
+      <span style="flex:1">${p.name}</span>
+      <button class="hchip-help" onclick="event.stopPropagation();showPatternInfo('${p.id}')" title="Saiba mais">?</button>
+    </div>`
   }).join('')
 }
+
 function renderContrast() {
   document.getElementById('contrast-list').innerHTML = CONTRAST_AXES.map(a =>
     `<div class="cchip ${a.id===selC?'on':''}" onclick="selContrast('${a.id}')">
@@ -211,6 +271,7 @@ function renderContrast() {
         <span class="cchip-name">${a.name}</span>
         <span class="cchip-sub">${a.sub}</span>
       </div>
+      <button class="hchip-help" onclick="event.stopPropagation();showContrastInfo('${a.id}')" title="Saiba mais">?</button>
     </div>`).join('')
   const axis = CONTRAST_AXES.find(a => a.id === selC)
   const ks = document.getElementById('kelvin-section')
@@ -221,17 +282,9 @@ function selHarmony(id) { selH = id; renderHarmonies() }
 function selPattern(id)  { selP = id; renderPatterns() }
 function selContrast(id) { selC = id; renderContrast() }
 
-// ── Harmony info popover ─────────────────────────────
-function showHarmonyInfo(id) {
-  const h = HARMONIES.find(x => x.id === id)
-  if (!h) return
-
-  // Remove existing popover
+// ── Generic info popover helper ───────────────────────
+function showInfoPopover({ title, icon, body, example, feel, ctaLabel, ctaFn }) {
   document.getElementById('harmony-popover')?.remove()
-
-  const colors = h.colors.map(c =>
-    `<div style="width:28px;height:28px;border-radius:6px;background:${c};flex-shrink:0" title="${c}"></div>`
-  ).join('')
 
   const pop = document.createElement('div')
   pop.id = 'harmony-popover'
@@ -245,45 +298,116 @@ function showHarmonyInfo(id) {
   `
   pop.innerHTML = `
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+      <strong style="font-size:14px">${icon ? icon + ' ' : ''}${title}</strong>
+      <button onclick="document.getElementById('harmony-popover')?.remove()"
+        style="background:rgba(255,255,255,.15);border:none;color:white;width:20px;height:20px;border-radius:50%;cursor:pointer;font-size:12px;line-height:1;font-family:var(--font)">✕</button>
+    </div>
+    <div style="font-size:12px;color:rgba(255,255,255,.8);margin-bottom:8px;white-space:pre-line">${body}</div>
+    ${example ? `<div style="font-size:11px;margin-bottom:6px;background:rgba(255,255,255,.08);padding:6px 8px;border-radius:6px">${example}</div>` : ''}
+    ${feel ? `<div style="font-size:11px;color:rgba(255,255,255,.45);font-style:italic;margin-bottom:10px">${feel}</div>` : ''}
+    <button onclick="${ctaFn};document.getElementById('harmony-popover')?.remove()"
+      style="width:100%;padding:8px;background:white;color:#1a1a1a;border:none;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font)">
+      ${ctaLabel}
+    </button>
+  `
+
+  // Position near click
+  const rect = event?.target?.getBoundingClientRect()
+  if (rect) {
+    const top  = Math.min(rect.bottom + 8, window.innerHeight - 280)
+    const left = Math.max(8, Math.min(rect.left, window.innerWidth - 256))
+    pop.style.top  = top + 'px'
+    pop.style.left = left + 'px'
+  }
+
+  document.body.appendChild(pop)
+  setTimeout(() => {
+    document.addEventListener('click', function closePop(e) {
+      if (!pop.contains(e.target)) { pop.remove(); document.removeEventListener('click', closePop) }
+    })
+  }, 0)
+}
+
+// ── Harmony info popover ─────────────────────────────
+function showHarmonyInfo(id) {
+  const h = HARMONIES.find(x => x.id === id)
+  if (!h) return
+
+  document.getElementById('harmony-popover')?.remove()
+  const colors = h.colors.map(c =>
+    `<div style="width:24px;height:24px;border-radius:5px;background:${c};flex-shrink:0" title="${c}"></div>`
+  ).join('')
+
+  const pop = document.createElement('div')
+  pop.id = 'harmony-popover'
+  pop.style.cssText = `
+    position:fixed;z-index:600;background:#1a1a1a;color:white;
+    border-radius:12px;padding:16px;width:240px;
+    box-shadow:0 8px 32px rgba(0,0,0,.4);
+    font-family:var(--font);font-size:13px;line-height:1.5;
+    animation:fadeUp .15s ease;
+  `
+  pop.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
       <strong style="font-size:14px">${h.name}</strong>
       <button onclick="document.getElementById('harmony-popover')?.remove()"
         style="background:rgba(255,255,255,.15);border:none;color:white;width:20px;height:20px;border-radius:50%;cursor:pointer;font-size:12px;line-height:1;font-family:var(--font)">✕</button>
     </div>
-    <div style="display:flex;gap:6px;margin-bottom:12px;align-items:center">
+    <div style="display:flex;gap:5px;margin-bottom:10px;align-items:center">
       ${colors}
       <span style="font-size:11px;color:rgba(255,255,255,.5);margin-left:4px">${h.angle}</span>
     </div>
     <div style="font-size:12px;color:rgba(255,255,255,.8);margin-bottom:8px">${h.when}</div>
-    <div style="font-size:11px;margin-bottom:6px">${h.example}</div>
-    <div style="font-size:11px;color:rgba(255,255,255,.45);font-style:italic">${h.feel}</div>
+    <div style="font-size:11px;background:rgba(255,255,255,.08);padding:5px 8px;border-radius:6px;margin-bottom:6px">${h.example}</div>
+    <div style="font-size:11px;color:rgba(255,255,255,.45);font-style:italic;margin-bottom:10px">${h.feel}</div>
     <button onclick="selHarmony('${h.id}');document.getElementById('harmony-popover')?.remove()"
-      style="width:100%;margin-top:12px;padding:8px;background:white;color:#1a1a1a;border:none;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font)">
+      style="width:100%;padding:8px;background:white;color:#1a1a1a;border:none;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font)">
       Usar ${h.name}
     </button>
   `
-
-  // Position near clicked button
-  const btn = event?.target
-  if (btn) {
-    const rect = btn.getBoundingClientRect()
-    const top  = rect.bottom + 8
-    const left = Math.min(rect.left, window.innerWidth - 256)
-    pop.style.top  = top + 'px'
-    pop.style.left = Math.max(8, left) + 'px'
+  const rect = event?.target?.getBoundingClientRect()
+  if (rect) {
+    pop.style.top  = Math.min(rect.bottom + 8, window.innerHeight - 300) + 'px'
+    pop.style.left = Math.max(8, Math.min(rect.left, window.innerWidth - 256)) + 'px'
   }
-
   document.body.appendChild(pop)
-
-  // Close on outside click
   setTimeout(() => {
     document.addEventListener('click', function closePop(e) {
-      if (!pop.contains(e.target)) {
-        pop.remove()
-        document.removeEventListener('click', closePop)
-      }
+      if (!pop.contains(e.target)) { pop.remove(); document.removeEventListener('click', closePop) }
     })
   }, 0)
 }
+
+// ── Pattern info popover ─────────────────────────────
+function showPatternInfo(id) {
+  const p = PATTERNS.find(x => x.id === id)
+  if (!p) return
+  showInfoPopover({
+    title: p.name,
+    icon: null,
+    body: p.when,
+    example: p.example,
+    feel: p.feel,
+    ctaLabel: `Usar ${p.name}`,
+    ctaFn: `selPattern('${p.id}')`,
+  })
+}
+
+// ── Contrast axis info popover ───────────────────────
+function showContrastInfo(id) {
+  const a = CONTRAST_AXES.find(x => x.id === id)
+  if (!a) return
+  showInfoPopover({
+    title: a.name,
+    icon: a.icon,
+    body: a.info,
+    example: a.example,
+    feel: null,
+    ctaLabel: `Usar ${a.name}`,
+    ctaFn: `selContrast('${a.id}')`,
+  })
+}
+
 
 function kUpdate() {
   const w = document.getElementById('kw').value

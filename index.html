@@ -108,6 +108,8 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);-webkit-font
 .pchip{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:var(--r-sm);border:1.5px solid var(--border-light);background:transparent;cursor:pointer;transition:all .15s;font-size:13px;font-weight:500;color:var(--text2)}
 .pchip:hover{background:var(--bg)}
 .pchip.on{border-color:var(--text);background:var(--text);color:white}
+.pchip .hchip-help{background:rgba(0,0,0,.1)}
+.pchip.on .hchip-help{background:rgba(255,255,255,.2);color:white}
 .pg-mini{display:grid;grid-template-columns:repeat(3,6px);gap:1.5px;flex-shrink:0}
 .pm{width:6px;height:6px;border-radius:1px;background:currentColor;opacity:.3}
 .pm.w{opacity:1}
@@ -117,6 +119,8 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);-webkit-font
 .cchip{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:var(--r-sm);border:1.5px solid var(--border-light);background:transparent;cursor:pointer;transition:all .15s;font-size:13px;font-weight:500;color:var(--text2)}
 .cchip:hover{background:var(--bg)}
 .cchip.on{border-color:var(--text);background:var(--text);color:white}
+.cchip .hchip-help{background:rgba(0,0,0,.1);margin-left:auto}
+.cchip.on .hchip-help{background:rgba(255,255,255,.2);color:white}
 .cchip-icon{font-size:16px;line-height:1;flex-shrink:0}
 .cchip-name{font-size:13px;font-weight:600;display:block}
 .cchip-sub{font-size:10px;opacity:.65;display:block;margin-top:1px}
