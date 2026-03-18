@@ -1,9 +1,11 @@
 import express from 'express';
 import https from 'https';
-import { readFileSync } from 'fs';
 
 const app = express();
-app.use(express.json({ limit: '20mb' }));
+
+// Increase limits for image payloads
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.use(express.static('.'));
 
 app.post('/api/analyze', (req, res) => {
@@ -13,6 +15,12 @@ app.post('/api/analyze', (req, res) => {
   }
 
   const body = JSON.stringify(req.body);
+  const bodyBytes = Buffer.byteLength(body);
+
+  // Safety check — Anthropic has ~32MB limit
+  if (bodyBytes > 30 * 1024 * 1024) {
+    return res.status(413).json({ error: `Payload muito grande: ${Math.round(bodyBytes/1024/1024)}MB. Reduza o numero de fotos.` });
+  }
 
   const options = {
     hostname: 'api.anthropic.com',
@@ -22,7 +30,7 @@ app.post('/api/analyze', (req, res) => {
       'x-api-key': apiKey,
       'anthropic-version': '2023-06-01',
       'Content-Type': 'application/json',
-      'Content-Length': Buffer.byteLength(body),
+      'Content-Length': bodyBytes,
     },
   };
 
@@ -33,7 +41,7 @@ app.post('/api/analyze', (req, res) => {
       try {
         res.status(apiRes.statusCode).json(JSON.parse(data));
       } catch {
-        res.status(500).json({ error: 'Erro ao processar resposta' });
+        res.status(500).json({ error: 'Erro ao processar resposta da API' });
       }
     });
   });
