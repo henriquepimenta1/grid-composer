@@ -230,7 +230,17 @@ const CONTRAST_AXES = [
 ]
 
 let selH = 'complementary', selP = 'checkerboard', selC = 'temperature'
-let photos = Array(3).fill(null), igPhotos = [], planSize = 3, igMode = 'skip'
+// repository = all uploaded photos (up to 12), unordered pool
+// feedSlots  = sparse array [0..planSize-1], each slot = repo index or null
+let repository = []   // {file, dataUrl, cropUrl, compressed, colors, kelvin}
+let feedSlots  = [null, null, null]  // indices into repository
+let igPhotos = [], planSize = 3, igMode = 'skip'
+
+// Legacy alias so existing compose/renderResults code still works
+Object.defineProperty(window, 'photos', {
+  get() { return feedSlots.map(i => i !== null ? repository[i] : null) },
+  configurable: true
+})
 
 // ══ INIT ═════════════════════════════════════════════
 function init() {
@@ -419,21 +429,15 @@ function kUpdate() {
 
 function setPlan(n, btn) {
   planSize = n
-  document.querySelectorAll('.topbar-center .plan-tab').forEach(t => t.classList.remove('active'))
+  document.querySelectorAll('.feed-tab,.topbar-center .plan-tab').forEach(t => t.classList.remove('active'))
   btn.classList.add('active')
-  // Resize photos array to new planSize
-  photos.length = n
-  for (let i = 0; i < n; i++) { if (photos[i] === undefined) photos[i] = null }
+  // Resize feedSlots
+  while (feedSlots.length < n) feedSlots.push(null)
+  feedSlots.length = n
   renderUploadGrid()
+  updateActionButtons()
 }
-function setPlanM(n, btn) {
-  planSize = n
-  document.querySelectorAll('.plan-tabs-mobile .plan-tab').forEach(t => t.classList.remove('active'))
-  btn.classList.add('active')
-  photos.length = n
-  for (let i = 0; i < n; i++) { if (photos[i] === undefined) photos[i] = null }
-  renderUploadGrid()
-}
+function setPlanM(n, btn) { setPlan(n, btn) }
 function setIG(mode) {
   igMode = mode
   document.getElementById('ig-skip').className   = 'ig-opt' + (mode==='skip'   ? ' on' : '')
@@ -442,76 +446,112 @@ function setIG(mode) {
   document.getElementById('ig-note').style.display    = mode === 'skip'   ? 'block' : 'none'
 }
 
-// ══ UPLOAD ═══════════════════════════════════════════
+// ══ UPLOAD — REPOSITORY + FEED ══════════════════════
 function setupDrop() {
-  const dz = document.getElementById('dz')
-  dz.addEventListener('dragover',  e => { e.preventDefault(); dz.classList.add('drag') })
-  dz.addEventListener('dragleave', () => dz.classList.remove('drag'))
-  dz.addEventListener('drop',      e => { e.preventDefault(); dz.classList.remove('drag'); handleFiles(e.dataTransfer.files) })
-  dz.addEventListener('click',     () => document.getElementById('fin').click())
+  // Repo area: drag files onto it
+  const repoGrid = document.getElementById('repo-grid')
+  if (repoGrid) {
+    repoGrid.addEventListener('dragover',  e => { e.preventDefault(); repoGrid.style.outline='2px dashed var(--blue)' })
+    repoGrid.addEventListener('dragleave', () => { repoGrid.style.outline='' })
+    repoGrid.addEventListener('drop',      e => { e.preventDefault(); repoGrid.style.outline=''; handleFiles(e.dataTransfer.files) })
+  }
+  // Feed slots: accept drop from repo
+  const feedGrid = document.getElementById('upload-grid')
+  if (feedGrid) {
+    feedGrid.addEventListener('dragover',  e => { e.preventDefault(); feedGrid.classList.add('drop-active') })
+    feedGrid.addEventListener('dragleave', e => { if (!feedGrid.contains(e.relatedTarget)) feedGrid.classList.remove('drop-active') })
+    feedGrid.addEventListener('drop',      e => { e.preventDefault(); feedGrid.classList.remove('drop-active') })
+  }
 }
 
+// ── Add files to REPOSITORY ───────────────────────────
 async function handleFiles(files) {
   const toAdd = Array.from(files).filter(f => f.type.startsWith('image/'))
   if (!toAdd.length) return
-  setStatus(`Processando ${toAdd.length} foto(s)...`, '')
-
-  // Fill empty slots first, then append
-  for (const file of toAdd) {
-    // Find first empty slot
-    let idx = -1
-    for (let i = 0; i < planSize; i++) { if (!photos[i]) { idx = i; break } }
-    if (idx === -1) break // all slots full
-
+  const remaining = 12 - repository.length
+  const batch = toAdd.slice(0, remaining)
+  setStatus(`Processando ${batch.length} foto(s)...`, '')
+  for (const file of batch) {
     const raw        = await readFile(file)
     const img        = await loadImg(raw)
     const colors     = extractColors(img, 5)
     const kelvin     = estimateKelvin(colors)
     const compressed = await compressImage(raw, 800, 0.75)
-    photos[idx] = { file, dataUrl: raw, compressed, colors, kelvin }
-    renderUploadGrid()
+    repository.push({ file, dataUrl: raw, compressed, colors, kelvin })
+    renderRepo()
   }
-
-  const filled = photos.filter(Boolean).length
-  setStatus(`✓ ${filled} foto(s) · k-means LAB`, 'ok')
-  document.getElementById('go').disabled = filled < planSize
+  setStatus(`✓ ${repository.length} foto(s) no repositório`, 'ok')
+  updateActionButtons()
 }
 
 function readFile(f) { return new Promise(r => { const fr = new FileReader(); fr.onload = e => r(e.target.result); fr.readAsDataURL(f) }) }
 function loadImg(s)  { return new Promise(r => { const i = new Image(); i.onload = () => r(i); i.src = s }) }
 
-async function handleIG(files) {
-  igPhotos = []
-  const g = document.getElementById('ig-grid')
-  g.innerHTML = ''
-  for (const f of Array.from(files).slice(0, 3)) {
-    const url = await readFile(f)
-    const img = await loadImg(url)
-    igPhotos.push({ dataUrl: url, colors: extractColors(img, 5), kelvin: estimateKelvin(extractColors(img, 5)) })
-    const c = document.createElement('div')
-    c.className = 'igmc'
-    c.innerHTML = `<img src="${url}">`
-    g.appendChild(c)
-  }
-  while (g.children.length < 3) {
-    const c = document.createElement('div'); c.className = 'igmc'; c.innerHTML = '<div class="igmc-e">+</div>'; g.appendChild(c)
-  }
+// ── Render REPOSITORY ─────────────────────────────────
+function renderRepo() {
+  const grid = document.getElementById('repo-grid')
+  if (!grid) return
+  // Thumbs
+  const thumbsHtml = repository.map((p, i) => `
+    <div class="repo-thumb ${repoDragIdx===i?'repo-dragging':''}"
+      draggable="true"
+      ondragstart="repoDragStart(event,${i})"
+      ondragend="repoDragEnd(event)">
+      <img src="${p.cropUrl || p.dataUrl}" alt="">
+      <button class="repo-del" onclick="event.stopPropagation();removeFromRepo(${i})">✕</button>
+    </div>`).join('')
+
+  const addBtn = repository.length < 12
+    ? `<div class="repo-add" id="repo-add" onclick="document.getElementById('fin').click()">
+        <span style="font-size:22px;color:var(--text3)">+</span>
+        <span style="font-size:11px;color:var(--text3);margin-top:2px">Adicionar</span>
+       </div>`
+    : ''
+
+  grid.innerHTML = thumbsHtml + addBtn
+  document.getElementById('pcnt').textContent = `${repository.length} / 12`
 }
 
-// ── Upload grid ───────────────────────────────────────
-// photos is now a sparse array: photos[i] = photo or null/undefined
-// planSize determines how many slots to show
+// ── Drag from REPOSITORY → FEED slot ─────────────────
+let repoDragIdx = null
 
+function repoDragStart(e, i) {
+  repoDragIdx = i
+  e.dataTransfer.setData('text/plain', String(i))
+  e.dataTransfer.effectAllowed = 'copy'
+  renderRepo()
+}
+function repoDragEnd(e) {
+  repoDragIdx = null
+  renderRepo()
+}
+
+function removeFromRepo(i) {
+  // Remove from repo and clear any feed slots pointing to it
+  repository.splice(i, 1)
+  feedSlots = feedSlots.map(s => {
+    if (s === i) return null
+    if (s > i)   return s - 1
+    return s
+  })
+  renderRepo()
+  renderUploadGrid()
+  updateActionButtons()
+}
+
+// ── Render FEED grid ──────────────────────────────────
 let slotTargetIdx = null
 let ugDragging    = false
 let ugDragIdx     = null
+let _clickTimer   = null
 
 function renderUploadGrid() {
   const grid = document.getElementById('upload-grid')
   if (!grid) return
   const cells = []
   for (let i = 0; i < planSize; i++) {
-    const photo = photos[i]
+    const repoIdx = feedSlots[i]
+    const photo   = repoIdx !== null && repoIdx !== undefined ? repository[repoIdx] : null
     if (photo) {
       const pal = (photo.colors||[]).slice(0,5).map(c=>`<div style="flex:1;background:${c.hex}"></div>`).join('')
       cells.push(`
@@ -522,261 +562,70 @@ function renderUploadGrid() {
           ondrop="ugDrop(event,${i})"
           ondragend="ugDragEnd(event)"
           onclick="ugSingleClick(event,${i})"
-          ondblclick="openCrop(${i})">
+          ondblclick="openCrop(${repoIdx})">
           <img src="${photo.cropUrl || photo.dataUrl}">
-          <button class="ugslot-del" onclick="event.stopPropagation();removePhotoAt(${i})">✕</button>
+          <button class="ugslot-del" onclick="event.stopPropagation();clearSlot(${i})">✕</button>
           <div class="ugslot-n">${i+1}${i===0?' · 1ª':''}</div>
           <div class="ugslot-pal">${pal}</div>
         </div>`)
     } else {
       cells.push(`
-        <div class="ugslot" onclick="openSlotPicker(${i})">
+        <div class="ugslot"
+          ondragover="slotDragOver(event)"
+          ondragleave="slotDragLeave(event)"
+          ondrop="slotDropFromRepo(event,${i})"
+          onclick="openSlotPicker(${i})">
           <div class="ugslot-empty">
             <div class="ugslot-plus">+</div>
-            <div class="ugslot-num">foto ${i+1}${i===0?' · 1ª a postar':''}</div>
+            <div class="ugslot-num">slot ${i+1}${i===0?' · 1ª a postar':''}</div>
           </div>
         </div>`)
     }
   }
   grid.innerHTML = cells.join('')
-  updateCnt()
-  // Enable/disable action buttons
-  const filled = photos.filter(Boolean).length
-  const enough = filled >= planSize
-  document.getElementById('go').disabled = !enough
-  const manBtn = document.getElementById('manual-btn')
-  if (manBtn) manBtn.disabled = !enough
 }
 
-// Single click on filled slot
-let _clickTimer = null
+// drop from repo onto feed slot
+function slotDragOver(e) {
+  e.preventDefault()
+  e.currentTarget.classList.add('drop-hover')
+}
+function slotDragLeave(e) {
+  e.currentTarget.classList.remove('drop-hover')
+}
+function slotDropFromRepo(e, slotIdx) {
+  e.preventDefault()
+  e.currentTarget.classList.remove('drop-hover')
+  const repoIdx = parseInt(e.dataTransfer.getData('text/plain'))
+  if (isNaN(repoIdx)) return
+  feedSlots[slotIdx] = repoIdx
+  renderUploadGrid()
+  updateActionButtons()
+}
+
+// drag within feed to reorder
+function ugDragStart(e, i) {
+  ugDragIdx = i; ugDragging = true
+  e.dataTransfer.effectAllowed = 'move'
+}
+function ugDragOver(e)  { e.preventDefault(); e.dataTransfer.dropEffect = 'move' }
+function ugDragEnd(e)   { setTimeout(()=>ugDragging=false, 50) }
+function ugDrop(e, i) {
+  e.preventDefault()
+  if (ugDragIdx === null || ugDragIdx === i) return
+  const tmp = feedSlots[ugDragIdx]; feedSlots[ugDragIdx] = feedSlots[i]; feedSlots[i] = tmp
+  ugDragIdx = null; renderUploadGrid()
+}
+
+// single click = palette, double click = crop
 function ugSingleClick(e, i) {
   if (ugDragging) return
-  // Distinguish single vs double click
-  if (_clickTimer) return  // double click handled by ondblclick
+  if (_clickTimer) return
   _clickTimer = setTimeout(() => {
     _clickTimer = null
-    // Show palette modal
-    if (photos[i]) openPaletteModal(i)
+    const repoIdx = feedSlots[i]
+    if (repoIdx !== null && repoIdx !== undefined) openPaletteModal(repoIdx)
   }, 220)
-}
-
-// ── Palette modal ─────────────────────────────────────
-function openPaletteModal(photoIdx) {
-  const photo = photos[photoIdx]
-  if (!photo || !photo.colors) return
-  document.getElementById('palette-title').textContent = `Foto ${photoIdx+1} — paleta de cores`
-  document.getElementById('palette-swatches').innerHTML = photo.colors.map((c, i) => `
-    <div class="palette-swatch" id="swatch-${photoIdx}-${i}" onclick="copySwatch('${c.hex}',${photoIdx},${i})">
-      <div class="swatch-color" style="background:${c.hex}"></div>
-      <div class="swatch-info">
-        <div class="swatch-hex">${c.hex.toUpperCase()}</div>
-        <div class="swatch-pct">${c.pct}% da imagem</div>
-        <div class="swatch-copy">clique para copiar</div>
-      </div>
-    </div>`).join('')
-  document.getElementById('palette-modal').classList.add('open')
-}
-
-function copySwatch(hex, photoIdx, colorIdx) {
-  navigator.clipboard?.writeText(hex).then(() => {
-    const el = document.getElementById(`swatch-${photoIdx}-${colorIdx}`)
-    if (el) {
-      el.classList.add('copied')
-      el.querySelector('.swatch-copy').textContent = '✓ copiado!'
-      setTimeout(() => {
-        el.classList.remove('copied')
-        el.querySelector('.swatch-copy').textContent = 'clique para copiar'
-      }, 1500)
-    }
-  }).catch(() => {})
-}
-
-function closePaletteModal() {
-  document.getElementById('palette-modal')?.classList.remove('open')
-}
-
-// ── Crop modal ────────────────────────────────────────
-let cropSlotIdx    = null
-let cropOffsetX    = 0
-let cropOffsetY    = 0
-let cropScale      = 1
-let cropDragging   = false
-let cropDragStartX = 0
-let cropDragStartY = 0
-let cropImgW       = 0
-let cropImgH       = 0
-
-function openCrop(idx) {
-  if (_clickTimer) { clearTimeout(_clickTimer); _clickTimer = null }
-  const photo = photos[idx]
-  if (!photo) return
-  cropSlotIdx = idx
-  cropOffsetX = 0; cropOffsetY = 0; cropScale = 1
-
-  const modal = document.getElementById('crop-modal')
-  const img   = document.getElementById('crop-img')
-  const frame = document.getElementById('crop-frame')
-
-  img.src = photo.dataUrl
-  img.onload = () => {
-    cropImgW = img.naturalWidth
-    cropImgH = img.naturalHeight
-    // Fit image to fill the 4:5 frame initially
-    const frameW = frame.clientWidth
-    const frameH = frame.clientHeight
-    const scaleToFit = Math.max(frameW / cropImgW, frameH / cropImgH)
-    cropScale = scaleToFit * 100  // stored as % for slider
-    document.getElementById('crop-zoom').value = Math.min(300, Math.max(100, cropScale))
-    applyCropTransform()
-  }
-
-  modal.classList.add('open')
-
-  // Drag to reposition
-  const frame2 = document.getElementById('crop-frame')
-  frame2.onmousedown = (e) => {
-    cropDragging = true
-    cropDragStartX = e.clientX - cropOffsetX
-    cropDragStartY = e.clientY - cropOffsetY
-    e.preventDefault()
-  }
-  frame2.ontouchstart = (e) => {
-    cropDragging = true
-    cropDragStartX = e.touches[0].clientX - cropOffsetX
-    cropDragStartY = e.touches[0].clientY - cropOffsetY
-  }
-
-  document.onmousemove = (e) => {
-    if (!cropDragging) return
-    cropOffsetX = e.clientX - cropDragStartX
-    cropOffsetY = e.clientY - cropDragStartY
-    applyCropTransform()
-  }
-  document.ontouchmove = (e) => {
-    if (!cropDragging) return
-    cropOffsetX = e.touches[0].clientX - cropDragStartX
-    cropOffsetY = e.touches[0].clientY - cropDragStartY
-    applyCropTransform()
-  }
-  document.onmouseup = document.ontouchend = () => { cropDragging = false }
-
-  // Scroll to zoom
-  frame2.onwheel = (e) => {
-    e.preventDefault()
-    const slider = document.getElementById('crop-zoom')
-    const val = Math.min(300, Math.max(100, parseFloat(slider.value) - e.deltaY * 0.3))
-    slider.value = val
-    cropZoom(val)
-  }
-}
-
-function cropZoom(val) {
-  cropScale = parseFloat(val)
-  applyCropTransform()
-}
-
-function applyCropTransform() {
-  const img   = document.getElementById('crop-img')
-  const frame = document.getElementById('crop-frame')
-  if (!img || !frame) return
-  const s = cropScale / 100
-  img.style.width     = cropImgW * s + 'px'
-  img.style.height    = cropImgH * s + 'px'
-  img.style.left      = (frame.clientWidth  / 2 - cropImgW * s / 2 + cropOffsetX) + 'px'
-  img.style.top       = (frame.clientHeight / 2 - cropImgH * s / 2 + cropOffsetY) + 'px'
-}
-
-function saveCrop() {
-  const frame = document.getElementById('crop-frame')
-  const img   = document.getElementById('crop-img')
-  if (!frame || !img || cropSlotIdx === null) return
-
-  const canvas = document.createElement('canvas')
-  const fW = frame.clientWidth, fH = frame.clientHeight
-  canvas.width  = fW * 2  // 2x for retina
-  canvas.height = fH * 2
-  const ctx = canvas.getContext('2d')
-  ctx.scale(2, 2)
-
-  const s = cropScale / 100
-  const x = fW / 2 - cropImgW * s / 2 + cropOffsetX
-  const y = fH / 2 - cropImgH * s / 2 + cropOffsetY
-
-  const srcImg = new Image()
-  srcImg.onload = () => {
-    ctx.drawImage(srcImg, x, y, cropImgW * s, cropImgH * s)
-    const cropUrl = canvas.toDataURL('image/jpeg', 0.9)
-    photos[cropSlotIdx].cropUrl = cropUrl
-    // Re-compress for API
-    compressImage(cropUrl, 800, 0.75).then(compressed => {
-      photos[cropSlotIdx].compressed = compressed
-    })
-    renderUploadGrid()
-    closeCrop()
-  }
-  srcImg.src = img.src
-}
-
-function closeCrop() {
-  document.getElementById('crop-modal')?.classList.remove('open')
-  document.onmousemove = null
-  document.onmouseup   = null
-  cropSlotIdx = null
-}
-
-// ── Manual mode ───────────────────────────────────────
-let isManualMode = false
-
-function activateManual() {
-  isManualMode = true
-  // Build a simple manual plan from current photo order
-  currentPlan = photos.filter(Boolean).map((p, i) => ({
-    slot: i + 1,
-    photo: photos.indexOf(p) + 1,
-    temp: p.kelvin < 5000 ? 'warm' : 'cool',
-    kelvin: p.kelvin + 'K',
-    contrast_role: p.kelvin < 5000 ? 'quente' : 'frio',
-    type: 'Manual',
-    harmony_role: 'Organização manual',
-    reason: 'Ordem definida manualmente',
-  }))
-  currentHarmony = { name: 'Manual' }
-
-  const results = document.getElementById('results')
-  results.innerHTML = `
-    <div class="plan-post">
-      <div class="pp-hdr">
-        <div class="pp-user">
-          <div class="pp-av" id="manual-av">?</div>
-          <div>
-            <div class="pp-name" id="manual-name"></div>
-            <div class="pp-sub">Organização manual · arraste para reordenar</div>
-          </div>
-        </div>
-        <button onclick="deactivateManual()" style="font-size:12px;padding:4px 10px;border-radius:100px;border:1.5px solid var(--border);background:transparent;cursor:pointer;font-family:var(--font);color:var(--text2)">Resetar</button>
-      </div>
-      <div class="pp-grid" id="result-grid"></div>
-      <div class="pp-grid-hint">↕ Arraste para reordenar · duplo clique para crop · sem créditos</div>
-    </div>`
-
-  // Fill avatar/name from auth
-  const name = currentUser?.user_metadata?.name || currentUser?.email?.split('@')[0] || 'user'
-  const av = document.getElementById('manual-av')
-  const nm = document.getElementById('manual-name')
-  if (av) av.textContent = name[0].toUpperCase()
-  if (nm) nm.textContent = name
-
-  renderGrid()
-  results.classList.add('show')
-  results.scrollIntoView({ behavior: 'smooth', block: 'start' })
-}
-
-function deactivateManual() {
-  isManualMode = false
-  currentPlan  = []
-  document.getElementById('results').classList.remove('show')
-  document.getElementById('results').innerHTML = ''
 }
 
 function openSlotPicker(idx) {
@@ -789,60 +638,81 @@ async function handleSlotFile(files) {
   if (!files || !files.length || slotTargetIdx === null) return
   const file = files[0]
   if (!file.type.startsWith('image/')) return
+  // Add to repo first
   const raw        = await readFile(file)
   const img        = await loadImg(raw)
   const colors     = extractColors(img, 5)
   const kelvin     = estimateKelvin(colors)
   const compressed = await compressImage(raw, 800, 0.75)
-  photos[slotTargetIdx] = { file, dataUrl: raw, compressed, colors, kelvin }
+  if (repository.length < 12) {
+    repository.push({ file, dataUrl: raw, compressed, colors, kelvin })
+    feedSlots[slotTargetIdx] = repository.length - 1
+    renderRepo()
+  }
   slotTargetIdx = null
   renderUploadGrid()
-  const filled = photos.filter(Boolean).length
-  setStatus(`✓ ${filled} foto(s) · k-means LAB`, 'ok')
-  document.getElementById('go').disabled = filled < planSize
+  updateActionButtons()
+  setStatus(`✓ ${repository.length} foto(s) no repositório`, 'ok')
 }
 
-function ugDragStart(e, i) {
-  ugDragIdx = i; ugDragging = true
-  e.currentTarget.classList.add('ugslot-drag')
-  e.dataTransfer.effectAllowed = 'move'
-}
-function ugDragOver(e) { e.preventDefault(); e.dataTransfer.dropEffect = 'move' }
-function ugDragEnd(e)  { e.currentTarget.classList.remove('ugslot-drag'); setTimeout(()=>ugDragging=false, 50) }
-function ugDrop(e, i) {
-  e.preventDefault()
-  if (ugDragIdx === null || ugDragIdx === i) return
-  const tmp = photos[ugDragIdx]; photos[ugDragIdx] = photos[i]; photos[i] = tmp
-  ugDragIdx = null; renderUploadGrid()
-}
-
-function removePhotoAt(i) {
-  photos[i] = null
+function clearSlot(i) {
+  feedSlots[i] = null
   renderUploadGrid()
-  if (!photos.filter(Boolean).length) setStatus('', '')
+  updateActionButtons()
 }
 
 function setStatus(msg, cls) {
   const el = document.getElementById('exts')
+  if (!el) return
   el.className = 'up-status' + (cls ? ' ' + cls : '')
   el.innerHTML = cls ? `<div class="status-dot"></div>${msg}` : msg
 }
 
 function updateCnt() {
-  const filled = photos.filter(Boolean).length
-  document.getElementById('pcnt').textContent = `${filled} foto${filled!==1?'s':''}`
+  document.getElementById('pcnt').textContent = `${repository.length} / 12`
+}
+
+function updateActionButtons() {
+  const filledSlots = feedSlots.filter(s => s !== null && s !== undefined).length
+  const hasRepo     = repository.length > 0
+  const go      = document.getElementById('go')
+  const manBtn  = document.getElementById('manual-btn')
+  // IA: needs repo photos (uses all repo, not just slots)
+  if (go)     go.disabled     = !hasRepo
+  // Manual: needs at least planSize slots filled
+  if (manBtn) manBtn.disabled = filledSlots < planSize
 }
 
 function clearAll() {
-  photos = Array(planSize).fill(null)
-  igPhotos = []
+  repository = []
+  feedSlots  = Array(planSize).fill(null)
+  igPhotos   = []
   isManualMode = false
+  renderRepo()
   renderUploadGrid()
   document.getElementById('fin').value = ''
   document.getElementById('results').classList.remove('show')
   document.getElementById('results').innerHTML = ''
   currentPlan = []
   hideErr(); setStatus('', '')
+}
+
+async function handleIG(files) {
+  igPhotos = []
+  const g = document.getElementById('ig-grid')
+  if (!g) return
+  g.innerHTML = ''
+  for (const f of Array.from(files).slice(0, 3)) {
+    const url = await readFile(f)
+    const img = await loadImg(url)
+    igPhotos.push({ dataUrl: url, colors: extractColors(img, 5), kelvin: estimateKelvin(extractColors(img, 5)) })
+    const c = document.createElement('div'); c.className = 'igmc'
+    c.innerHTML = `<img src="${url}">`; g.appendChild(c)
+  }
+  while (g.children.length < 3) {
+    const c = document.createElement('div'); c.className = 'igmc'
+    c.innerHTML = '<div class="igmc-e">+</div>'; g.appendChild(c)
+  }
 }
 
 // ══ ERRORS ═══════════════════════════════════════════
@@ -855,8 +725,10 @@ function hideErr() { document.getElementById('err').classList.remove('show') }
 
 // ══ COMPOSE ══════════════════════════════════════════
 async function compose() {
-  const filledPhotos = photos.filter(Boolean)
-  if (filledPhotos.length < planSize) return
+  // IA uses all repository photos as candidates
+  const repoPhotos = repository.filter(Boolean)
+  if (repoPhotos.length < 1) return
+  const filledPhotos = repoPhotos  // alias for rest of compose
   hideErr()
   document.getElementById('results').classList.remove('show')
   document.getElementById('results').innerHTML = ''
@@ -871,9 +743,7 @@ async function compose() {
     const kc = document.getElementById('kc').value
 
     // Use only filled slots, numbered by slot position
-    const filledPhotos = photos.map((p,i) => p ? {p, slotIdx: i} : null).filter(Boolean)
-
-    const colorCtx = filledPhotos.map(({p,slotIdx},i) =>
+    const colorCtx = repoPhotos.map((p,i) =>
       `FOTO ${i+1}: kelvin~${p.kelvin}K temp=${p.kelvin<5000?'QUENTE':'FRIO'} cores=[${(p.colors||[]).map(c=>c.hex+'('+c.pct+'%)').join(' ')}]`
     ).join('\n')
 
@@ -886,7 +756,7 @@ async function compose() {
     step(2)
 
     const content = []
-    filledPhotos.forEach(({p},i) => {
+    repoPhotos.forEach((p,i) => {
       content.push({ type:'image', source:{ type:'base64', media_type:'image/jpeg', data:p.compressed.split(',')[1] } })
       content.push({ type:'text', text:`[FOTO ${i+1}]` })
     })
@@ -990,7 +860,7 @@ RETORNE APENAS JSON SEM MARKDOWN:
 {"plan":[{"slot":1,"photo":N,"grid_position":"top-right","temp":"cool","kelvin":"7500K","contrast_role":"frio","type":"TIPO","harmony_role":"papel na harmonia","reason":"max 70 chars","preset":"ajustes PS/LR max 60 chars"}],"overview":"1 frase","harmony_note":"1 frase com eixo usado"}
 
 Slots: ${Array.from({length:size},(_,i)=>i+1).join(', ')}
-Fotos: 1 a ${photos.filter(Boolean).length}
+Fotos: 1 a ${repoPhotos.length}
 Kelvin: MENOR=quente/laranja MAIOR=frio/azul`
 }
 
