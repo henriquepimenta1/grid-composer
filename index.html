@@ -2,293 +2,284 @@
 <html lang="pt">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>GridAI</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GridAI — Grid Composer</title>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --white:#fff;--bg:#fafafa;--surface:#fff;
-  --border:#dbdbdb;--border-light:#efefef;
-  --text:#262626;--text-2:#737373;--text-3:#a8a8a8;
-  --blue:#0095f6;--blue-dark:#0074cc;
-  --red:#ed4956;--green:#27ae60;
+  --bg:#fafafa;--white:#fff;--border:#dbdbdb;--border-light:#efefef;
+  --text:#262626;--text2:#737373;--text3:#a8a8a8;
+  --blue:#0095f6;--blue-d:#0074cc;--green:#27ae60;--red:#ed4956;
   --warm:#e8920a;--cool:#1976d2;
-  --ig-grad:linear-gradient(45deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888);
-  --shadow-sm:0 1px 3px rgba(0,0,0,.08);
-  --radius:12px;--radius-sm:8px;
+  --ig:linear-gradient(45deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888);
+  --shadow:0 1px 3px rgba(0,0,0,.08);--shadow-md:0 4px 16px rgba(0,0,0,.1);
+  --r:10px;--r-sm:7px;
   --font:'Plus Jakarta Sans',sans-serif;
-  --nav-h:60px;
+  --sidebar:280px;--topbar:52px;
 }
-body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:100vh;padding-bottom:calc(var(--nav-h)+20px);-webkit-font-smoothing:antialiased}
+html,body{height:100%;overflow:hidden}
+body{background:var(--bg);color:var(--text);font-family:var(--font);-webkit-font-smoothing:antialiased;display:flex;flex-direction:column}
 
-/* TOP BAR */
-.topbar{position:sticky;top:0;z-index:100;background:rgba(255,255,255,.96);backdrop-filter:blur(12px);border-bottom:1px solid var(--border-light);height:54px;display:flex;align-items:center;justify-content:space-between;padding:0 16px}
-.logo{font-size:21px;font-weight:800;background:var(--ig-grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;letter-spacing:-.5px}
-.handle{font-size:13px;font-weight:600;color:var(--text-2)}
-.avatar{width:30px;height:30px;border-radius:50%;background:var(--ig-grad);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff}
+/* ── TOPBAR ── */
+.topbar{
+  height:var(--topbar);flex-shrink:0;
+  background:var(--white);border-bottom:1px solid var(--border-light);
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 24px;position:relative;z-index:100;
+}
+.logo{font-size:20px;font-weight:800;background:var(--ig);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;letter-spacing:-.5px}
+.topbar-center{display:flex;gap:4px}
+.plan-tab{
+  padding:6px 16px;border-radius:100px;
+  border:1.5px solid var(--border);background:transparent;
+  font-size:13px;font-weight:600;color:var(--text2);
+  cursor:pointer;transition:all .15s;font-family:var(--font);
+}
+.plan-tab:hover{border-color:var(--text);color:var(--text)}
+.plan-tab.active{background:var(--text);border-color:var(--text);color:white}
+.topbar-right{display:flex;align-items:center;gap:10px}
+.handle{font-size:13px;font-weight:600;color:var(--text2)}
+.avatar{width:28px;height:28px;border-radius:50%;background:var(--ig);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:white}
 
-/* STORIES TABS */
-.stories{padding:14px 16px;display:flex;gap:10px;overflow-x:auto;scrollbar-width:none}
-.stories::-webkit-scrollbar{display:none}
-.story{display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer;flex-shrink:0;background:none;border:none;padding:0}
-.story-ring{width:62px;height:62px;border-radius:50%;padding:2.5px;background:var(--border);transition:all .2s}
-.story.active .story-ring{background:var(--ig-grad)}
-.story-inner{width:100%;height:100%;border-radius:50%;background:var(--white);display:flex;align-items:center;justify-content:center;font-size:19px;font-weight:800;color:var(--text);border:2.5px solid var(--white)}
-.story.active .story-inner{color:#cc2366}
-.story-lbl{font-size:11px;font-weight:500;color:var(--text-2)}
-.story.active .story-lbl{color:var(--text);font-weight:700}
+/* ── BODY LAYOUT ── */
+.app-body{flex:1;display:flex;overflow:hidden;min-height:0}
 
-/* SECTION */
-.s{padding:0 16px;margin-bottom:14px}
-.s-title{font-size:13px;font-weight:700;color:var(--text);margin-bottom:10px}
+/* ── SIDEBAR ── */
+.sidebar{
+  width:var(--sidebar);flex-shrink:0;
+  background:var(--white);border-right:1px solid var(--border-light);
+  overflow-y:auto;overflow-x:hidden;
+  display:flex;flex-direction:column;
+}
+.sb-section{padding:16px;border-bottom:1px solid var(--border-light)}
+.sb-title{font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px}
 
-/* HARMONY CHIPS */
-.hscroll{display:flex;gap:7px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
-.hscroll::-webkit-scrollbar{display:none}
-.hchip{display:flex;align-items:center;gap:6px;padding:7px 12px 7px 7px;border-radius:100px;border:1.5px solid var(--border);background:var(--white);cursor:pointer;flex-shrink:0;transition:all .15s;font-size:12px;font-weight:500;color:var(--text-2)}
+/* Harmony chips */
+.h-chips{display:flex;flex-direction:column;gap:4px}
+.hchip{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:var(--r-sm);border:1.5px solid var(--border-light);background:transparent;cursor:pointer;transition:all .15s;font-size:13px;font-weight:500;color:var(--text2)}
+.hchip:hover{background:var(--bg)}
 .hchip.on{border-color:var(--text);background:var(--text);color:white}
-.hchip-dot{width:18px;height:18px;border-radius:50%;flex-shrink:0}
+.hchip-dot{width:20px;height:20px;border-radius:50%;flex-shrink:0}
 
-/* PATTERN */
-.prow{display:flex;gap:6px;flex-wrap:wrap}
-.pchip{display:flex;align-items:center;gap:5px;padding:6px 11px;border-radius:100px;border:1.5px solid var(--border);background:var(--white);cursor:pointer;transition:all .15s;font-size:12px;font-weight:500;color:var(--text-2)}
+/* Pattern chips */
+.p-chips{display:flex;flex-direction:column;gap:4px}
+.pchip{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:var(--r-sm);border:1.5px solid var(--border-light);background:transparent;cursor:pointer;transition:all .15s;font-size:13px;font-weight:500;color:var(--text2)}
+.pchip:hover{background:var(--bg)}
 .pchip.on{border-color:var(--text);background:var(--text);color:white}
-.pg-mini{display:grid;grid-template-columns:repeat(3,5px);gap:1.5px}
-.pm{width:5px;height:5px;border-radius:1px;background:currentColor;opacity:.35}
+.pg-mini{display:grid;grid-template-columns:repeat(3,6px);gap:1.5px;flex-shrink:0}
+.pm{width:6px;height:6px;border-radius:1px;background:currentColor;opacity:.3}
 .pm.w{opacity:1}
 
-/* KELVIN CARD */
-.kcard{background:var(--white);border:1px solid var(--border-light);border-radius:var(--radius);padding:14px;box-shadow:var(--shadow-sm)}
-.ktrack{width:100%;height:9px;border-radius:5px;background:linear-gradient(90deg,#FF5500,#FFB830,#FFEEBB,#C8DCFF,#80AAFF);margin-bottom:12px}
-.krow{display:flex;align-items:center;gap:9px;margin-bottom:7px}
+/* Kelvin */
+.ktrack{width:100%;height:8px;border-radius:4px;background:linear-gradient(90deg,#FF5500,#FFB830,#FFEEBB,#C8DCFF,#80AAFF);margin-bottom:12px}
+.krow{display:flex;align-items:center;gap:8px;margin-bottom:6px}
 .klbl{font-size:12px;font-weight:700;width:12px;flex-shrink:0}
 .kw{color:var(--warm)}.kc{color:var(--cool)}
 input[type=range]{flex:1;-webkit-appearance:none;height:3px;border-radius:2px;background:var(--border);outline:none;cursor:pointer}
-input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:var(--white);border:2px solid var(--text);cursor:pointer;box-shadow:var(--shadow-sm)}
-.kval{font-size:12px;font-weight:600;color:var(--text-2);width:44px;text-align:right;flex-shrink:0}
-.kdiff-row{text-align:center;font-size:11px;color:var(--text-3)}
-.kdiff-v{font-weight:700;color:var(--text-2)}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:var(--white);border:2px solid var(--text);cursor:pointer;box-shadow:var(--shadow)}
+.kval{font-size:11px;font-weight:600;color:var(--text2);width:42px;text-align:right;flex-shrink:0}
+.kdiff-row{text-align:center;font-size:11px;color:var(--text3);margin-top:4px}
+.kdiff-v{font-weight:700;color:var(--text2)}
 
-/* UPLOAD CARD */
-.ucard{background:var(--white);border:1px solid var(--border-light);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow-sm)}
-.ucard-hdr{padding:12px 14px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border-light)}
-.ucard-title{font-size:14px;font-weight:700}
-.ucnt{font-size:12px;font-weight:600;background:var(--bg);border:1px solid var(--border);padding:2px 9px;border-radius:100px;color:var(--text-2)}
-.dz{margin:12px;border:2px dashed var(--border);border-radius:var(--radius-sm);padding:24px 14px;text-align:center;cursor:pointer;transition:all .2s}
-.dz:hover,.dz.drag{border-color:var(--blue);background:#f0f8ff}
-.dz-icon{font-size:28px;margin-bottom:6px}
-.dz-t{font-size:14px;font-weight:600;color:var(--text);margin-bottom:3px}
-.dz-s{font-size:12px;color:var(--text-3)}
-.dz-btn{display:inline-block;margin-top:10px;padding:7px 18px;border-radius:100px;background:var(--blue);color:white;font-size:13px;font-weight:600;cursor:pointer;transition:background .15s}
-.dz:hover .dz-btn{background:var(--blue-dark)}
-.thumbs{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;padding:0 12px 12px}
-.thumb{aspect-ratio:1;position:relative;overflow:hidden;cursor:grab}
-.thumb img{width:100%;height:100%;object-fit:cover;display:block}
-.tov{position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,.5) 0%,transparent 55%);opacity:0;transition:opacity .15s}
-.thumb:hover .tov{opacity:1}
-.tdel{position:absolute;top:5px;right:5px;width:20px;height:20px;border-radius:50%;background:rgba(0,0,0,.65);color:white;font-size:11px;display:none;align-items:center;justify-content:center;cursor:pointer;z-index:2}
-.thumb:hover .tdel{display:flex}
-.tn{position:absolute;bottom:4px;left:5px;font-size:10px;font-weight:700;color:white;text-shadow:0 1px 3px rgba(0,0,0,.9);z-index:2}
-.tpal{position:absolute;bottom:0;left:0;right:0;height:4px;display:flex}
-.tp{flex:1}
-.exts{padding:0 14px 8px;font-size:12px;color:var(--text-3);min-height:18px}
-.exts.ok{color:var(--green)}
-.go-wrap{padding:0 12px 12px}
-.go-btn{width:100%;padding:13px;border-radius:var(--radius-sm);background:var(--ig-grad);border:none;color:white;cursor:pointer;font-size:14px;font-weight:700;font-family:var(--font);transition:opacity .15s;display:flex;align-items:center;justify-content:center;gap:7px}
-.go-btn:hover:not(:disabled){opacity:.9}
-.go-btn:disabled{opacity:.38;cursor:not-allowed}
-.go-btn:active:not(:disabled){transform:scale(.98)}
-
-/* IG CARD */
-.igcard{background:var(--white);border:1px solid var(--border-light);border-radius:var(--radius);padding:14px;box-shadow:var(--shadow-sm)}
-.ig-toggle{display:flex;gap:5px;margin-bottom:10px}
-.ig-opt{flex:1;padding:7px;border-radius:var(--radius-sm);border:1.5px solid var(--border);background:transparent;cursor:pointer;font-size:12px;font-weight:600;color:var(--text-2);transition:all .15s;text-align:center}
+/* IG context */
+.ig-toggle{display:flex;gap:4px;margin-bottom:10px}
+.ig-opt{flex:1;padding:6px;border-radius:var(--r-sm);border:1.5px solid var(--border);background:transparent;cursor:pointer;font-size:12px;font-weight:600;color:var(--text2);transition:all .15s;text-align:center}
 .ig-opt.on{border-color:var(--text);background:var(--text);color:white}
-.ig-mini{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;border-radius:var(--radius-sm);overflow:hidden}
-.igmc{aspect-ratio:1;background:var(--border-light);overflow:hidden;position:relative}
+.ig-mini{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;border-radius:var(--r-sm);overflow:hidden;margin-bottom:8px}
+.igmc{aspect-ratio:1;background:var(--border-light);overflow:hidden}
 .igmc img{width:100%;height:100%;object-fit:cover}
-.igmc-empty{display:flex;align-items:center;justify-content:center;height:100%;font-size:20px;color:var(--text-3)}
-.ig-note{font-size:12px;color:var(--text-3);line-height:1.55}
-.ig-up-btn{width:100%;margin-top:9px;padding:8px;background:var(--bg);border:1.5px dashed var(--border);border-radius:var(--radius-sm);cursor:pointer;font-size:12px;font-weight:600;color:var(--text-2);transition:all .15s}
+.igmc-e{display:flex;align-items:center;justify-content:center;height:100%;font-size:18px;color:var(--text3)}
+.ig-note{font-size:11px;color:var(--text3);line-height:1.55}
+.ig-up-btn{width:100%;margin-top:8px;padding:7px;background:var(--bg);border:1.5px dashed var(--border);border-radius:var(--r-sm);cursor:pointer;font-size:12px;font-weight:600;color:var(--text2);transition:all .15s;font-family:var(--font)}
 .ig-up-btn:hover{border-color:var(--blue);color:var(--blue)}
 
+/* ── MAIN CONTENT ── */
+.main{flex:1;overflow-y:auto;overflow-x:hidden;padding:24px;display:flex;flex-direction:column;gap:20px;min-height:0}
+
+/* UPLOAD AREA */
+.upload-panel{background:var(--white);border:1px solid var(--border-light);border-radius:var(--r);box-shadow:var(--shadow)}
+.up-hdr{padding:14px 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border-light)}
+.up-title{font-size:14px;font-weight:700}
+.up-meta{display:flex;align-items:center;gap:8px}
+.up-cnt{font-size:12px;font-weight:600;background:var(--bg);border:1px solid var(--border);padding:2px 9px;border-radius:100px;color:var(--text2)}
+.up-clear{font-size:12px;font-weight:600;color:var(--text3);cursor:pointer;padding:2px 6px;border-radius:4px;transition:color .15s;background:none;border:none;font-family:var(--font)}
+.up-clear:hover{color:var(--red)}
+.up-body{padding:16px}
+
+/* Drop zone */
+.dz{border:2px dashed var(--border);border-radius:var(--r-sm);padding:24px;text-align:center;cursor:pointer;transition:all .2s;margin-bottom:14px}
+.dz:hover,.dz.drag{border-color:var(--blue);background:#f0f8ff}
+.dz-icon{font-size:28px;margin-bottom:6px}
+.dz-t{font-size:14px;font-weight:600;color:var(--text);margin-bottom:2px}
+.dz-s{font-size:12px;color:var(--text3)}
+.dz-btn{display:inline-block;margin-top:10px;padding:7px 18px;border-radius:100px;background:var(--blue);color:white;font-size:13px;font-weight:600;cursor:pointer;transition:background .15s}
+.dz:hover .dz-btn,.dz.drag .dz-btn{background:var(--blue-d)}
+
+/* Thumbnails — smaller, desktop grid */
+.thumbs{display:grid;grid-template-columns:repeat(6,1fr);gap:3px;margin-bottom:10px}
+@media(max-width:900px){.thumbs{grid-template-columns:repeat(4,1fr)}}
+.thumb{aspect-ratio:1;position:relative;overflow:hidden;cursor:grab;border-radius:3px}
+.thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.tov{position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,.55) 0%,transparent 55%);opacity:0;transition:opacity .15s}
+.thumb:hover .tov{opacity:1}
+.tdel{position:absolute;top:3px;right:3px;width:18px;height:18px;border-radius:50%;background:rgba(0,0,0,.7);color:white;font-size:10px;display:none;align-items:center;justify-content:center;cursor:pointer;z-index:2}
+.thumb:hover .tdel{display:flex}
+.tn{position:absolute;bottom:3px;left:4px;font-size:9px;font-weight:700;color:white;text-shadow:0 1px 3px rgba(0,0,0,.9);z-index:2}
+.tpal{position:absolute;bottom:0;left:0;right:0;height:3px;display:flex}
+.tp{flex:1}
+
+/* Status + compress info */
+.up-status{font-size:12px;color:var(--text3);margin-bottom:10px;min-height:16px;display:flex;align-items:center;gap:6px}
+.up-status.ok{color:var(--green)}
+.up-status.warn{color:var(--warm)}
+.status-dot{width:6px;height:6px;border-radius:50%;background:currentColor;flex-shrink:0}
+
+/* Compose button */
+.compose-btn{
+  width:100%;padding:12px;border-radius:var(--r-sm);
+  background:var(--ig);border:none;color:white;
+  cursor:pointer;font-size:14px;font-weight:700;font-family:var(--font);
+  transition:opacity .15s;display:flex;align-items:center;justify-content:center;gap:6px;
+}
+.compose-btn:hover:not(:disabled){opacity:.88}
+.compose-btn:disabled{opacity:.35;cursor:not-allowed}
+.compose-btn:active:not(:disabled){transform:scale(.99)}
+
+/* ERROR PANEL — prominent */
+.err-panel{
+  display:none;background:#fff5f5;
+  border:1.5px solid #fca5a5;border-left:4px solid var(--red);
+  border-radius:var(--r);padding:14px 16px;
+}
+.err-panel.show{display:flex;gap:10px;align-items:flex-start}
+.err-icon{font-size:18px;flex-shrink:0;margin-top:1px}
+.err-body{}
+.err-title{font-size:13px;font-weight:700;color:var(--red);margin-bottom:3px}
+.err-msg{font-size:12px;color:#c0392b;line-height:1.5;font-family:monospace;background:#fee2e2;padding:6px 8px;border-radius:4px;margin-top:4px;word-break:break-all}
+
 /* LOADING */
-.loading{display:none;margin:0 16px 14px;background:var(--white);border:1px solid var(--border-light);border-radius:var(--radius);padding:22px 18px;text-align:center;box-shadow:var(--shadow-sm)}
+.loading{display:none;background:var(--white);border:1px solid var(--border-light);border-radius:var(--r);padding:24px;text-align:center;box-shadow:var(--shadow)}
 .loading.show{display:block}
 .ld-t{font-size:13px;font-weight:600;margin-bottom:12px}
 .ld-bar{width:100%;height:3px;background:var(--border-light);border-radius:2px;overflow:hidden;margin-bottom:12px}
-.ld-fill{height:100%;border-radius:2px;background:var(--ig-grad);animation:ldp 1.6s ease-in-out infinite}
+.ld-fill{height:100%;border-radius:2px;background:var(--ig);animation:ldp 1.6s ease-in-out infinite}
 @keyframes ldp{0%{width:0;margin-left:0}50%{width:70%;margin-left:15%}100%{width:0;margin-left:100%}}
-.ld-steps{display:flex;justify-content:center;gap:14px;flex-wrap:wrap}
-.ld-s{font-size:11px;font-weight:500;color:var(--text-3);display:flex;align-items:center;gap:3px}
+.ld-steps{display:flex;justify-content:center;gap:20px}
+.ld-s{font-size:11px;font-weight:500;color:var(--text3);display:flex;align-items:center;gap:4px}
 .ld-s.done{color:var(--green)}.ld-s.now{color:var(--blue);font-weight:700}
 .ld-dot{width:5px;height:5px;border-radius:50%;background:currentColor}
 
-/* ERROR */
-.err{display:none;margin:0 16px 10px;background:#fff5f5;border:1px solid #fecdd3;border-radius:var(--radius-sm);padding:10px 12px;font-size:12px;color:var(--red)}
-.err.show{display:block}
-
 /* RESULTS */
-.results{display:none;flex-direction:column}
+.results{display:none;flex-direction:column;gap:16px}
 .results.show{display:flex}
 
-/* PLAN CARD — instagram post style */
-.plan-post{background:var(--white);border-top:1px solid var(--border-light);border-bottom:1px solid var(--border-light);margin-bottom:8px}
-.pp-hdr{padding:11px 14px;display:flex;align-items:center;justify-content:space-between}
-.pp-user{display:flex;align-items:center;gap:9px}
-.pp-av{width:30px;height:30px;border-radius:50%;background:var(--ig-grad);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:white;flex-shrink:0}
-.pp-name{font-size:13px;font-weight:600}
-.pp-sub{font-size:11px;color:var(--text-3)}
-.pp-more{font-size:18px;color:var(--text-2);cursor:pointer;padding:0 4px}
+/* Plan post card — desktop wider */
+.plan-post{background:var(--white);border:1px solid var(--border-light);border-radius:var(--r);box-shadow:var(--shadow-md);overflow:hidden}
+.pp-hdr{padding:12px 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border-light)}
+.pp-user{display:flex;align-items:center;gap:10px}
+.pp-av{width:34px;height:34px;border-radius:50%;background:var(--ig);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:white;flex-shrink:0}
+.pp-name{font-size:14px;font-weight:700}
+.pp-sub{font-size:11px;color:var(--text3)}
+.pp-more{font-size:18px;color:var(--text2);cursor:pointer;padding:0 4px}
 
-/* grid preview */
-.pp-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:2px}
+/* grid — fixed width for desktop */
+.pp-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;max-width:480px}
+@media(min-width:800px){.pp-grid{max-width:none}}
 .ppc{aspect-ratio:1;position:relative;overflow:hidden;background:var(--border-light)}
 .ppc img{width:100%;height:100%;object-fit:cover;display:block}
 .ppc.empty{display:flex;align-items:center;justify-content:center}
-.ppc.empty span{font-size:20px;color:var(--text-3)}
-.ppc-badge{position:absolute;top:4px;left:4px;background:rgba(0,0,0,.6);color:white;font-size:9px;font-weight:700;padding:2px 5px;border-radius:3px;z-index:2;backdrop-filter:blur(4px)}
-.ppc-k{position:absolute;bottom:4px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.6);color:rgba(255,255,255,.9);font-size:8px;font-weight:600;padding:1px 4px;border-radius:2px;z-index:2;white-space:nowrap;backdrop-filter:blur(4px)}
-.ppc-dot{position:absolute;top:4px;right:4px;width:8px;height:8px;border-radius:50%;border:1.5px solid white;z-index:2}
-
-.pp-actions{padding:9px 14px;display:flex;align-items:center;justify-content:space-between}
-.pp-acts-l{display:flex;gap:14px}
-.pp-act{font-size:21px;cursor:pointer;transition:transform .15s;line-height:1}
+.ppc.empty span{font-size:24px;color:var(--text3)}
+.ppc-badge{position:absolute;top:5px;left:5px;background:rgba(0,0,0,.65);color:white;font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;z-index:2;backdrop-filter:blur(4px)}
+.ppc-k{position:absolute;bottom:5px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.65);color:rgba(255,255,255,.9);font-size:9px;font-weight:600;padding:2px 5px;border-radius:3px;z-index:2;white-space:nowrap;backdrop-filter:blur(4px)}
+.ppc-dot{position:absolute;top:5px;right:5px;width:9px;height:9px;border-radius:50%;border:1.5px solid white;z-index:2}
+.pp-actions{padding:10px 16px;display:flex;align-items:center;justify-content:space-between}
+.pp-acts{display:flex;gap:14px}
+.pp-act{font-size:22px;cursor:pointer;transition:transform .15s;line-height:1}
 .pp-act:hover{transform:scale(1.12)}
-.pp-save{font-size:19px;cursor:pointer}
-
-.pp-pal{padding:0 14px 8px;display:flex;gap:3px}
+.pp-pal{padding:0 16px 8px;display:flex;gap:3px}
 .ppal-c{flex:1;height:7px;border-radius:3px}
-
-.pp-row-temps{padding:2px 14px 8px;display:flex;gap:5px;flex-wrap:wrap}
-.rt{font-size:10px;font-weight:600;padding:2px 8px;border-radius:100px}
+.pp-temps{padding:0 16px 8px;display:flex;gap:5px;flex-wrap:wrap}
+.rt{font-size:11px;font-weight:600;padding:3px 9px;border-radius:100px}
 .rt-w{background:#fff3e0;color:var(--warm)}.rt-c{background:#e3f2fd;color:var(--cool)}
-
-.pp-caption{padding:0 14px 6px;font-size:13px;line-height:1.5}
+.pp-caption{padding:0 16px 6px;font-size:13px;line-height:1.5}
 .pp-caption strong{font-weight:700}
-.pp-harmony{padding:0 14px 12px;font-size:11px;color:var(--text-3)}
+.pp-harmony{padding:0 16px 14px;font-size:12px;color:var(--text3)}
 
-/* DETAIL LIST */
-.detail-hdr{padding:14px 16px 8px;font-size:15px;font-weight:700}
-.post-item{background:var(--white);border-top:1px solid var(--border-light);padding:12px 14px;display:flex;gap:10px}
-.post-item:last-child{border-bottom:1px solid var(--border-light)}
-.pi-thumb{width:66px;height:66px;border-radius:var(--radius-sm);overflow:hidden;flex-shrink:0}
-.pi-thumb img{width:100%;height:100%;object-fit:cover}
-.pi-body{flex:1;min-width:0}
-.pi-top{display:flex;align-items:center;gap:5px;margin-bottom:4px;flex-wrap:wrap}
-.pi-slot{font-size:10px;font-weight:700;padding:2px 7px;border-radius:100px;background:var(--text);color:white}
-.pi-type{font-size:12px;font-weight:700;color:var(--text)}
-.pi-temp{font-size:10px;font-weight:600;padding:2px 7px;border-radius:100px;margin-left:auto}
-.pi-tw{background:#fff3e0;color:var(--warm)}.pi-tc{background:#e3f2fd;color:var(--cool)}
-.pi-reason{font-size:12px;color:var(--text-2);line-height:1.5;margin-bottom:5px}
-.pi-preset{font-size:11px;color:var(--text-3);background:var(--bg);border-radius:5px;padding:4px 7px;line-height:1.4}
-.pi-pal{display:flex;gap:2px;margin-top:5px}
-.pi-pc{width:14px;height:14px;border-radius:3px}
+/* Detail table */
+.detail-panel{background:var(--white);border:1px solid var(--border-light);border-radius:var(--r);box-shadow:var(--shadow);overflow:hidden}
+.detail-hdr{padding:14px 16px;border-bottom:1px solid var(--border-light);font-size:14px;font-weight:700}
+.post-row{display:flex;gap:12px;padding:12px 16px;border-bottom:1px solid var(--border-light);align-items:flex-start}
+.post-row:last-child{border-bottom:none}
+.pr-thumb{width:60px;height:60px;border-radius:var(--r-sm);overflow:hidden;flex-shrink:0}
+.pr-thumb img{width:100%;height:100%;object-fit:cover}
+.pr-body{flex:1;min-width:0}
+.pr-top{display:flex;align-items:center;gap:6px;margin-bottom:5px;flex-wrap:wrap}
+.pr-slot{font-size:11px;font-weight:700;padding:2px 8px;border-radius:100px;background:var(--text);color:white}
+.pr-type{font-size:12px;font-weight:700}
+.pr-temp{font-size:11px;font-weight:600;padding:2px 8px;border-radius:100px;margin-left:auto}
+.pr-tw{background:#fff3e0;color:var(--warm)}.pr-tc{background:#e3f2fd;color:var(--cool)}
+.pr-reason{font-size:12px;color:var(--text2);line-height:1.5;margin-bottom:5px}
+.pr-preset{font-size:11px;color:var(--text3);background:var(--bg);border-radius:5px;padding:4px 8px;line-height:1.45}
+.pr-pal{display:flex;gap:2px;margin-top:5px}
+.pr-pc{width:14px;height:14px;border-radius:3px}
 
-/* BOTTOM NAV */
-.bnav{position:fixed;bottom:0;left:0;right:0;height:var(--nav-h);background:rgba(255,255,255,.97);backdrop-filter:blur(12px);border-top:1px solid var(--border-light);display:flex;z-index:200;padding:0 6px}
-.bni{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;cursor:pointer;background:none;border:none;transition:all .15s;padding:6px}
-.bni-icon{font-size:21px;line-height:1;transition:transform .15s}
-.bni-lbl{font-size:10px;font-weight:500;color:var(--text-3)}
-.bni.active .bni-lbl{color:var(--text);font-weight:700}
-.bni.active .bni-icon{transform:scale(1.08)}
-
-/* PAGES */
-.page{display:none}.page.active{display:block}
-
-/* ANIMATIONS */
-@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
-.results.show>*{animation:fadeUp .3s ease both}
-.results.show>*:nth-child(2){animation-delay:.08s}
+/* MOBILE — stack layout */
+@media(max-width:768px){
+  html,body{height:auto;overflow:auto}
+  .app-body{flex-direction:column;overflow:visible}
+  .sidebar{width:100%;border-right:none;border-bottom:1px solid var(--border-light);overflow:visible}
+  .main{overflow:visible;padding:16px}
+  .topbar-center{display:none}
+  .plan-tabs-mobile{display:flex;gap:6px;padding:12px 16px;border-bottom:1px solid var(--border-light);overflow-x:auto}
+}
+@media(min-width:769px){
+  .plan-tabs-mobile{display:none}
+}
 
 canvas{display:none}#fin,#ig-fin{display:none}
 </style>
 </head>
 <body>
 
+<!-- TOPBAR -->
 <div class="topbar">
   <div class="logo">GridAI</div>
-  <div class="handle">@henriq.eu</div>
-  <div class="avatar">H</div>
+  <div class="topbar-center">
+    <button class="plan-tab active" onclick="setPlan(3,this)">Próximos 3</button>
+    <button class="plan-tab" onclick="setPlan(6,this)">Próximos 6</button>
+    <button class="plan-tab" onclick="setPlan(9,this)">Próximos 9</button>
+  </div>
+  <div class="topbar-right">
+    <span class="handle">@henriq.eu</span>
+    <div class="avatar">H</div>
+  </div>
 </div>
 
-<!-- ═══ PAGE: COMPOSE ═══ -->
-<div class="page active" id="page-compose">
-
-  <!-- Plan size stories -->
-  <div class="stories">
-    <button class="story active" onclick="setPlan(3,this)">
-      <div class="story-ring"><div class="story-inner">3</div></div>
-      <span class="story-lbl">posts</span>
-    </button>
-    <button class="story" onclick="setPlan(6,this)">
-      <div class="story-ring"><div class="story-inner">6</div></div>
-      <span class="story-lbl">posts</span>
-    </button>
-    <button class="story" onclick="setPlan(9,this)">
-      <div class="story-ring"><div class="story-inner">9</div></div>
-      <span class="story-lbl">posts</span>
-    </button>
-  </div>
-
-  <!-- Upload -->
-  <div class="s">
-    <div class="ucard">
-      <div class="ucard-hdr">
-        <span class="ucard-title">Suas fotos</span>
-        <span class="ucnt" id="pcnt">0 fotos</span>
-      </div>
-      <div class="dz" id="dz">
-        <div class="dz-icon">🖼️</div>
-        <div class="dz-t">Adicionar fotos</div>
-        <div class="dz-s">JPG · PNG · WEBP · até 12 fotos</div>
-        <div class="dz-btn">Selecionar</div>
-      </div>
-      <input type="file" id="fin" accept="image/*" multiple onchange="handleFiles(this.files)">
-      <canvas id="cv"></canvas>
-      <div class="exts" id="exts"></div>
-      <div class="thumbs" id="thumbs"></div>
-      <div class="go-wrap">
-        <button class="go-btn" id="go" onclick="compose()" disabled>
-          ✦&nbsp; Compor grid
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <div class="err" id="err"></div>
-  <div class="loading" id="loading">
-    <div class="ld-t" id="ldtxt">Analisando...</div>
-    <div class="ld-bar"><div class="ld-fill"></div></div>
-    <div class="ld-steps">
-      <div class="ld-s now" id="s1"><div class="ld-dot"></div>Cores</div>
-      <div class="ld-s" id="s2"><div class="ld-dot"></div>Conteúdo</div>
-      <div class="ld-s" id="s3"><div class="ld-dot"></div>Combinar</div>
-      <div class="ld-s" id="s4"><div class="ld-dot"></div>Plano</div>
-    </div>
-  </div>
-
-  <div class="results" id="results"></div>
-
+<!-- MOBILE PLAN TABS -->
+<div class="plan-tabs-mobile">
+  <button class="plan-tab active" onclick="setPlanM(3,this)">Próximos 3</button>
+  <button class="plan-tab" onclick="setPlanM(6,this)">Próximos 6</button>
+  <button class="plan-tab" onclick="setPlanM(9,this)">Próximos 9</button>
 </div>
 
-<!-- ═══ PAGE: SETTINGS ═══ -->
-<div class="page" id="page-settings">
+<div class="app-body">
 
-  <div class="s" style="padding-top:18px">
-    <div class="s-title">Harmonia cromática</div>
-    <div class="hscroll" id="hm-list"></div>
-  </div>
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
 
-  <div class="s">
-    <div class="s-title">Padrão de grid</div>
-    <div class="prow" id="pat-list"></div>
-  </div>
+    <div class="sb-section">
+      <div class="sb-title">Harmonia</div>
+      <div class="h-chips" id="hm-list"></div>
+    </div>
 
-  <div class="s">
-    <div class="s-title">Temperatura (Kelvin)</div>
-    <div class="kcard">
+    <div class="sb-section">
+      <div class="sb-title">Padrão de grid</div>
+      <div class="p-chips" id="pat-list"></div>
+    </div>
+
+    <div class="sb-section">
+      <div class="sb-title">Temperatura (Kelvin)</div>
       <div class="ktrack"></div>
       <div class="krow">
         <span class="klbl kw">Q</span>
@@ -302,60 +293,123 @@ canvas{display:none}#fin,#ig-fin{display:none}
       </div>
       <div class="kdiff-row">Contraste: <span class="kdiff-v" id="kdiff">4300K</span></div>
     </div>
-  </div>
 
-  <div class="s">
-    <div class="s-title">Grid atual (contexto)</div>
-    <div class="igcard">
+    <div class="sb-section">
+      <div class="sb-title">Grid atual (contexto)</div>
       <div class="ig-toggle">
         <div class="ig-opt on" id="ig-skip" onclick="setIG('skip')">Ignorar</div>
-        <div class="ig-opt" id="ig-up-opt" onclick="setIG('upload')">Upload das últimas 3</div>
+        <div class="ig-opt" id="ig-up-opt" onclick="setIG('upload')">Últimas 3</div>
       </div>
-      <div id="ig-note-area">
-        <div class="ig-note">O Instagram bloqueia acesso direto. Faça upload das suas últimas 3 fotos para melhorar a sugestão de continuidade.</div>
+      <div id="ig-note">
+        <div class="ig-note">Upload das últimas 3 fotos do seu grid para melhorar a continuidade.</div>
       </div>
       <div id="ig-up-area" style="display:none">
         <div class="ig-mini" id="ig-grid">
-          <div class="igmc"><div class="igmc-empty">+</div></div>
-          <div class="igmc"><div class="igmc-empty">+</div></div>
-          <div class="igmc"><div class="igmc-empty">+</div></div>
+          <div class="igmc"><div class="igmc-e">+</div></div>
+          <div class="igmc"><div class="igmc-e">+</div></div>
+          <div class="igmc"><div class="igmc-e">+</div></div>
         </div>
-        <button class="ig-up-btn" onclick="document.getElementById('ig-fin').click()">📎 Upload últimas 3 fotos</button>
+        <button class="ig-up-btn" onclick="document.getElementById('ig-fin').click()">📎 Selecionar fotos</button>
         <input type="file" id="ig-fin" accept="image/*" multiple onchange="handleIG(this.files)" style="display:none">
       </div>
     </div>
-  </div>
 
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+
+    <!-- Upload panel -->
+    <div class="upload-panel">
+      <div class="up-hdr">
+        <span class="up-title">Suas fotos</span>
+        <div class="up-meta">
+          <span class="up-cnt" id="pcnt">0 fotos</span>
+          <button class="up-clear" onclick="clearAll()">Limpar</button>
+        </div>
+      </div>
+      <div class="up-body">
+        <div class="dz" id="dz">
+          <div class="dz-icon">🖼️</div>
+          <div class="dz-t">Arraste fotos aqui ou clique para selecionar</div>
+          <div class="dz-s">JPG · PNG · WEBP · até 12 fotos · comprimidas automaticamente</div>
+          <div class="dz-btn">Selecionar fotos</div>
+        </div>
+        <input type="file" id="fin" accept="image/*" multiple onchange="handleFiles(this.files)">
+        <canvas id="cv"></canvas>
+
+        <div class="thumbs" id="thumbs"></div>
+        <div class="up-status" id="exts"></div>
+
+        <button class="compose-btn" id="go" onclick="compose()" disabled>
+          ✦&nbsp; Compor grid
+        </button>
+      </div>
+    </div>
+
+    <!-- Error — always visible when present -->
+    <div class="err-panel" id="err">
+      <div class="err-icon">⚠️</div>
+      <div class="err-body">
+        <div class="err-title">Erro</div>
+        <div class="err-msg" id="err-msg"></div>
+      </div>
+    </div>
+
+    <!-- Loading -->
+    <div class="loading" id="loading">
+      <div class="ld-t" id="ldtxt">Analisando...</div>
+      <div class="ld-bar"><div class="ld-fill"></div></div>
+      <div class="ld-steps">
+        <div class="ld-s now" id="s1"><div class="ld-dot"></div>Extraindo cores</div>
+        <div class="ld-s" id="s2"><div class="ld-dot"></div>Analisando conteúdo</div>
+        <div class="ld-s" id="s3"><div class="ld-dot"></div>Combinando</div>
+        <div class="ld-s" id="s4"><div class="ld-dot"></div>Montando plano</div>
+      </div>
+    </div>
+
+    <!-- Results -->
+    <div class="results" id="results"></div>
+
+  </main>
 </div>
 
-<!-- BOTTOM NAV -->
-<nav class="bnav">
-  <button class="bni active" onclick="showPage('compose',this)">
-    <span class="bni-icon">⊞</span>
-    <span class="bni-lbl">Compor</span>
-  </button>
-  <button class="bni" onclick="showPage('settings',this)">
-    <span class="bni-icon">⚙</span>
-    <span class="bni-lbl">Ajustes</span>
-  </button>
-</nav>
-
 <script>
-// ── COLOR ENGINE ──────────────────────────────────────
-function rgbToLab(r,g,b){let R=r/255,G=g/255,B=b/255;R=R>.04045?Math.pow((R+.055)/1.055,2.4):R/12.92;G=G>.04045?Math.pow((G+.055)/1.055,2.4):G/12.92;B=B>.04045?Math.pow((B+.055)/1.055,2.4):B/12.92;let X=R*.4124564+G*.3575761+B*.1804375,Y=R*.2126729+G*.7151522+B*.0721750,Z=R*.0193339+G*.1191920+B*.9503041;X/=.95047;Z/=1.08883;const f=v=>v>.008856?Math.cbrt(v):(7.787*v)+16/116;return[116*f(Y)-16,500*(f(X)-f(Y)),200*(f(Y)-f(Z))]}
-function labToRgb(L,a,b){let Y=(L+16)/116,X=a/500+Y,Z=Y-b/200;X=(Math.pow(X,3)>.008856?Math.pow(X,3):(X-16/116)/7.787)*.95047;Y=(Math.pow(Y,3)>.008856?Math.pow(Y,3):(Y-16/116)/7.787);Z=(Math.pow(Z,3)>.008856?Math.pow(Z,3):(Z-16/116)/7.787)*1.08883;let R=X*3.2404542+Y*-1.5371385+Z*-.4985314,G=X*-.9692660+Y*1.8760108+Z*.0415560,B=X*.0556434+Y*-.2040259+Z*1.0572252;R=R>.0031308?1.055*Math.pow(R,1/2.4)-.055:12.92*R;G=G>.0031308?1.055*Math.pow(G,1/2.4)-.055:12.92*G;B=B>.0031308?1.055*Math.pow(B,1/2.4)-.055:12.92*B;return[Math.round(Math.max(0,Math.min(255,R*255))),Math.round(Math.max(0,Math.min(255,G*255))),Math.round(Math.max(0,Math.min(255,B*255)))]}
+// ══ COLOR ENGINE (k-means LAB) ═══════════════════════
+function rgbToLab(r,g,b){let R=r/255,G=g/255,B=b/255;R=R>.04045?Math.pow((R+.055)/1.055,2.4):R/12.92;G=G>.04045?Math.pow((G+.055)/1.055,2.4):G/12.92;B=B>.04045?Math.pow((B+.055)/1.055,2.4):B/12.92;let X=R*.4124564+G*.3575761+B*.1804375,Y=R*.2126729+G*.7151522+B*.072175,Z=R*.0193339+G*.119192+B*.9503041;X/=.95047;Z/=1.08883;const f=v=>v>.008856?Math.cbrt(v):(7.787*v)+16/116;return[116*f(Y)-16,500*(f(X)-f(Y)),200*(f(Y)-f(Z))]}
+function labToRgb(L,a,b){let Y=(L+16)/116,X=a/500+Y,Z=Y-b/200;X=(Math.pow(X,3)>.008856?Math.pow(X,3):(X-16/116)/7.787)*.95047;Y=(Math.pow(Y,3)>.008856?Math.pow(Y,3):(Y-16/116)/7.787);Z=(Math.pow(Z,3)>.008856?Math.pow(Z,3):(Z-16/116)/7.787)*1.08883;let R=X*3.2404542+Y*-1.5371385+Z*-.4985314,G=X*-.969266+Y*1.8760108+Z*.041556,B=X*.0556434+Y*-.2040259+Z*1.0572252;R=R>.0031308?1.055*Math.pow(R,1/2.4)-.055:12.92*R;G=G>.0031308?1.055*Math.pow(G,1/2.4)-.055:12.92*G;B=B>.0031308?1.055*Math.pow(B,1/2.4)-.055:12.92*B;return[Math.round(Math.max(0,Math.min(255,R*255))),Math.round(Math.max(0,Math.min(255,G*255))),Math.round(Math.max(0,Math.min(255,B*255)))]}
 function labDist(a,b){return Math.sqrt((a[0]-b[0])**2+(a[1]-b[1])**2+(a[2]-b[2])**2)}
 function rgbToHex(r,g,b){return'#'+[r,g,b].map(v=>v.toString(16).padStart(2,'0')).join('')}
-function extractColors(img,k=5){const cv=document.getElementById('cv');const MAX=100;let w=img.width,h=img.height;if(w>MAX||h>MAX){const r=Math.min(MAX/w,MAX/h);w=Math.round(w*r);h=Math.round(h*r)}cv.width=w;cv.height=h;const ctx=cv.getContext('2d');ctx.drawImage(img,0,0,w,h);const data=ctx.getImageData(0,0,w,h).data;const px=[];for(let i=0;i<data.length;i+=16){const r=data[i],g=data[i+1],b=data[i+2],a=data[i+3];if(a<128)continue;px.push(rgbToLab(r,g,b))}const c=[];c.push(px[Math.floor(Math.random()*px.length)]);for(let ci=1;ci<k;ci++){const d=px.map(p=>Math.min(...c.map(cc=>labDist(p,cc))));const t=d.reduce((a,b)=>a+b,0);let r=Math.random()*t;for(let pi=0;pi<px.length;pi++){r-=d[pi];if(r<=0){c.push([...px[pi]]);break}}if(c.length<=ci)c.push([...px[Math.floor(Math.random()*px.length)]])}let asgn=new Array(px.length).fill(0);for(let it=0;it<12;it++){for(let pi=0;pi<px.length;pi++){let best=0,bd=Infinity;for(let ci=0;ci<k;ci++){const dd=labDist(px[pi],c[ci]);if(dd<bd){bd=dd;best=ci}}asgn[pi]=best}for(let ci=0;ci<k;ci++){const cp=px.filter((_,pi)=>asgn[pi]===ci);if(!cp.length)continue;c[ci]=[cp.reduce((s,p)=>s+p[0],0)/cp.length,cp.reduce((s,p)=>s+p[1],0)/cp.length,cp.reduce((s,p)=>s+p[2],0)/cp.length]}}const cnt=new Array(k).fill(0);asgn.forEach(ci=>cnt[ci]++);const res=c.map((cc,ci)=>{const[r,g,b]=labToRgb(cc[0],cc[1],cc[2]);return{hex:rgbToHex(r,g,b),pct:Math.round(cnt[ci]/px.length*100)}});res.sort((a,b)=>b.pct-a.pct);return res.slice(0,5)}
-function estimateKelvin(colors){if(!colors.length)return 6500;const hex=colors[0].hex;const r=parseInt(hex.slice(1,3),16),b=parseInt(hex.slice(5,7),16);const rb=r/(b+1);if(rb>3.5)return 1900+Math.round(Math.random()*400);if(rb>2.5)return 2600+Math.round(Math.random()*500);if(rb>1.8)return 3300+Math.round(Math.random()*600);if(rb>1.3)return 4300+Math.round(Math.random()*600);if(rb>1.0)return 5600+Math.round(Math.random()*800);if(rb>0.7)return 6900+Math.round(Math.random()*800);if(rb>0.5)return 8100+Math.round(Math.random()*1000);return 9500+Math.round(Math.random()*500)}
+function extractColors(img,k=5){const cv=document.getElementById('cv');const MAX=80;let w=img.width,h=img.height;if(w>MAX||h>MAX){const r=Math.min(MAX/w,MAX/h);w=Math.round(w*r);h=Math.round(h*r)}cv.width=w;cv.height=h;const ctx=cv.getContext('2d');ctx.drawImage(img,0,0,w,h);const data=ctx.getImageData(0,0,w,h).data;const px=[];for(let i=0;i<data.length;i+=16){if(data[i+3]<128)continue;px.push(rgbToLab(data[i],data[i+1],data[i+2]))}if(!px.length)return[];const c=[px[Math.floor(Math.random()*px.length)]];for(let ci=1;ci<k;ci++){const d=px.map(p=>Math.min(...c.map(cc=>labDist(p,cc))));const t=d.reduce((a,b)=>a+b,0);let r=Math.random()*t;for(let pi=0;pi<px.length;pi++){r-=d[pi];if(r<=0){c.push([...px[pi]]);break}}if(c.length<=ci)c.push([...px[Math.floor(Math.random()*px.length)]])}let asgn=new Array(px.length).fill(0);for(let it=0;it<10;it++){for(let pi=0;pi<px.length;pi++){let b=0,bd=Infinity;for(let ci=0;ci<k;ci++){const dd=labDist(px[pi],c[ci]);if(dd<bd){bd=dd;b=ci}}asgn[pi]=b}for(let ci=0;ci<k;ci++){const cp=px.filter((_,pi)=>asgn[pi]===ci);if(!cp.length)continue;c[ci]=[cp.reduce((s,p)=>s+p[0],0)/cp.length,cp.reduce((s,p)=>s+p[1],0)/cp.length,cp.reduce((s,p)=>s+p[2],0)/cp.length]}}const cnt=new Array(k).fill(0);asgn.forEach(ci=>cnt[ci]++);return c.map((cc,ci)=>{const[r,g,b]=labToRgb(cc[0],cc[1],cc[2]);return{hex:rgbToHex(r,g,b),pct:Math.round(cnt[ci]/px.length*100)}}).sort((a,b)=>b.pct-a.pct).slice(0,5)}
+function estimateKelvin(colors){if(!colors.length)return 6500;const hex=colors[0].hex;const r=parseInt(hex.slice(1,3),16),b=parseInt(hex.slice(5,7),16);const rb=r/(b+1);if(rb>3.5)return 1900;if(rb>2.5)return 2800;if(rb>1.8)return 3500;if(rb>1.3)return 4500;if(rb>1.0)return 5800;if(rb>0.7)return 7200;if(rb>0.5)return 8500;return 9800}
 
-// ── STATE ────────────────────────────────────────────
+// ══ IMAGE COMPRESSION ════════════════════════════════
+// Resize + compress to JPEG before sending — avoids Render payload limit
+async function compressImage(dataUrl, maxDim=800, quality=0.75) {
+  return new Promise(resolve => {
+    const img = new Image();
+    img.onload = () => {
+      const cv2 = document.createElement('canvas');
+      let w = img.width, h = img.height;
+      if (w > maxDim || h > maxDim) {
+        const r = Math.min(maxDim/w, maxDim/h);
+        w = Math.round(w * r); h = Math.round(h * r);
+      }
+      cv2.width = w; cv2.height = h;
+      cv2.getContext('2d').drawImage(img, 0, 0, w, h);
+      resolve(cv2.toDataURL('image/jpeg', quality));
+    };
+    img.src = dataUrl;
+  });
+}
+
+// ══ STATE ═══════════════════════════════════════════
 const HARMONIES=[
   {id:'complementary',name:'Complementar',dot:'linear-gradient(135deg,#C4853A,#3A5870)'},
   {id:'analogous',name:'Análogo',dot:'linear-gradient(135deg,#4A8A9A,#5A8A6A)'},
-  {id:'split',name:'Split',dot:'linear-gradient(135deg,#C4853A,#3A7870,#3A4A88)'},
+  {id:'split',name:'Split Complementar',dot:'linear-gradient(135deg,#C4853A,#3A7870,#3A4A88)'},
   {id:'triad',name:'Tríade',dot:'linear-gradient(135deg,#C4853A,#3A7A9A,#8A3A9A)'},
-  {id:'monochrome',name:'Monocrom.',dot:'linear-gradient(135deg,#0A2A3A,#4A9AB8)'},
+  {id:'monochrome',name:'Monocromático',dot:'linear-gradient(135deg,#0A2A3A,#4A9AB8)'},
   {id:'square',name:'Quadrado',dot:'linear-gradient(135deg,#C4853A,#3A8A4A,#8A3A7A)'},
   {id:'shades',name:'Sombras',dot:'linear-gradient(135deg,#111,#1C3040)'},
   {id:'custom',name:'IA decide',dot:'linear-gradient(135deg,#888,#444)'},
@@ -365,44 +419,144 @@ const PATTERNS=[
   {id:'columns',name:'Colunas',cells:[false,false,true,false,false,true]},
   {id:'rows',name:'Linhas',cells:[true,true,true,false,false,false]},
   {id:'diagonal',name:'Diagonal',cells:[false,false,true,false,true,false]},
-  {id:'free',name:'Livre',cells:[null,null,null,null,null,null]},
+  {id:'free',name:'Livre (IA)',cells:[null,null,null,null,null,null]},
 ];
 let selH='complementary',selP='checkerboard',photos=[],igPhotos=[],planSize=3,igMode='skip';
 
+// ══ INIT ════════════════════════════════════════════
 function init(){renderHarmonies();renderPatterns();setupDrop();kUpdate()}
-function renderHarmonies(){document.getElementById('hm-list').innerHTML=HARMONIES.map(h=>`<div class="hchip ${h.id===selH?'on':''}" onclick="selHarmony('${h.id}')"><div class="hchip-dot" style="background:${h.dot}"></div>${h.name}</div>`).join('')}
-function renderPatterns(){document.getElementById('pat-list').innerHTML=PATTERNS.map(p=>{const cells=p.cells.map(v=>`<div class="pm ${v===true?'w':''}"></div>`).join('');return`<div class="pchip ${p.id===selP?'on':''}" onclick="selPattern('${p.id}')"><div class="pg-mini">${cells}</div>${p.name}</div>`}).join('')}
+
+function renderHarmonies(){
+  document.getElementById('hm-list').innerHTML=HARMONIES.map(h=>
+    `<div class="hchip ${h.id===selH?'on':''}" onclick="selHarmony('${h.id}')">
+      <div class="hchip-dot" style="background:${h.dot}"></div>${h.name}
+    </div>`).join('');
+}
+function renderPatterns(){
+  document.getElementById('pat-list').innerHTML=PATTERNS.map(p=>{
+    const cells=p.cells.map(v=>`<div class="pm ${v===true?'w':''}"></div>`).join('');
+    return`<div class="pchip ${p.id===selP?'on':''}" onclick="selPattern('${p.id}')">
+      <div class="pg-mini">${cells}</div>${p.name}</div>`;
+  }).join('');
+}
 function selHarmony(id){selH=id;renderHarmonies()}
 function selPattern(id){selP=id;renderPatterns()}
-function kUpdate(){const w=document.getElementById('kw').value,c=document.getElementById('kc').value;document.getElementById('kwv').textContent=w+'K';document.getElementById('kcv').textContent=c+'K';document.getElementById('kdiff').textContent=(c-w)+'K'}
-function setPlan(n,btn){planSize=n;document.querySelectorAll('.story').forEach(t=>t.classList.remove('active'));btn.classList.add('active');document.getElementById('go').disabled=photos.length<planSize}
-function setIG(mode){igMode=mode;document.getElementById('ig-skip').className='ig-opt'+(mode==='skip'?' on':'');document.getElementById('ig-up-opt').className='ig-opt'+(mode==='upload'?' on':'');document.getElementById('ig-up-area').style.display=mode==='upload'?'block':'none';document.getElementById('ig-note-area').style.display=mode==='skip'?'block':'none'}
-function showPage(id,btn){document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));document.querySelectorAll('.bni').forEach(b=>b.classList.remove('active'));document.getElementById('page-'+id).classList.add('active');btn.classList.add('active');window.scrollTo({top:0,behavior:'smooth'})}
+function kUpdate(){
+  const w=document.getElementById('kw').value,c=document.getElementById('kc').value;
+  document.getElementById('kwv').textContent=w+'K';
+  document.getElementById('kcv').textContent=c+'K';
+  document.getElementById('kdiff').textContent=(c-w)+'K';
+}
+function setPlan(n,btn){
+  planSize=n;
+  document.querySelectorAll('.topbar-center .plan-tab').forEach(t=>t.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('go').disabled=photos.length<planSize;
+}
+function setPlanM(n,btn){
+  planSize=n;
+  document.querySelectorAll('.plan-tabs-mobile .plan-tab').forEach(t=>t.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('go').disabled=photos.length<planSize;
+}
+function setIG(mode){
+  igMode=mode;
+  document.getElementById('ig-skip').className='ig-opt'+(mode==='skip'?' on':'');
+  document.getElementById('ig-up-opt').className='ig-opt'+(mode==='upload'?' on':'');
+  document.getElementById('ig-up-area').style.display=mode==='upload'?'block':'none';
+  document.getElementById('ig-note').style.display=mode==='skip'?'block':'none';
+}
 
-function setupDrop(){const dz=document.getElementById('dz');dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('drag')});dz.addEventListener('dragleave',()=>dz.classList.remove('drag'));dz.addEventListener('drop',e=>{e.preventDefault();dz.classList.remove('drag');handleFiles(e.dataTransfer.files)});dz.addEventListener('click',()=>document.getElementById('fin').click())}
+// ══ UPLOAD ══════════════════════════════════════════
+function setupDrop(){
+  const dz=document.getElementById('dz');
+  dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('drag')});
+  dz.addEventListener('dragleave',()=>dz.classList.remove('drag'));
+  dz.addEventListener('drop',e=>{e.preventDefault();dz.classList.remove('drag');handleFiles(e.dataTransfer.files)});
+  dz.addEventListener('click',()=>document.getElementById('fin').click());
+}
 
 async function handleFiles(files){
   const rem=12-photos.length;
   const toAdd=Array.from(files).slice(0,rem).filter(f=>f.type.startsWith('image/'));
-  const exts=document.getElementById('exts');exts.className='exts';exts.textContent=`Extraindo cores de ${toAdd.length} foto(s)...`;
-  for(const file of toAdd){const url=await readFile(file);const img=await loadImg(url);const colors=extractColors(img,5);const kelvin=estimateKelvin(colors);photos.push({file,dataUrl:url,colors,kelvin});renderThumbs();updateCnt()}
-  exts.className='exts ok';exts.textContent=`✓ ${photos.length} foto(s) · k-means LAB`;
+  if(!toAdd.length)return;
+  setStatus(`Processando ${toAdd.length} foto(s)...`,'');
+  for(const file of toAdd){
+    const raw=await readFile(file);
+    const img=await loadImg(raw);
+    const colors=extractColors(img,5);
+    const kelvin=estimateKelvin(colors);
+    // Compress for API sending (smaller payload)
+    const compressed=await compressImage(raw,800,0.75);
+    photos.push({file,dataUrl:raw,compressed,colors,kelvin});
+    renderThumbs();updateCnt();
+  }
+  // Show payload estimate
+  const estKB=photos.reduce((s,p)=>s+Math.round(p.compressed.length*.75/1024),0);
+  setStatus(`✓ ${photos.length} foto(s) prontas · ~${estKB}KB comprimido · k-means LAB`,'ok');
   document.getElementById('go').disabled=photos.length<planSize;
 }
+
+function setStatus(msg,cls){
+  const el=document.getElementById('exts');
+  el.className='up-status'+(cls?' '+cls:'');
+  el.innerHTML=cls?`<div class="status-dot"></div>${msg}`:msg;
+}
+
 function readFile(f){return new Promise(r=>{const fr=new FileReader();fr.onload=e=>r(e.target.result);fr.readAsDataURL(f)})}
 function loadImg(s){return new Promise(r=>{const i=new Image();i.onload=()=>r(i);i.src=s})}
-async function handleIG(files){igPhotos=[];const g=document.getElementById('ig-grid');g.innerHTML='';for(const f of Array.from(files).slice(0,3)){const url=await readFile(f);const img=await loadImg(url);igPhotos.push({dataUrl:url,colors:extractColors(img,5),kelvin:estimateKelvin(extractColors(img,5))});const c=document.createElement('div');c.className='igmc';c.innerHTML=`<img src="${url}">`;g.appendChild(c)}while(g.children.length<3){const c=document.createElement('div');c.className='igmc';c.innerHTML='<div class="igmc-empty">+</div>';g.appendChild(c)}}
-function renderThumbs(){document.getElementById('thumbs').innerHTML=photos.map((p,i)=>{const pal=(p.colors||[]).slice(0,5).map(c=>`<div class="tp" style="background:${c.hex}"></div>`).join('');return`<div class="thumb" draggable="true" ondragstart="dragStart(${i})" ondragover="dragOver(event)" ondrop="drop(event,${i})"><img src="${p.dataUrl}"><div class="tov"></div><div class="tdel" onclick="removePhoto(${i})">✕</div><div class="tn">${i+1}</div><div class="tpal">${pal}</div></div>`}).join('')}
+
+async function handleIG(files){
+  igPhotos=[];const g=document.getElementById('ig-grid');g.innerHTML='';
+  for(const f of Array.from(files).slice(0,3)){
+    const url=await readFile(f);const img=await loadImg(url);
+    igPhotos.push({dataUrl:url,colors:extractColors(img,5),kelvin:estimateKelvin(extractColors(img,5))});
+    const c=document.createElement('div');c.className='igmc';c.innerHTML=`<img src="${url}">`;g.appendChild(c);
+  }
+  while(g.children.length<3){const c=document.createElement('div');c.className='igmc';c.innerHTML='<div class="igmc-e">+</div>';g.appendChild(c)}
+}
+
+function renderThumbs(){
+  document.getElementById('thumbs').innerHTML=photos.map((p,i)=>{
+    const pal=(p.colors||[]).slice(0,5).map(c=>`<div class="tp" style="background:${c.hex}"></div>`).join('');
+    return`<div class="thumb" draggable="true" ondragstart="dragStart(${i})" ondragover="dragOver(event)" ondrop="drop(event,${i})">
+      <img src="${p.dataUrl}"><div class="tov"></div>
+      <div class="tdel" onclick="removePhoto(${i})">✕</div>
+      <div class="tn">${i+1}</div><div class="tpal">${pal}</div>
+    </div>`;
+  }).join('');
+}
 function updateCnt(){document.getElementById('pcnt').textContent=`${photos.length} foto${photos.length!==1?'s':''}`}
-function removePhoto(i){photos.splice(i,1);photos.forEach((p,j)=>p.idx=j);renderThumbs();updateCnt();document.getElementById('go').disabled=photos.length<planSize}
+function removePhoto(i){
+  photos.splice(i,1);renderThumbs();updateCnt();
+  document.getElementById('go').disabled=photos.length<planSize;
+  if(!photos.length)setStatus('','');
+}
+function clearAll(){
+  photos=[];renderThumbs();updateCnt();
+  document.getElementById('fin').value='';
+  document.getElementById('go').disabled=true;
+  document.getElementById('results').classList.remove('show');
+  document.getElementById('results').innerHTML='';
+  hideErr();setStatus('','');
+}
 let dragI=null;
 function dragStart(i){dragI=i}
 function dragOver(e){e.preventDefault()}
 function drop(e,i){e.preventDefault();if(dragI===null||dragI===i)return;const m=photos.splice(dragI,1)[0];photos.splice(i,0,m);dragI=null;renderThumbs()}
 
+// ══ ERROR HANDLING ═══════════════════════════════════
+function showErr(msg){
+  document.getElementById('err-msg').textContent=msg;
+  document.getElementById('err').classList.add('show');
+  document.getElementById('err').scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+function hideErr(){document.getElementById('err').classList.remove('show')}
+
+// ══ COMPOSE ══════════════════════════════════════════
 async function compose(){
   if(photos.length<planSize)return;
-  document.getElementById('err').classList.remove('show');
+  hideErr();
   document.getElementById('results').classList.remove('show');
   document.getElementById('results').innerHTML='';
   document.getElementById('loading').classList.add('show');
@@ -411,76 +565,150 @@ async function compose(){
   try{
     const H=HARMONIES.find(h=>h.id===selH),P=PATTERNS.find(p=>p.id===selP);
     const kw=document.getElementById('kw').value,kc=document.getElementById('kc').value;
-    const colorCtx=photos.map((p,i)=>`FOTO ${i+1}: kelvin~${p.kelvin}K temp=${p.kelvin<5000?'QUENTE':'FRIO'} cores=[${(p.colors||[]).map(c=>c.hex+'('+c.pct+'%)').join(' ')}]`).join('\n');
-    const igCtx=igPhotos.length>0?'\nULTIMAS 3 IG:\n'+igPhotos.map((p,i)=>`IG${i+1}: kelvin~${p.kelvin}K cores=[${(p.colors||[]).map(c=>c.hex+'('+c.pct+'%)').join(' ')}]`).join('\n'):'';
+    const colorCtx=photos.map((p,i)=>
+      `FOTO ${i+1}: kelvin~${p.kelvin}K temp=${p.kelvin<5000?'QUENTE':'FRIO'} cores=[${(p.colors||[]).map(c=>c.hex+'('+c.pct+'%)').join(' ')}]`
+    ).join('\n');
+    const igCtx=igPhotos.length>0
+      ?'\nULTIMAS 3 FOTOS DO GRID (continuidade):\n'+igPhotos.map((p,i)=>`IG${i+1}: kelvin~${p.kelvin}K cores=[${(p.colors||[]).map(c=>c.hex+'('+c.pct+'%)').join(' ')}]`).join('\n')
+      :'';
     step(2);
+
+    // Use compressed images for API call
     const content=[];
-    photos.forEach((p,i)=>{content.push({type:'image',source:{type:'base64',media_type:p.file.type||'image/jpeg',data:p.dataUrl.split(',')[1]}});content.push({type:'text',text:`[FOTO ${i+1}]`})});
+    photos.forEach((p,i)=>{
+      const b64=p.compressed.split(',')[1];
+      content.push({type:'image',source:{type:'base64',media_type:'image/jpeg',data:b64}});
+      content.push({type:'text',text:`[FOTO ${i+1}]`});
+    });
     step(3);
-    content.push({type:'text',text:`Especialista grid Instagram outdoor/adventure.\n\nCORES K-MEANS LAB:\n${colorCtx}\n${igCtx}\n\nCONFIG: Harmonia=${H.name} Padrao=${P.name} Kelvin-Q=ate${kw}K Kelvin-F=acima${kc}K Posts=${planSize}\n\nMonte o melhor plano de ${planSize} posts. Retorne APENAS JSON sem markdown:\n{"plan":[{"slot":1,"photo":N,"temp":"cool","kelvin":"7500K","type":"TIPO","harmony_role":"papel","reason":"razao max 70 chars","preset":"ajustes PS/LR max 60 chars"}],"overview":"visao geral 1 frase","harmony_note":"harmonia em 1 frase"}\n\nSlots:${Array.from({length:planSize},(_,i)=>i+1).join(',')} Fotos:1-${photos.length} Kelvin:menor=quente maior=frio`});
-    const res=await fetch('/api/analyze',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:4000,messages:[{role:'user',content}]})});
-    if(!res.ok){const e=await res.json();throw new Error(e.error?.message||`HTTP ${res.status}`)}
+    content.push({type:'text',text:buildPrompt(H,P,kw,kc,colorCtx,igCtx,planSize)});
+
+    const res=await fetch('/api/analyze',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:4000,messages:[{role:'user',content}]})
+    });
+
     const data=await res.json();
+    if(!res.ok)throw new Error(data.error?.message||data.error||`HTTP ${res.status}`);
+
     const raw=data.content.filter(b=>b.type==='text').map(b=>b.text).join('');
     step(4);
+
     const cleaned=raw.replace(/```json\s*/gi,'').replace(/```\s*/g,'').trim();
     let parsed;
-    try{parsed=JSON.parse(cleaned)}catch{try{const m=cleaned.match(/\{[\s\S]*\}/);if(!m)throw 0;parsed=JSON.parse(m[0].replace(/,\s*([}\]])/g,'$1'))}catch{const a=cleaned.match(/"plan"\s*:\s*(\[[\s\S]*?\])\s*[,}]/);if(a)parsed={plan:JSON.parse(a[1])};else throw new Error('JSON inválido — tente novamente.')}}
-    renderResults(parsed);
-  }catch(e){document.getElementById('err').textContent='⚠ '+e.message;document.getElementById('err').classList.add('show')}
-  finally{document.getElementById('loading').classList.remove('show');document.getElementById('go').disabled=false}
+    try{parsed=JSON.parse(cleaned)}
+    catch{
+      const m=cleaned.match(/\{[\s\S]*\}/);
+      if(m){try{parsed=JSON.parse(m[0].replace(/,\s*([}\]])/g,'$1'))}catch{}}
+      if(!parsed){
+        const a=cleaned.match(/"plan"\s*:\s*(\[[\s\S]*?\])/);
+        if(a)parsed={plan:JSON.parse(a[1])};
+        else throw new Error('JSON inválido — resposta: '+cleaned.slice(0,300));
+      }
+    }
+    renderResults(parsed,H);
+  }catch(e){
+    showErr(e.message);
+  }finally{
+    document.getElementById('loading').classList.remove('show');
+    document.getElementById('go').disabled=false;
+  }
 }
 
-function step(n){['s1','s2','s3','s4'].forEach((id,i)=>{document.getElementById(id).className='ld-s'+(i+1<n?' done':i+1===n?' now':'')});const m=['','Extraindo cores...','Analisando fotos...','Combinando...','Montando plano...'];document.getElementById('ldtxt').textContent=m[n]}
+function step(n){
+  ['s1','s2','s3','s4'].forEach((id,i)=>{
+    document.getElementById(id).className='ld-s'+(i+1<n?' done':i+1===n?' now':'');
+  });
+  const m=['','Extraindo cores reais...','Analisando composição...','Testando combinações...','Montando plano...'];
+  document.getElementById('ldtxt').textContent=m[n];
+}
 
-function renderResults(data){
+function buildPrompt(H,P,kw,kc,colorCtx,igCtx,size){
+  return`Especialista em color grading e grid Instagram outdoor/adventure.
+
+CORES K-MEANS LAB EXTRAIDAS (valores reais do pixel):
+${colorCtx}${igCtx}
+
+CONFIG: Harmonia=${H.name} Padrao=${P.name} Kelvin-Q=ate${kw}K Kelvin-F=acima${kc}K Posts=${size}
+
+Monte o melhor plano de ${size} posts. RETORNE APENAS JSON SEM MARKDOWN:
+{"plan":[{"slot":1,"photo":N,"temp":"cool","kelvin":"7500K","type":"TIPO","harmony_role":"papel na harmonia","reason":"max 70 chars","preset":"ajustes PS/LR max 60 chars"}],"overview":"1 frase","harmony_note":"1 frase"}
+
+Slots: ${Array.from({length:size},(_,i)=>i+1).join(', ')}
+Fotos disponiveis: 1 a ${photos.length}
+Kelvin: MENOR=quente/laranja MAIOR=frio/azul`;
+}
+
+// ══ RENDER ═══════════════════════════════════════════
+function renderResults(data,H){
   const plan=data.plan||[];
   const results=document.getElementById('results');
+
+  // Collect unique palette colors
   const allColors=[];
   plan.forEach(s=>{const p=photos[s.photo-1];if(p)(p.colors||[]).slice(0,2).forEach(c=>{if(!allColors.includes(c.hex))allColors.push(c.hex)})});
+
   const gridCells=plan.map(s=>{
     const p=photos[s.photo-1];const iW=s.temp==='warm';
     if(!p)return`<div class="ppc empty"><span>+${s.slot}</span></div>`;
-    return`<div class="ppc"><img src="${p.dataUrl}"><div class="ppc-badge">+${s.slot}</div><div class="ppc-k">${s.kelvin}</div><div class="ppc-dot" style="background:${iW?'#e8920a':'#1976d2'}"></div></div>`;
+    return`<div class="ppc">
+      <img src="${p.dataUrl}">
+      <div class="ppc-badge">+${s.slot}</div>
+      <div class="ppc-k">${s.kelvin}</div>
+      <div class="ppc-dot" style="background:${iW?'#e8920a':'#1976d2'}"></div>
+    </div>`;
   }).join('');
+
   const rows=[];for(let i=0;i<plan.length;i+=3)rows.push(plan.slice(i,i+3));
   const tempBadges=rows.map(row=>row.map(s=>`<span class="rt ${s.temp==='warm'?'rt-w':'rt-c'}">${s.temp==='warm'?'🟠':'🔵'} ${s.kelvin}</span>`).join('')).join('');
-  const palHtml=allColors.slice(0,8).map(hex=>`<div class="ppal-c" style="background:${hex}"></div>`).join('');
-  const H=HARMONIES.find(h=>h.id===selH);
+  const palHtml=allColors.slice(0,10).map(hex=>`<div class="ppal-c" style="background:${hex}"></div>`).join('');
+
   const details=plan.map(s=>{
     const p=photos[s.photo-1];if(!p)return'';const iW=s.temp==='warm';
-    const palDots=(p.colors||[]).slice(0,5).map(c=>`<div class="pi-pc" style="background:${c.hex}"></div>`).join('');
-    return`<div class="post-item"><div class="pi-thumb"><img src="${p.dataUrl}"></div><div class="pi-body"><div class="pi-top"><span class="pi-slot">+${s.slot}</span><span class="pi-type">${s.type}</span><span class="pi-temp ${iW?'pi-tw':'pi-tc'}">${iW?'Quente':'Frio'}</span></div><div class="pi-reason">${s.reason}</div><div class="pi-preset">⚙ ${s.preset}</div><div class="pi-pal">${palDots}</div></div></div>`;
+    const palDots=(p.colors||[]).slice(0,5).map(c=>`<div class="pr-pc" style="background:${c.hex}"></div>`).join('');
+    return`<div class="post-row">
+      <div class="pr-thumb"><img src="${p.dataUrl}"></div>
+      <div class="pr-body">
+        <div class="pr-top">
+          <span class="pr-slot">+${s.slot}</span>
+          <span class="pr-type">${s.type}</span>
+          <span class="pr-temp ${iW?'pr-tw':'pr-tc'}">${iW?'Quente':'Frio'}</span>
+        </div>
+        <div class="pr-reason">${s.reason}</div>
+        <div class="pr-preset">⚙ ${s.preset}</div>
+        <div class="pr-pal">${palDots}</div>
+      </div>
+    </div>`;
   }).join('');
+
   results.innerHTML=`
     <div class="plan-post">
       <div class="pp-hdr">
         <div class="pp-user">
           <div class="pp-av">H</div>
-          <div><div class="pp-name">henriq.eu</div><div class="pp-sub">Próximos ${planSize} posts · ${H?.name}</div></div>
+          <div><div class="pp-name">henriq.eu</div><div class="pp-sub">Próximos ${planSize} posts · ${H?.name||''}</div></div>
         </div>
         <div class="pp-more">···</div>
       </div>
       <div class="pp-grid">${gridCells}</div>
       <div class="pp-actions">
-        <div class="pp-acts-l">
-          <span class="pp-act">♡</span>
-          <span class="pp-act">💬</span>
-          <span class="pp-act">↗</span>
-        </div>
-        <span class="pp-save">🔖</span>
+        <div class="pp-acts"><span class="pp-act">♡</span><span class="pp-act">💬</span><span class="pp-act">↗</span></div>
+        <span class="pp-act">🔖</span>
       </div>
       <div class="pp-pal">${palHtml}</div>
-      <div class="pp-row-temps">${tempBadges}</div>
+      <div class="pp-temps">${tempBadges}</div>
       <div class="pp-caption"><strong>henriq.eu</strong> ${data.overview||''}</div>
       <div class="pp-harmony">${data.harmony_note||''}</div>
     </div>
-    <div>
+    <div class="detail-panel">
       <div class="detail-hdr">Detalhe por post</div>
       ${details}
     </div>`;
+
   results.classList.add('show');
-  results.scrollIntoView({behavior:'smooth',block:'start'});
+  // Scroll main area to results
+  document.querySelector('.main').scrollTo({top:0,behavior:'smooth'});
 }
 
 init();
