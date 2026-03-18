@@ -558,7 +558,8 @@ function renderUploadGrid() {
           draggable="true"
           ondragstart="ugDragStart(event,${i})"
           ondragover="ugDragOver(event)"
-          ondrop="ugDrop(event,${i})"
+          ondrop="ugDropOrReplace(event,${i})"
+          ondragleave="slotDragLeave(event)"
           ondragend="ugDragEnd(event)">
           <img src="${photo.cropUrl || photo.dataUrl}">
           <button class="ugslot-del" onclick="event.stopPropagation();clearSlot(${i})" title="Remover">✕</button>
@@ -619,16 +620,42 @@ function slotDropFromRepo(e, slotIdx) {
 
 // drag within feed to reorder
 function ugDragStart(e, i) {
-  ugDragIdx = i; ugDragging = true
+  ugDragIdx  = i
+  ugDragging = true
+  dragSource = 'feed'
+  e.dataTransfer.setData('text/plain', 'feed')
   e.dataTransfer.effectAllowed = 'move'
 }
 function ugDragOver(e)  { e.preventDefault(); e.dataTransfer.dropEffect = 'move' }
-function ugDragEnd(e)   { setTimeout(()=>ugDragging=false, 50) }
+function ugDragEnd(e)   { setTimeout(()=>{ ugDragging=false; dragSource=null }, 50) }
 function ugDrop(e, i) {
   e.preventDefault()
   if (ugDragIdx === null || ugDragIdx === i) return
   const tmp = feedSlots[ugDragIdx]; feedSlots[ugDragIdx] = feedSlots[i]; feedSlots[i] = tmp
-  ugDragIdx = null; renderUploadGrid()
+  ugDragIdx = null; renderUploadGrid(); updateActionButtons()
+}
+
+// Handles drop on filled slot — could be repo drag OR feed reorder
+function ugDropOrReplace(e, i) {
+  e.preventDefault()
+  e.currentTarget.classList.remove('drop-hover')
+
+  // Check if it's a repo drag (has text/plain with repo index, dragSource='repo')
+  const raw = e.dataTransfer.getData('text/plain')
+  const repoIdx = parseInt(raw)
+
+  if (dragSource === 'repo' && !isNaN(repoIdx)) {
+    // Drop from repository onto filled slot → replace
+    feedSlots[i] = repoIdx
+    renderUploadGrid()
+    updateActionButtons()
+    return
+  }
+
+  // Otherwise it's a feed reorder
+  if (ugDragIdx === null || ugDragIdx === i) return
+  const tmp = feedSlots[ugDragIdx]; feedSlots[ugDragIdx] = feedSlots[i]; feedSlots[i] = tmp
+  ugDragIdx = null; renderUploadGrid(); updateActionButtons()
 }
 
 // click actions now handled by hover icon buttons
@@ -684,8 +711,8 @@ function updateActionButtons() {
   const manBtn  = document.getElementById('manual-btn')
   const costEl  = document.getElementById('credit-cost')
 
-  if (go)     go.disabled     = !hasRepo
-  if (manBtn) manBtn.disabled = filledSlots < planSize
+  if (go)     go.disabled = !hasRepo
+  if (manBtn) manBtn.style.display = 'none'  // removed per UX decision
 
   // Update credit label
   if (costEl && typeof updateCreditsUI === 'undefined') {
@@ -869,7 +896,12 @@ ${axis?.prompt || ''}
 Monte o melhor plano considerando as POSIÇÕES REAIS no grid do Instagram.
 O padrão xadrez deve alternar na posição visual, não na ordem de slot.
 
-REGRA ANTI-REPETIÇÃO: Evite colocar fotos com sujeito dominante similar em slots visualmente adjacentes (horizontais ou verticais). Se duas fotos têm o mesmo sujeito principal (pessoa com chapéu, cachoeira, duna), separe-as com pelo menos 1 slot de distância visual no grid.
+REGRA DE DIVERSIDADE VISUAL:
+1. Nunca coloque dois slots com pessoa como sujeito dominante lado a lado (horizontal ou vertical).
+2. Prefira intercalar: PAISAGEM · PESSOA · PAISAGEM ou DETALHE · PESSOA · PAISAGEM.
+3. Se houver múltiplas fotos de grupo/multidão, trate como "pessoa" para fins desta regra.
+4. Fotos de detalhe (equipamento, textura, close de objeto) funcionam como separador entre qualquer par.
+5. Para feeds paisagem-dominante: alterne escala (panorama amplo vs plano fechado).
 
 RETORNE APENAS JSON SEM MARKDOWN:
 {"plan":[{"slot":1,"photo":N,"grid_position":"top-right","temp":"cool","kelvin":"7500K","contrast_role":"frio","type":"TIPO","harmony_role":"papel na harmonia","reason":"max 70 chars","preset":"ajustes PS/LR max 60 chars"}],"overview":"1 frase","harmony_note":"1 frase com eixo usado"}
@@ -1135,17 +1167,23 @@ function openCrop(repoIdx) {
   const img   = document.getElementById('crop-img')
   if (!frame || !img) return
 
-  img.src = photo.dataUrl
-  img.onload = () => {
-    cropNatW = img.naturalWidth
-    cropNatH = img.naturalHeight
-    // Scale to fill the 4:5 frame
-    const fW  = frame.clientWidth  || 280
-    const fH  = frame.clientHeight || 350
-    cropZoomVal = Math.min(300, Math.max(100, Math.round(Math.max(fW/cropNatW, fH/cropNatH) * 100)))
-    document.getElementById('crop-zoom').value = cropZoomVal
-    cropApply()
-  }
+  // Open modal FIRST so frame has real dimensions, then load image
+  document.getElementById('crop-modal').classList.add('open')
+
+  img.src = ''
+  requestAnimationFrame(() => {
+    img.onload = () => {
+      cropNatW = img.naturalWidth
+      cropNatH = img.naturalHeight
+      // Scale to fill the 4:5 frame
+      const fW  = frame.clientWidth  || 280
+      const fH  = frame.clientHeight || 350
+      cropZoomVal = Math.min(300, Math.max(100, Math.round(Math.max(fW/cropNatW, fH/cropNatH) * 100)))
+      document.getElementById('crop-zoom').value = cropZoomVal
+      cropApply()
+    }
+    img.src = photo.dataUrl
+  })
 
   // Drag to reposition
   frame.onmousedown  = e => { cropDragging=true; cropSX=e.clientX-cropOffX; cropSY=e.clientY-cropOffY; e.preventDefault() }
@@ -1156,7 +1194,6 @@ function openCrop(repoIdx) {
   // Scroll to zoom
   frame.onwheel = e => { e.preventDefault(); const s=document.getElementById('crop-zoom'); s.value=Math.min(300,Math.max(100,parseFloat(s.value)-e.deltaY*0.3)); cropZoom(s.value) }
 
-  document.getElementById('crop-modal').classList.add('open')
 }
 
 function cropZoom(val) { cropZoomVal=parseFloat(val); cropApply() }
@@ -1259,10 +1296,17 @@ function openPhotoModal(slotNum) {
   tempEl.textContent = iW ? '🟠 Quente' : '🔵 Frio'
   tempEl.className   = `pm-temp ${iW ? 'pr-tw' : 'pr-tc'}`
 
-  // Palette — click to copy hex
-  document.getElementById('pm-palette').innerHTML = (p.colors || []).slice(0,5).map(c =>
-    `<div class="pm-pc" style="background:${c.hex}" title="${c.hex} · ${c.pct}%"
-      onclick="navigator.clipboard?.writeText('${c.hex}').then(()=>this.style.outline='2px solid #27ae60').catch(()=>{})">
+  // Palette — large swatches with hex + click to copy
+  document.getElementById('pm-palette').innerHTML = (p.colors || []).slice(0,5).map((c,ci) =>
+    `<div class="pm-swatch" id="pm-sw-${s.slot}-${ci}"
+      onclick="navigator.clipboard?.writeText('${c.hex}').then(()=>{
+        const el=document.getElementById('pm-sw-${s.slot}-${ci}');
+        if(el){el.classList.add('pm-sw-copied');el.querySelector('.pm-sw-lbl').textContent='✓';}
+        setTimeout(()=>{if(el){el.classList.remove('pm-sw-copied');el.querySelector('.pm-sw-lbl').textContent='${c.hex.toUpperCase()}';}},1400)
+      }).catch(()=>{})">
+      <div class="pm-sw-color" style="background:${c.hex}"></div>
+      <div class="pm-sw-lbl">${c.hex.toUpperCase()}</div>
+      <div class="pm-sw-pct">${c.pct}%</div>
     </div>`
   ).join('')
 

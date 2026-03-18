@@ -362,9 +362,18 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
 .pm-label{font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px}
 .pm-value{font-size:13px;color:var(--text2);line-height:1.5}
 .pm-preset{font-size:12px;background:var(--bg);padding:8px 10px;border-radius:var(--r-sm);line-height:1.5;color:var(--text2);font-family:monospace}
-.pm-palette{display:flex;gap:4px;margin-top:4px}
-.pm-pc{width:28px;height:28px;border-radius:5px;cursor:pointer;transition:transform .15s}
-.pm-pc:hover{transform:scale(1.15)}
+.pm-palette{display:flex;gap:6px;margin-top:6px;flex-wrap:wrap}
+.pm-swatch{
+  display:flex;flex-direction:column;align-items:center;
+  border-radius:8px;overflow:hidden;cursor:pointer;
+  border:1.5px solid var(--border-light);transition:all .15s;
+  width:52px;flex-shrink:0;
+}
+.pm-swatch:hover{transform:scale(1.06);box-shadow:var(--shadow)}
+.pm-swatch.pm-sw-copied{border-color:var(--green)}
+.pm-sw-color{width:100%;height:40px}
+.pm-sw-lbl{font-size:9px;font-weight:700;font-family:monospace;padding:3px 2px 1px;color:var(--text);text-align:center;word-break:break-all}
+.pm-sw-pct{font-size:9px;color:var(--text3);padding-bottom:3px}
 .pm-harmony{font-size:12px;color:var(--text2);background:#f0f9ff;border:1px solid #bae6fd;border-radius:var(--r-sm);padding:8px 10px;line-height:1.5}
 .pm-close{width:100%;padding:11px;margin-top:4px;border-radius:var(--r-sm);border:1.5px solid var(--border);background:transparent;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font);color:var(--text2)}
 .pm-close:hover{background:var(--bg)}
@@ -762,20 +771,13 @@ canvas{display:none}
 
     <!-- ③ AÇÃO -->
     <div class="mode-panel" id="mode-panel">
-      <div class="mode-hint">O que deseja fazer?</div>
+      <div class="mode-hint">Organizar o feed</div>
       <div class="mode-btns">
         <button class="mode-btn mode-btn-ai" id="go" onclick="compose()" disabled>
           <span class="mode-btn-icon">✦</span>
           <div>
             <div class="mode-btn-title">Compor com IA</div>
             <div class="mode-btn-sub" id="credit-cost">analisa o repositório e distribui nos slots · 1 crédito</div>
-          </div>
-        </button>
-        <button class="mode-btn mode-btn-manual" id="manual-btn" onclick="activateManual()" disabled>
-          <span class="mode-btn-icon">☰</span>
-          <div>
-            <div class="mode-btn-title">Organizar manualmente</div>
-            <div class="mode-btn-sub">arraste do repositório para os slots · sem créditos</div>
           </div>
         </button>
       </div>
