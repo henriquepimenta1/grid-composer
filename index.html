@@ -90,6 +90,18 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);-webkit-font
 .hchip:hover{background:var(--bg)}
 .hchip.on{border-color:var(--text);background:var(--text);color:white}
 .hchip-dot{width:20px;height:20px;border-radius:50%;flex-shrink:0}
+.hchip-name{flex:1}
+.hchip-help{
+  width:16px;height:16px;border-radius:50%;
+  background:rgba(0,0,0,.12);border:none;
+  color:inherit;font-size:9px;font-weight:700;
+  cursor:pointer;font-family:var(--font);
+  flex-shrink:0;opacity:.6;transition:opacity .15s;
+  display:flex;align-items:center;justify-content:center;
+  padding:0;
+}
+.hchip:hover .hchip-help{opacity:1}
+.hchip.on .hchip-help{background:rgba(255,255,255,.2);color:white}
 
 /* Patterns */
 .p-chips{display:flex;flex-direction:column;gap:4px}
@@ -371,20 +383,7 @@ canvas{display:none}
   <!-- SIDEBAR -->
   <aside class="sidebar">
     <div class="sb-section">
-      <div class="sb-title">
-        <span data-i18n="harmony">Harmonia</span>
-        <span class="tooltip-wrap">
-          <button class="help-btn">?</button>
-          <div class="tooltip-box">
-            <strong>Harmonia cromática</strong> define a relação de cores entre as fotos.<br><br>
-            <strong>Complementar</strong> — máximo contraste (laranja + teal)<br>
-            <strong>Análogo</strong> — cores vizinhas, feed suave<br>
-            <strong>Monocromático</strong> — 1 matiz, minimalista<br>
-            <strong>Sombras</strong> — dark, moody, dramático<br>
-            <strong>IA decide</strong> — escolhe a melhor para o seu conjunto
-          </div>
-        </span>
-      </div>
+      <div class="sb-title" data-i18n="harmony">Harmonia</div>
       <div class="h-chips" id="hm-list"></div>
     </div>
     <div class="sb-section">

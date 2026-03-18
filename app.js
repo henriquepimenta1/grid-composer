@@ -79,14 +79,78 @@ async function compressImage(dataUrl, maxDim=800, quality=0.75) {
 
 // ══ STATE ════════════════════════════════════════════
 const HARMONIES = [
-  {id:'complementary', name:'Complementar',     dot:'linear-gradient(135deg,#C4853A,#3A5870)'},
-  {id:'analogous',     name:'Análogo',           dot:'linear-gradient(135deg,#4A8A9A,#5A8A6A)'},
-  {id:'split',         name:'Split Complementar',dot:'linear-gradient(135deg,#C4853A,#3A7870,#3A4A88)'},
-  {id:'triad',         name:'Tríade',            dot:'linear-gradient(135deg,#C4853A,#3A7A9A,#8A3A9A)'},
-  {id:'monochrome',    name:'Monocromático',     dot:'linear-gradient(135deg,#0A2A3A,#4A9AB8)'},
-  {id:'square',        name:'Quadrado',          dot:'linear-gradient(135deg,#C4853A,#3A8A4A,#8A3A7A)'},
-  {id:'shades',        name:'Sombras',           dot:'linear-gradient(135deg,#111,#1C3040)'},
-  {id:'custom',        name:'IA decide',         dot:'linear-gradient(135deg,#888,#444)'},
+  {
+    id:'complementary', name:'Complementar',
+    dot:'linear-gradient(135deg,#C4853A,#3A5870)',
+    colors:['#C4853A','#3A5870'],
+    angle:'180°',
+    when:'Máximo contraste. Fotos de pôr do sol (laranja) intercaladas com mar ou floresta (teal). O par mais impactante do círculo cromático.',
+    example:'🌅 laranja + 🌊 teal',
+    feel:'Dramático · energético · forte',
+  },
+  {
+    id:'analogous', name:'Análogo',
+    dot:'linear-gradient(135deg,#4A8A9A,#5A8A6A,#8A9A4A)',
+    colors:['#4A8A9A','#5A8A6A','#8A9A4A'],
+    angle:'0–60°',
+    when:'Cores vizinhas no círculo. Feed suave e coeso. Ideal para natureza verde-azul ou tons terrosos.',
+    example:'🟢 verde + 🔵 azul-verde',
+    feel:'Suave · harmonioso · natural',
+  },
+  {
+    id:'split', name:'Split Complementar',
+    dot:'linear-gradient(135deg,#C4853A,#3A7870,#3A4A88)',
+    colors:['#C4853A','#3A7870','#3A4A88'],
+    angle:'±30°',
+    when:'Contraste forte mas menos agressivo que o complementar. Cor dominante vs dois vizinhos do oposto.',
+    example:'🟠 laranja + 🔵 teal + 🟦 azul',
+    feel:'Vibrante · sofisticado · equilibrado',
+  },
+  {
+    id:'triad', name:'Tríade',
+    dot:'linear-gradient(135deg,#C4853A,#3A7A9A,#8A3A9A)',
+    colors:['#C4853A','#3A7A9A','#8A3A9A'],
+    angle:'120°',
+    when:'Três cores igualmente espaçadas. Feed colorido. Funciona bem quando cada foto tem uma cor dominante diferente.',
+    example:'🟠 laranja + 🔵 azul + 🟣 roxo',
+    feel:'Colorido · vibrante · criativo',
+  },
+  {
+    id:'monochrome', name:'Monocromático',
+    dot:'linear-gradient(135deg,#0A2A3A,#1A5A7A,#4A9AB8)',
+    colors:['#0A2A3A','#1A5A7A','#4A9AB8'],
+    angle:'1 matiz',
+    when:'Um único matiz em diferentes saturações e luminâncias. Feed minimalista e elegante. Ótimo para paisagens em azul ou feeds terrosos.',
+    example:'🔵 azul escuro → azul médio → azul claro',
+    feel:'Elegante · minimalista · coeso',
+  },
+  {
+    id:'square', name:'Quadrado',
+    dot:'linear-gradient(135deg,#C4853A,#3A8A4A,#3A5870,#8A3A7A)',
+    colors:['#C4853A','#3A8A4A','#3A5870','#8A3A7A'],
+    angle:'4×90°',
+    when:'Quatro cores em quadrado no círculo. Feed rico e complexo. Difícil de executar mas muito impactante.',
+    example:'🟠 + 🟢 + 🔵 + 🟣',
+    feel:'Complexo · rico · arrojado',
+  },
+  {
+    id:'shades', name:'Sombras',
+    dot:'linear-gradient(135deg,#0A0E12,#142028,#1C3040)',
+    colors:['#0A0E12','#142028','#1C3040'],
+    angle:'dark',
+    when:'Tons escuros e sombrios, baixa saturação. Feed cinematográfico. Ideal para aventura noturna, grutas, florestas densas.',
+    example:'⬛ preto + 🌑 cinza escuro + azul noite',
+    feel:'Misterioso · cinematográfico · dramático',
+  },
+  {
+    id:'custom', name:'IA decide',
+    dot:'linear-gradient(135deg,#888,#444)',
+    colors:['#888888','#444444'],
+    angle:'auto',
+    when:'A IA analisa suas fotos e escolhe a harmonia que melhor se aplica ao conjunto. Ideal quando você não tem certeza.',
+    example:'🤖 análise automática do conjunto',
+    feel:'Adaptativo · otimizado para suas fotos',
+  },
 ]
 
 const PATTERNS = [
@@ -126,7 +190,9 @@ function init() {
 function renderHarmonies() {
   document.getElementById('hm-list').innerHTML = HARMONIES.map(h =>
     `<div class="hchip ${h.id===selH?'on':''}" onclick="selHarmony('${h.id}')">
-      <div class="hchip-dot" style="background:${h.dot}"></div>${h.name}
+      <div class="hchip-dot" style="background:${h.dot}"></div>
+      <span class="hchip-name">${h.name}</span>
+      <button class="hchip-help" onclick="event.stopPropagation();showHarmonyInfo('${h.id}')" title="Saiba mais">?</button>
     </div>`).join('')
 }
 function renderPatterns() {
@@ -153,6 +219,70 @@ function renderContrast() {
 function selHarmony(id) { selH = id; renderHarmonies() }
 function selPattern(id)  { selP = id; renderPatterns() }
 function selContrast(id) { selC = id; renderContrast() }
+
+// ── Harmony info popover ─────────────────────────────
+function showHarmonyInfo(id) {
+  const h = HARMONIES.find(x => x.id === id)
+  if (!h) return
+
+  // Remove existing popover
+  document.getElementById('harmony-popover')?.remove()
+
+  const colors = h.colors.map(c =>
+    `<div style="width:28px;height:28px;border-radius:6px;background:${c};flex-shrink:0" title="${c}"></div>`
+  ).join('')
+
+  const pop = document.createElement('div')
+  pop.id = 'harmony-popover'
+  pop.style.cssText = `
+    position:fixed;z-index:600;
+    background:#1a1a1a;color:white;
+    border-radius:12px;padding:16px;
+    width:240px;box-shadow:0 8px 32px rgba(0,0,0,.4);
+    font-family:var(--font);font-size:13px;line-height:1.5;
+    animation:fadeUp .15s ease;
+  `
+  pop.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+      <strong style="font-size:14px">${h.name}</strong>
+      <button onclick="document.getElementById('harmony-popover')?.remove()"
+        style="background:rgba(255,255,255,.15);border:none;color:white;width:20px;height:20px;border-radius:50%;cursor:pointer;font-size:12px;line-height:1;font-family:var(--font)">✕</button>
+    </div>
+    <div style="display:flex;gap:6px;margin-bottom:12px;align-items:center">
+      ${colors}
+      <span style="font-size:11px;color:rgba(255,255,255,.5);margin-left:4px">${h.angle}</span>
+    </div>
+    <div style="font-size:12px;color:rgba(255,255,255,.8);margin-bottom:8px">${h.when}</div>
+    <div style="font-size:11px;margin-bottom:6px">${h.example}</div>
+    <div style="font-size:11px;color:rgba(255,255,255,.45);font-style:italic">${h.feel}</div>
+    <button onclick="selHarmony('${h.id}');document.getElementById('harmony-popover')?.remove()"
+      style="width:100%;margin-top:12px;padding:8px;background:white;color:#1a1a1a;border:none;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font)">
+      Usar ${h.name}
+    </button>
+  `
+
+  // Position near clicked button
+  const btn = event?.target
+  if (btn) {
+    const rect = btn.getBoundingClientRect()
+    const top  = rect.bottom + 8
+    const left = Math.min(rect.left, window.innerWidth - 256)
+    pop.style.top  = top + 'px'
+    pop.style.left = Math.max(8, left) + 'px'
+  }
+
+  document.body.appendChild(pop)
+
+  // Close on outside click
+  setTimeout(() => {
+    document.addEventListener('click', function closePop(e) {
+      if (!pop.contains(e.target)) {
+        pop.remove()
+        document.removeEventListener('click', closePop)
+      }
+    })
+  }, 0)
+}
 
 function kUpdate() {
   const w = document.getElementById('kw').value
