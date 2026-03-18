@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>GridAI — Entrar</title>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="/i18n.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -158,18 +158,23 @@ body{
 </head>
 <body>
 
-<div class="card">
+<div class="card" style="position:relative">
+
+  <!-- Lang toggle -->
+  <div style="position:absolute;top:12px;right:12px;">
+    <button id="lang-toggle" onclick="toggleLang()" style="font-size:11px;font-weight:600;padding:4px 10px;border-radius:100px;border:1.5px solid #dbdbdb;background:transparent;cursor:pointer;font-family:inherit;color:#737373;">🇧🇷 PT</button>
+  </div>
 
   <!-- Logo -->
   <div class="card-logo">
     <div class="logo">GridAI</div>
-    <div class="logo-sub">Planejamento inteligente de grid</div>
+    <div class="logo-sub">Planejamento inteligente de grid" data-i18n="app_tagline</div>
   </div>
 
   <!-- Tabs -->
   <div class="tabs">
-    <button class="tab-btn active" id="tab-login" onclick="switchTab('login')">Entrar</button>
-    <button class="tab-btn" id="tab-signup" onclick="switchTab('signup')">Criar conta</button>
+    <button class="tab-btn active" id="tab-login" onclick="switchTab('login')" data-i18n="login_tab">Entrar</button>
+    <button class="tab-btn" id="tab-signup" onclick="switchTab('signup')" data-i18n="signup_tab">Criar conta</button>
   </div>
 
   <!-- ══ LOGIN FORM ══ -->
@@ -177,22 +182,22 @@ body{
     <div class="msg" id="login-msg"></div>
 
     <div class="field">
-      <label class="field-label">E-mail</label>
-      <input class="field-input" id="login-email" type="email" placeholder="seu@email.com" autocomplete="email">
+      <label class="field-label" data-i18n="email_label">E-mail</label>
+      <input class="field-input" id="login-email" type="email" placeholder="seu@email.com" data-i18n-attr="placeholder" data-i18n="email_placeholder" autocomplete="email">
     </div>
 
     <div class="field">
-      <label class="field-label">Senha</label>
-      <input class="field-input" id="login-password" type="password" placeholder="••••••••" autocomplete="current-password">
+      <label class="field-label" data-i18n="password_label">Senha</label>
+      <input class="field-input" id="login-password" type="password" placeholder="••••••••" data-i18n-attr="placeholder" data-i18n="password_placeholder" autocomplete="current-password">
     </div>
 
-    <div class="forgot"><a onclick="showForgot()">Esqueci minha senha</a></div>
+    <div class="forgot"><a onclick="showForgot()" data-i18n="forgot_password">Esqueci minha senha</a></div>
 
-    <button class="submit-btn" id="login-btn" onclick="doLogin()">Entrar</button>
+    <button class="submit-btn" id="login-btn" onclick="doLogin()" data-i18n="login_btn">Entrar</button>
 
     <div class="divider">
       <div class="div-line"></div>
-      <span class="div-txt">ou continue com</span>
+      <span class="div-txt" data-i18n="or_continue">ou continue com</span>
       <div class="div-line"></div>
     </div>
 
@@ -212,7 +217,7 @@ body{
     <div class="msg" id="signup-msg"></div>
 
     <div class="field">
-      <label class="field-label">Nome</label>
+      <label class="field-label" data-i18n="name_label">Nome</label>
       <input class="field-input" id="signup-name" type="text" placeholder="Seu nome" autocomplete="name">
     </div>
 
@@ -281,6 +286,9 @@ const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
 
 // ══ TABS ══════════════════════════════════════════════
 function switchTab(tab) {
+  // Update tab button labels (re-apply i18n)
+  document.getElementById('tab-login').textContent = t('login_tab')
+  document.getElementById('tab-signup').textContent = t('signup_tab')
   const isLogin = tab === 'login'
   document.getElementById('tab-login').className = 'tab-btn' + (isLogin ? ' active' : '')
   document.getElementById('tab-signup').className = 'tab-btn' + (!isLogin ? ' active' : '')
@@ -439,6 +447,9 @@ function hideMsg(el) {
 }
 
 // Enter key support
+// Init i18n
+setLang(LANG)
+
 document.addEventListener('keydown', e => {
   if (e.key !== 'Enter') return
   const loginVisible = document.getElementById('form-login').style.display !== 'none'
