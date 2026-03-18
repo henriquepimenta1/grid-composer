@@ -349,7 +349,96 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
 .compose-btn.warn-credits{background:linear-gradient(45deg,#f59e0b,#ef4444)}
 .compose-btn .credit-cost{font-size:11px;opacity:.8;margin-left:4px}
 
-/* ── MODE PANEL ── */
+/* ── HOW TO USE BUTTON ── */
+.howto-btn{
+  display:flex;align-items:center;gap:5px;
+  padding:5px 12px;border-radius:100px;
+  border:1.5px solid var(--border);background:transparent;
+  font-size:12px;font-weight:600;color:var(--text2);
+  cursor:pointer;font-family:var(--font);transition:all .15s;
+}
+.howto-btn:hover{border-color:var(--text);color:var(--text);background:var(--bg)}
+.howto-btn span:first-child{
+  width:16px;height:16px;border-radius:50%;
+  background:var(--text);color:white;
+  display:flex;align-items:center;justify-content:center;
+  font-size:9px;font-weight:800;flex-shrink:0;
+}
+@media(max-width:600px){.howto-btn-label{display:none}}
+
+/* ── HOW TO USE MODAL ── */
+.howto-overlay{
+  display:none;position:fixed;inset:0;
+  background:rgba(0,0,0,.5);backdrop-filter:blur(8px);
+  z-index:1100;align-items:center;justify-content:center;padding:20px;
+}
+.howto-overlay.open{display:flex;animation:fadeIn .2s ease}
+.howto-box{
+  background:var(--white);border-radius:16px;
+  width:100%;max-width:440px;
+  box-shadow:0 24px 80px rgba(0,0,0,.25);
+  overflow:hidden;display:flex;flex-direction:column;
+}
+.howto-header{
+  padding:18px 20px 0;
+  display:flex;align-items:center;justify-content:space-between;
+}
+.howto-logo{
+  font-size:15px;font-weight:800;
+  background:var(--ig);-webkit-background-clip:text;
+  -webkit-text-fill-color:transparent;background-clip:text;
+}
+.howto-close{
+  width:28px;height:28px;border-radius:50%;
+  background:var(--bg);border:none;
+  cursor:pointer;font-size:14px;color:var(--text2);
+  display:flex;align-items:center;justify-content:center;
+  transition:all .15s;
+}
+.howto-close:hover{background:var(--border-light);color:var(--text)}
+
+/* Step content */
+.howto-content{
+  padding:24px 28px 8px;
+  min-height:260px;
+  display:flex;flex-direction:column;
+}
+.ht-step-icon{font-size:40px;line-height:1;margin-bottom:12px}
+.ht-step-num{font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px}
+.ht-step-title{font-size:20px;font-weight:800;color:var(--text);letter-spacing:-.3px;margin-bottom:10px;line-height:1.2}
+.ht-step-desc{font-size:14px;color:var(--text2);line-height:1.65;flex:1}
+.ht-step-tip{
+  margin-top:14px;padding:10px 12px;
+  background:var(--bg);border-radius:8px;border-left:3px solid var(--blue);
+  font-size:12px;color:var(--text2);line-height:1.5;
+}
+
+/* Dots */
+.howto-dots{
+  display:flex;justify-content:center;gap:6px;
+  padding:16px 0 8px;
+}
+.ht-dot{
+  width:7px;height:7px;border-radius:50%;
+  background:var(--border);cursor:pointer;transition:all .2s;
+}
+.ht-dot.active{background:var(--text);transform:scale(1.2)}
+.ht-dot.done{background:var(--text3)}
+
+/* Nav */
+.howto-nav{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:12px 20px 20px;gap:8px;
+}
+.ht-nav-btn{
+  padding:10px 20px;border-radius:8px;
+  font-size:13px;font-weight:600;font-family:var(--font);
+  cursor:pointer;transition:all .15s;
+}
+.ht-prev{background:transparent;border:1.5px solid var(--border);color:var(--text2)}
+.ht-prev:hover{border-color:var(--text);color:var(--text)}
+.ht-next{background:var(--text);border:1.5px solid var(--text);color:white;flex:1;max-width:160px}
+.ht-next:hover{opacity:.85}
 .mode-panel{background:var(--white);border:1px solid var(--border-light);border-radius:var(--r);padding:16px;box-shadow:var(--shadow)}
 .mode-hint{font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px}
 .mode-btns{display:flex;gap:8px}
@@ -471,6 +560,9 @@ canvas{display:none}
   </div>
   <div class="topbar-right">
     <span class="handle" id="user-handle"></span>
+    <button onclick="openHowTo()" class="howto-btn">
+      <span>?</span> <span class="howto-btn-label">Como usar</span>
+    </button>
     <button id="lang-toggle" onclick="toggleLang()" style="font-size:11px;font-weight:600;padding:4px 10px;border-radius:100px;border:1.5px solid var(--border);background:transparent;cursor:pointer;font-family:var(--font);color:var(--text2)">🇧🇷 PT</button>
     <span id="credits-badge" style="font-size:12px;font-weight:600;background:#f3f4f6;border:1px solid #e5e7eb;padding:2px 10px;border-radius:100px;color:#374151;cursor:pointer" onclick="window.location.href='/comprar'">—</span>
     <div style="position:relative" id="user-avatar-wrap">
@@ -658,6 +750,22 @@ canvas{display:none}
   </main>
 </div>
 
+<!-- HOW TO USE MODAL -->
+<div id="howto-modal" class="howto-overlay" onclick="if(event.target===this)closeHowTo()">
+  <div class="howto-box">
+    <div class="howto-header">
+      <div class="howto-logo">Grid Composer</div>
+      <button class="howto-close" onclick="closeHowTo()">✕</button>
+    </div>
+    <div class="howto-content" id="howto-content"></div>
+    <div class="howto-dots" id="howto-dots"></div>
+    <div class="howto-nav">
+      <button class="ht-nav-btn ht-prev" id="howto-prev" onclick="howtoNav(-1)">← Anterior</button>
+      <button class="ht-nav-btn ht-next" id="howto-next" onclick="howtoNav(1)">Próximo →</button>
+    </div>
+  </div>
+</div>
+
 <!-- CROP MODAL -->
 <div id="crop-modal" class="crop-modal">
   <div class="crop-frame" id="crop-frame">
@@ -785,6 +893,7 @@ canvas{display:none}
 
 <script src="/auth.js"></script>
 <script src="/app.js"></script>
+<script src="/howto.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', async () => {
   setLang(LANG)

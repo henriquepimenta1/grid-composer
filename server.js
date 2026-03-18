@@ -33,9 +33,10 @@ app.get('/comprar', (req, res) => res.send(injectKeys(fs.readFileSync('./pricing
 app.get('/pricing', (req, res) => res.send(injectKeys(fs.readFileSync('./pricing.html', 'utf8'))));
 
 // ── JS files (auth.js gets key injection too) ─────────
-app.get('/i18n.js', (req, res) => res.sendFile('i18n.js', { root: '.' }));
-app.get('/app.js',  (req, res) => res.sendFile('app.js',  { root: '.' }));
-app.get('/auth.js', (req, res) => res.send(injectKeys(fs.readFileSync('./auth.js', 'utf8'))));
+app.get('/i18n.js',  (req, res) => res.sendFile('i18n.js',  { root: '.' }));
+app.get('/app.js',   (req, res) => res.sendFile('app.js',   { root: '.' }));
+app.get('/howto.js', (req, res) => res.sendFile('howto.js', { root: '.' }));
+app.get('/auth.js',  (req, res) => res.send(injectKeys(fs.readFileSync('./auth.js', 'utf8'))));
 
 // Static files fallback
 app.use(express.static('.'));
@@ -255,4 +256,4 @@ function constructStripeEvent(payload, sig, secret) {
 }
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`GridAI rodando na porta ${PORT}`));
+app.listen(PORT, () => console.log(`Grid Composer rodando na porta ${PORT}`));
