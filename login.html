@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GridAI — Entrar</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#fafafa;--white:#fff;--border:#dbdbdb;--border-light:#efefef;
+  --text:#262626;--text2:#737373;--text3:#a8a8a8;
+  --blue:#0095f6;--blue-d:#0074cc;--green:#27ae60;--red:#ed4956;
+  --ig:linear-gradient(45deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888);
+  --shadow:0 1px 3px rgba(0,0,0,.08);--shadow-md:0 8px 32px rgba(0,0,0,.12);
+  --r:10px;--r-sm:7px;
+  --font:'Plus Jakarta Sans',sans-serif;
+}
+body{
+  background:var(--bg);color:var(--text);font-family:var(--font);
+  min-height:100vh;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;padding:24px;-webkit-font-smoothing:antialiased;
+}
+
+/* ── CARD ── */
+.card{
+  width:100%;max-width:380px;
+  background:var(--white);
+  border:1px solid var(--border-light);
+  border-radius:var(--r);
+  box-shadow:var(--shadow-md);
+  overflow:hidden;
+}
+
+/* Logo area */
+.card-logo{
+  padding:32px 32px 24px;
+  text-align:center;
+  border-bottom:1px solid var(--border-light);
+}
+.logo{
+  font-size:28px;font-weight:800;
+  background:var(--ig);-webkit-background-clip:text;
+  -webkit-text-fill-color:transparent;background-clip:text;
+  letter-spacing:-.5px;display:inline-block;margin-bottom:6px;
+}
+.logo-sub{font-size:13px;color:var(--text2);font-weight:500}
+
+/* Tabs */
+.tabs{
+  display:flex;border-bottom:1px solid var(--border-light);
+}
+.tab-btn{
+  flex:1;padding:14px;font-size:13px;font-weight:600;
+  color:var(--text2);cursor:pointer;border:none;background:none;
+  border-bottom:2px solid transparent;transition:all .15s;
+  font-family:var(--font);
+}
+.tab-btn.active{color:var(--text);border-bottom-color:var(--text)}
+
+/* Form */
+.form-body{padding:24px}
+
+.field{margin-bottom:14px}
+.field-label{
+  display:block;font-size:12px;font-weight:600;
+  color:var(--text2);margin-bottom:6px;letter-spacing:.02em;
+}
+.field-input{
+  width:100%;padding:10px 12px;
+  border:1.5px solid var(--border);border-radius:var(--r-sm);
+  font-size:14px;font-family:var(--font);color:var(--text);
+  background:var(--white);outline:none;transition:border-color .15s;
+}
+.field-input:focus{border-color:var(--text)}
+.field-input::placeholder{color:var(--text3)}
+
+/* Submit button */
+.submit-btn{
+  width:100%;padding:12px;margin-top:6px;
+  border-radius:var(--r-sm);background:var(--ig);
+  border:none;color:white;cursor:pointer;
+  font-size:14px;font-weight:700;font-family:var(--font);
+  transition:opacity .15s;
+}
+.submit-btn:hover:not(:disabled){opacity:.88}
+.submit-btn:disabled{opacity:.4;cursor:not-allowed}
+.submit-btn:active:not(:disabled){transform:scale(.99)}
+
+/* Divider */
+.divider{
+  display:flex;align-items:center;gap:10px;
+  margin:18px 0;
+}
+.div-line{flex:1;height:1px;background:var(--border-light)}
+.div-txt{font-size:12px;color:var(--text3);white-space:nowrap}
+
+/* Google button */
+.google-btn{
+  width:100%;padding:11px;
+  border-radius:var(--r-sm);
+  border:1.5px solid var(--border);
+  background:var(--white);cursor:pointer;
+  font-size:14px;font-weight:600;font-family:var(--font);color:var(--text);
+  display:flex;align-items:center;justify-content:center;gap:10px;
+  transition:all .15s;
+}
+.google-btn:hover{background:var(--bg);border-color:#aaa}
+.google-icon{width:18px;height:18px;flex-shrink:0}
+
+/* Message box */
+.msg{
+  display:none;padding:10px 12px;border-radius:var(--r-sm);
+  font-size:13px;line-height:1.5;margin-bottom:14px;
+}
+.msg.show{display:block}
+.msg.error{background:#fff5f5;border:1px solid #fca5a5;color:var(--red)}
+.msg.success{background:#f0fdf4;border:1px solid #86efac;color:#166534}
+.msg.info{background:#eff6ff;border:1px solid #93c5fd;color:#1e40af}
+
+/* Forgot password */
+.forgot{
+  text-align:right;margin-top:-8px;margin-bottom:14px;
+}
+.forgot a{font-size:12px;color:var(--blue);text-decoration:none;cursor:pointer}
+.forgot a:hover{text-decoration:underline}
+
+/* Footer */
+.card-footer{
+  padding:16px 32px;
+  border-top:1px solid var(--border-light);
+  text-align:center;
+  font-size:12px;color:var(--text3);
+}
+.card-footer a{color:var(--blue);text-decoration:none;font-weight:600}
+.card-footer a:hover{text-decoration:underline}
+
+/* Loading spinner */
+.spinner{
+  display:inline-block;width:16px;height:16px;
+  border:2px solid rgba(255,255,255,.3);
+  border-top-color:white;border-radius:50%;
+  animation:spin .6s linear infinite;vertical-align:middle;margin-right:6px;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* Password strength */
+.pw-strength{margin-top:6px;display:none}
+.pw-strength.show{display:block}
+.pw-bar{height:3px;border-radius:2px;transition:all .3s;margin-bottom:4px}
+.pw-label{font-size:11px}
+
+/* Terms note */
+.terms-note{font-size:11px;color:var(--text3);text-align:center;margin-top:12px;line-height:1.5}
+.terms-note a{color:var(--blue);text-decoration:none}
+</style>
+</head>
+<body>
+
+<div class="card">
+
+  <!-- Logo -->
+  <div class="card-logo">
+    <div class="logo">GridAI</div>
+    <div class="logo-sub">Planejamento inteligente de grid</div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <button class="tab-btn active" id="tab-login" onclick="switchTab('login')">Entrar</button>
+    <button class="tab-btn" id="tab-signup" onclick="switchTab('signup')">Criar conta</button>
+  </div>
+
+  <!-- ══ LOGIN FORM ══ -->
+  <div id="form-login" class="form-body">
+    <div class="msg" id="login-msg"></div>
+
+    <div class="field">
+      <label class="field-label">E-mail</label>
+      <input class="field-input" id="login-email" type="email" placeholder="seu@email.com" autocomplete="email">
+    </div>
+
+    <div class="field">
+      <label class="field-label">Senha</label>
+      <input class="field-input" id="login-password" type="password" placeholder="••••••••" autocomplete="current-password">
+    </div>
+
+    <div class="forgot"><a onclick="showForgot()">Esqueci minha senha</a></div>
+
+    <button class="submit-btn" id="login-btn" onclick="doLogin()">Entrar</button>
+
+    <div class="divider">
+      <div class="div-line"></div>
+      <span class="div-txt">ou continue com</span>
+      <div class="div-line"></div>
+    </div>
+
+    <button class="google-btn" onclick="doGoogle()">
+      <svg class="google-icon" viewBox="0 0 24 24">
+        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+        <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/>
+        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+      </svg>
+      Continuar com Google
+    </button>
+  </div>
+
+  <!-- ══ SIGNUP FORM ══ -->
+  <div id="form-signup" class="form-body" style="display:none">
+    <div class="msg" id="signup-msg"></div>
+
+    <div class="field">
+      <label class="field-label">Nome</label>
+      <input class="field-input" id="signup-name" type="text" placeholder="Seu nome" autocomplete="name">
+    </div>
+
+    <div class="field">
+      <label class="field-label">E-mail</label>
+      <input class="field-input" id="signup-email" type="email" placeholder="seu@email.com" autocomplete="email">
+    </div>
+
+    <div class="field">
+      <label class="field-label">Senha</label>
+      <input class="field-input" id="signup-password" type="password" placeholder="mínimo 8 caracteres" autocomplete="new-password" oninput="checkPwStrength(this.value)">
+      <div class="pw-strength" id="pw-strength">
+        <div class="pw-bar" id="pw-bar"></div>
+        <div class="pw-label" id="pw-label"></div>
+      </div>
+    </div>
+
+    <button class="submit-btn" id="signup-btn" onclick="doSignup()">Criar conta grátis</button>
+
+    <div class="divider">
+      <div class="div-line"></div>
+      <span class="div-txt">ou continue com</span>
+      <div class="div-line"></div>
+    </div>
+
+    <button class="google-btn" onclick="doGoogle()">
+      <svg class="google-icon" viewBox="0 0 24 24">
+        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+        <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/>
+        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84z"/>
+      </svg>
+      Continuar com Google
+    </button>
+
+    <div class="terms-note">
+      Ao criar conta você concorda com os
+      <a href="#">Termos de Uso</a> e
+      <a href="#">Política de Privacidade</a>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="card-footer" id="card-footer">
+    Novo por aqui? <a onclick="switchTab('signup')">Crie sua conta grátis →</a>
+  </div>
+
+</div>
+
+<script>
+// ══ SUPABASE CONFIG ═══════════════════════════════════
+// SUBSTITUA pelas suas credenciais do Supabase
+const SUPABASE_URL = 'https://SEU_PROJETO.supabase.co'
+const SUPABASE_ANON_KEY = 'SUA_ANON_KEY'
+
+const { createClient } = supabase
+const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+
+// ══ VERIFICAR SE JÁ LOGADO ═══════════════════════════
+;(async () => {
+  const { data: { session } } = await sb.auth.getSession()
+  if (session) {
+    window.location.href = '/app'
+  }
+})()
+
+// ══ TABS ══════════════════════════════════════════════
+function switchTab(tab) {
+  const isLogin = tab === 'login'
+  document.getElementById('tab-login').className = 'tab-btn' + (isLogin ? ' active' : '')
+  document.getElementById('tab-signup').className = 'tab-btn' + (!isLogin ? ' active' : '')
+  document.getElementById('form-login').style.display = isLogin ? 'block' : 'none'
+  document.getElementById('form-signup').style.display = !isLogin ? 'block' : 'none'
+  document.getElementById('card-footer').innerHTML = isLogin
+    ? 'Novo por aqui? <a onclick="switchTab(\'signup\')">Crie sua conta grátis →</a>'
+    : 'Já tem conta? <a onclick="switchTab(\'login\')">Entrar →</a>'
+}
+
+// ══ LOGIN ══════════════════════════════════════════════
+async function doLogin() {
+  const email = document.getElementById('login-email').value.trim()
+  const password = document.getElementById('login-password').value
+  const btn = document.getElementById('login-btn')
+  const msg = document.getElementById('login-msg')
+
+  if (!email || !password) return showMsg(msg, 'Preencha e-mail e senha.', 'error')
+
+  setLoading(btn, true, 'Entrando...')
+  hideMsg(msg)
+
+  const { error } = await sb.auth.signInWithPassword({ email, password })
+
+  if (error) {
+    setLoading(btn, false, 'Entrar')
+    const erros = {
+      'Invalid login credentials': 'E-mail ou senha incorretos.',
+      'Email not confirmed': 'Confirme seu e-mail antes de entrar.',
+      'Too many requests': 'Muitas tentativas. Aguarde alguns minutos.',
+    }
+    showMsg(msg, erros[error.message] || error.message, 'error')
+  } else {
+    showMsg(msg, '✓ Login feito! Redirecionando...', 'success')
+    setTimeout(() => window.location.href = '/app', 1000)
+  }
+}
+
+// ══ SIGNUP ════════════════════════════════════════════
+async function doSignup() {
+  const name = document.getElementById('signup-name').value.trim()
+  const email = document.getElementById('signup-email').value.trim()
+  const password = document.getElementById('signup-password').value
+  const btn = document.getElementById('signup-btn')
+  const msg = document.getElementById('signup-msg')
+
+  if (!name) return showMsg(msg, 'Informe seu nome.', 'error')
+  if (!email) return showMsg(msg, 'Informe seu e-mail.', 'error')
+  if (password.length < 8) return showMsg(msg, 'Senha mínimo 8 caracteres.', 'error')
+
+  setLoading(btn, true, 'Criando conta...')
+  hideMsg(msg)
+
+  const { error } = await sb.auth.signUp({
+    email,
+    password,
+    options: {
+      data: { name },
+      emailRedirectTo: window.location.origin + '/app'
+    }
+  })
+
+  setLoading(btn, false, 'Criar conta grátis')
+
+  if (error) {
+    const erros = {
+      'User already registered': 'Este e-mail já está cadastrado.',
+      'Password should be at least 6 characters': 'Senha mínimo 6 caracteres.',
+    }
+    showMsg(msg, erros[error.message] || error.message, 'error')
+  } else {
+    showMsg(msg,
+      '✓ Conta criada! Verifique seu e-mail para confirmar o cadastro.',
+      'success'
+    )
+    document.getElementById('signup-btn').disabled = true
+  }
+}
+
+// ══ GOOGLE ════════════════════════════════════════════
+async function doGoogle() {
+  const { error } = await sb.auth.signInWithOAuth({
+    provider: 'google',
+    options: {
+      redirectTo: window.location.origin + '/app'
+    }
+  })
+  if (error) alert('Erro ao conectar com Google: ' + error.message)
+}
+
+// ══ FORGOT PASSWORD ═══════════════════════════════════
+async function showForgot() {
+  const email = document.getElementById('login-email').value.trim()
+  const msg = document.getElementById('login-msg')
+
+  if (!email) {
+    showMsg(msg, 'Digite seu e-mail acima para recuperar a senha.', 'info')
+    document.getElementById('login-email').focus()
+    return
+  }
+
+  const { error } = await sb.auth.resetPasswordForEmail(email, {
+    redirectTo: window.location.origin + '/reset-password'
+  })
+
+  if (error) {
+    showMsg(msg, 'Erro: ' + error.message, 'error')
+  } else {
+    showMsg(msg, `✓ E-mail de recuperação enviado para ${email}`, 'success')
+  }
+}
+
+// ══ PASSWORD STRENGTH ════════════════════════════════
+function checkPwStrength(pw) {
+  const el = document.getElementById('pw-strength')
+  const bar = document.getElementById('pw-bar')
+  const lbl = document.getElementById('pw-label')
+
+  if (!pw) { el.classList.remove('show'); return }
+  el.classList.add('show')
+
+  let score = 0
+  if (pw.length >= 8) score++
+  if (pw.length >= 12) score++
+  if (/[A-Z]/.test(pw)) score++
+  if (/[0-9]/.test(pw)) score++
+  if (/[^A-Za-z0-9]/.test(pw)) score++
+
+  const levels = [
+    { color: '#ef4444', label: 'Muito fraca', w: '20%' },
+    { color: '#f97316', label: 'Fraca',       w: '40%' },
+    { color: '#eab308', label: 'Média',        w: '60%' },
+    { color: '#22c55e', label: 'Forte',        w: '80%' },
+    { color: '#16a34a', label: 'Muito forte',  w: '100%' },
+  ]
+  const lvl = levels[Math.min(score, 4)]
+  bar.style.background = lvl.color
+  bar.style.width = lvl.w
+  lbl.textContent = lvl.label
+  lbl.style.color = lvl.color
+}
+
+// ══ HELPERS ═══════════════════════════════════════════
+function setLoading(btn, loading, label) {
+  btn.disabled = loading
+  btn.innerHTML = loading
+    ? `<span class="spinner"></span>${label}`
+    : label
+}
+function showMsg(el, text, type) {
+  el.textContent = text
+  el.className = `msg ${type} show`
+}
+function hideMsg(el) {
+  el.classList.remove('show')
+}
+
+// Enter key support
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Enter') return
+  const loginVisible = document.getElementById('form-login').style.display !== 'none'
+  if (loginVisible) doLogin()
+  else doSignup()
+})
+</script>
+</body>
+</html>
