@@ -542,7 +542,6 @@ function removeFromRepo(i) {
 let slotTargetIdx = null
 let ugDragging    = false
 let ugDragIdx     = null
-let _clickTimer   = null
 
 function renderUploadGrid() {
   const grid = document.getElementById('upload-grid')
@@ -552,18 +551,21 @@ function renderUploadGrid() {
     const repoIdx = feedSlots[i]
     const photo   = repoIdx !== null && repoIdx !== undefined ? repository[repoIdx] : null
     if (photo) {
-      const pal = (photo.colors||[]).slice(0,5).map(c=>`<div style="flex:1;background:${c.hex}"></div>`).join('')
+      const pal      = (photo.colors||[]).slice(0,5).map(c=>`<div style="flex:1;background:${c.hex}"></div>`).join('')
+      const hasInfo  = currentPlan.length > 0
       cells.push(`
         <div class="ugslot filled"
           draggable="true"
           ondragstart="ugDragStart(event,${i})"
           ondragover="ugDragOver(event)"
           ondrop="ugDrop(event,${i})"
-          ondragend="ugDragEnd(event)"
-          onclick="ugSingleClick(event,${i})"
-          ondblclick="openCrop(${repoIdx})">
+          ondragend="ugDragEnd(event)">
           <img src="${photo.cropUrl || photo.dataUrl}">
-          <button class="ugslot-del" onclick="event.stopPropagation();clearSlot(${i})">✕</button>
+          <button class="ugslot-del" onclick="event.stopPropagation();clearSlot(${i})" title="Remover">✕</button>
+          <div class="slot-actions">
+            <button class="slot-act" onclick="event.stopPropagation();openCrop(${repoIdx})" title="Recortar">✂</button>
+            <button class="slot-act ${hasInfo?'':'slot-act-dim'}" onclick="event.stopPropagation();openSlotInfo(${i})" title="${hasInfo?'Ver informações':'Sem análise ainda'}">ℹ</button>
+          </div>
           <div class="ugslot-n">${i+1}${i===0?' · 1ª':''}</div>
           <div class="ugslot-pal">${pal}</div>
         </div>`)
@@ -582,6 +584,19 @@ function renderUploadGrid() {
     }
   }
   grid.innerHTML = cells.join('')
+}
+
+// Open info for a feed slot — palette if no AI plan, detail modal if AI ran
+function openSlotInfo(slotIdx) {
+  if (currentPlan.length > 0) {
+    // Map feedSlot index to slot number in plan
+    const repoIdx = feedSlots[slotIdx]
+    const s = currentPlan.find(x => (x.photo - 1) === repoIdx)
+    if (s) { openPhotoModal(s.slot); return }
+  }
+  // Fallback: palette
+  const repoIdx = feedSlots[slotIdx]
+  if (repoIdx !== null && repoIdx !== undefined) openPaletteModal(repoIdx)
 }
 
 // drop from repo onto feed slot
@@ -616,16 +631,7 @@ function ugDrop(e, i) {
   ugDragIdx = null; renderUploadGrid()
 }
 
-// single click = palette, double click = crop
-function ugSingleClick(e, i) {
-  if (ugDragging) return
-  if (_clickTimer) return
-  _clickTimer = setTimeout(() => {
-    _clickTimer = null
-    const repoIdx = feedSlots[i]
-    if (repoIdx !== null && repoIdx !== undefined) openPaletteModal(repoIdx)
-  }, 220)
-}
+// click actions now handled by hover icon buttons
 
 function openSlotPicker(idx) {
   slotTargetIdx = idx
@@ -696,6 +702,10 @@ function clearAll() {
   renderRepo()
   renderUploadGrid()
   document.getElementById('fin').value = ''
+  // Restore feed + mode panel visibility
+  document.querySelectorAll('.upload-panel').forEach(el => el.style.display = '')
+  const mp = document.getElementById('mode-panel')
+  if (mp) mp.style.display = ''
   document.getElementById('results').classList.remove('show')
   document.getElementById('results').innerHTML = ''
   currentPlan = []
@@ -878,54 +888,88 @@ let isManualMode = false
 function renderResults(data, H) {
   currentPlan    = data.plan || []
   currentHarmony = H
-  const results  = document.getElementById('results')
 
+  // Apply AI plan to feedSlots — the feed IS the result
+  currentPlan.forEach(s => {
+    const slotIdx = s.slot - 1  // slot 1 → feedSlots[0]
+    if (slotIdx >= 0 && slotIdx < planSize) {
+      feedSlots[slotIdx] = s.photo - 1  // photo 1 → repository[0]
+    }
+  })
+  renderUploadGrid()
+
+  // Show detail panel below the feed
   const allColors = []
   currentPlan.forEach(s => {
     const p = repository[s.photo-1]
     if (p) (p.colors||[]).slice(0,2).forEach(c => { if (!allColors.includes(c.hex)) allColors.push(c.hex) })
   })
+  const palHtml = allColors.slice(0,10).map(hex => `<div class="ppal-c" style="background:${hex}"></div>`).join('')
 
-  const palHtml    = allColors.slice(0,10).map(hex => `<div class="ppal-c" style="background:${hex}"></div>`).join('')
-  const userName   = currentUser?.user_metadata?.name || currentUser?.email?.split('@')[0] || 'user'
-
+  const results = document.getElementById('results')
   results.innerHTML = `
-    <div class="plan-post">
-      <div class="pp-hdr">
-        <div class="pp-user">
-          <div class="pp-av">${userName[0].toUpperCase()}</div>
-          <div>
-            <div class="pp-name">${userName}</div>
-            <div class="pp-sub">Próximos ${planSize} posts · ${H?.name||''}</div>
-          </div>
-        </div>
-        <div class="pp-more">···</div>
-      </div>
-      <div class="pp-grid-wrap">
-        <div class="pp-grid" id="result-grid"></div>
-        <div class="pp-grid-hint">↕ Arraste para reordenar · sem consumir créditos</div>
-      </div>
-      <div class="pp-actions">
-        <div class="pp-acts"><span class="pp-act">♡</span><span class="pp-act">💬</span><span class="pp-act">↗</span></div>
-        <span class="pp-act">🔖</span>
-      </div>
-      <div class="pp-pal">${palHtml}</div>
-      <div class="pp-caption"><strong>${userName}</strong> ${data.overview||''}</div>
-      <div class="pp-harmony">${data.harmony_note||''}</div>
+    <div class="plan-post-summary">
+      <div class="pp-pal" style="padding:10px 16px 6px">${palHtml}</div>
+      <div class="pp-harmony" style="padding:0 16px 14px;font-size:12px;color:var(--text3)">${data.harmony_note||''}</div>
+      <div style="padding:0 16px 14px;font-size:12px;color:var(--text2)">${data.overview||''}</div>
     </div>
     <div class="detail-panel">
-      <div class="detail-hdr" id="detail-hdr-title">Detalhe por post</div>
+      <div class="detail-hdr">Detalhe por post · clique em ℹ no grid para ver</div>
       <div id="detail-cards"></div>
     </div>`
-
-  renderGrid()
   renderDetails()
-
   results.classList.add('show')
   document.querySelector('.main').scrollTo({ top: 0, behavior: 'smooth' })
 }
 
+// ── Manual mode ───────────────────────────────────────
+function activateManual() {
+  isManualMode = true
+
+  const filled = feedSlots.map((repoIdx, i) => {
+    if (repoIdx === null || repoIdx === undefined) return null
+    const p = repository[repoIdx]
+    if (!p) return null
+    return {
+      slot: i + 1,
+      photo: repoIdx + 1,
+      temp: p.kelvin < 5000 ? 'warm' : 'cool',
+      kelvin: p.kelvin + 'K',
+      contrast_role: p.kelvin < 5000 ? 'quente' : 'frio',
+      type: 'Manual',
+      harmony_role: 'Organização manual',
+      reason: 'Ordem definida manualmente',
+    }
+  }).filter(Boolean)
+
+  if (!filled.length) {
+    showErr('Preencha ao menos um slot do feed antes de organizar manualmente.')
+    return
+  }
+
+  currentPlan    = filled
+  currentHarmony = { name: 'Manual' }
+
+  // Manual mode: just re-render the feed (already filled from feedSlots)
+  renderUploadGrid()
+
+  const results = document.getElementById('results')
+  results.innerHTML = `
+    <div class="plan-post-summary">
+      <div style="padding:12px 16px;font-size:13px;color:var(--text2)">
+        ☰ Modo manual ativo · arraste as fotos no feed para reordenar
+      </div>
+    </div>
+    <div class="detail-panel">
+      <div class="detail-hdr">Detalhe por post</div>
+      <div id="detail-cards"></div>
+    </div>`
+  renderDetails()
+  results.classList.add('show')
+}
+
 function renderGrid() {
+  // Legacy: result grid removed — feed IS the grid. No-op.
   const grid = document.getElementById('result-grid')
   if (!grid) return
 
@@ -1068,6 +1112,127 @@ function gridDrop(e, targetSlot) {
 
   renderGrid()
   renderDetails()
+}
+
+// ══ CROP MODAL ═══════════════════════════════════════
+let cropRepoIdx  = null
+let cropOffX     = 0
+let cropOffY     = 0
+let cropZoomVal  = 100
+let cropDragging = false
+let cropSX       = 0
+let cropSY       = 0
+let cropNatW     = 0
+let cropNatH     = 0
+
+function openCrop(repoIdx) {
+  const photo = repository[repoIdx]
+  if (!photo) return
+  cropRepoIdx = repoIdx
+  cropOffX = 0; cropOffY = 0; cropZoomVal = 100
+
+  const frame = document.getElementById('crop-frame')
+  const img   = document.getElementById('crop-img')
+  if (!frame || !img) return
+
+  img.src = photo.dataUrl
+  img.onload = () => {
+    cropNatW = img.naturalWidth
+    cropNatH = img.naturalHeight
+    // Scale to fill the 4:5 frame
+    const fW  = frame.clientWidth  || 280
+    const fH  = frame.clientHeight || 350
+    cropZoomVal = Math.min(300, Math.max(100, Math.round(Math.max(fW/cropNatW, fH/cropNatH) * 100)))
+    document.getElementById('crop-zoom').value = cropZoomVal
+    cropApply()
+  }
+
+  // Drag to reposition
+  frame.onmousedown  = e => { cropDragging=true; cropSX=e.clientX-cropOffX; cropSY=e.clientY-cropOffY; e.preventDefault() }
+  frame.ontouchstart = e => { cropDragging=true; cropSX=e.touches[0].clientX-cropOffX; cropSY=e.touches[0].clientY-cropOffY }
+  document.onmousemove  = e => { if(!cropDragging)return; cropOffX=e.clientX-cropSX; cropOffY=e.clientY-cropSY; cropApply() }
+  document.ontouchmove  = e => { if(!cropDragging)return; cropOffX=e.touches[0].clientX-cropSX; cropOffY=e.touches[0].clientY-cropSY; cropApply() }
+  document.onmouseup = document.ontouchend = () => { cropDragging=false }
+  // Scroll to zoom
+  frame.onwheel = e => { e.preventDefault(); const s=document.getElementById('crop-zoom'); s.value=Math.min(300,Math.max(100,parseFloat(s.value)-e.deltaY*0.3)); cropZoom(s.value) }
+
+  document.getElementById('crop-modal').classList.add('open')
+}
+
+function cropZoom(val) { cropZoomVal=parseFloat(val); cropApply() }
+
+function cropApply() {
+  const img   = document.getElementById('crop-img')
+  const frame = document.getElementById('crop-frame')
+  if (!img || !frame || !cropNatW) return
+  const s  = cropZoomVal/100
+  const iW = cropNatW*s
+  const iH = cropNatH*s
+  img.style.width  = iW+'px'
+  img.style.height = iH+'px'
+  img.style.left   = (frame.clientWidth/2  - iW/2 + cropOffX)+'px'
+  img.style.top    = (frame.clientHeight/2 - iH/2 + cropOffY)+'px'
+}
+
+function saveCrop() {
+  if (cropRepoIdx === null) return
+  const frame = document.getElementById('crop-frame')
+  const img   = document.getElementById('crop-img')
+  if (!frame || !img) return
+  const fW = frame.clientWidth
+  const fH = frame.clientHeight
+  const cv = document.createElement('canvas')
+  cv.width = fW*2; cv.height = fH*2
+  const ctx = cv.getContext('2d')
+  ctx.scale(2,2)
+  const s  = cropZoomVal/100
+  const src = new Image()
+  src.onload = () => {
+    ctx.drawImage(src, fW/2-cropNatW*s/2+cropOffX, fH/2-cropNatH*s/2+cropOffY, cropNatW*s, cropNatH*s)
+    const cropUrl = cv.toDataURL('image/jpeg', 0.92)
+    repository[cropRepoIdx].cropUrl = cropUrl
+    compressImage(cropUrl, 800, 0.75).then(c => { repository[cropRepoIdx].compressed = c })
+    renderRepo(); renderUploadGrid(); closeCrop()
+  }
+  src.src = img.src
+}
+
+function closeCrop() {
+  document.getElementById('crop-modal')?.classList.remove('open')
+  document.onmousemove = document.onmouseup = document.ontouchmove = document.ontouchend = null
+  cropRepoIdx = null
+}
+
+// ══ PALETTE MODAL ════════════════════════════════════
+function openPaletteModal(repoIdx) {
+  const photo = repository[repoIdx]
+  if (!photo || !photo.colors) return
+  document.getElementById('palette-title').textContent = `Foto ${repoIdx+1} — paleta de cores`
+  document.getElementById('palette-swatches').innerHTML = photo.colors.map((c,i) => `
+    <div class="palette-swatch" id="sw-${repoIdx}-${i}" onclick="copySwatch('${c.hex}',${repoIdx},${i})">
+      <div class="swatch-color" style="background:${c.hex}"></div>
+      <div class="swatch-info">
+        <div class="swatch-hex">${c.hex.toUpperCase()}</div>
+        <div class="swatch-pct">${c.pct}% da imagem</div>
+        <div class="swatch-copy">clique para copiar</div>
+      </div>
+    </div>`).join('')
+  document.getElementById('palette-modal').classList.add('open')
+}
+
+function copySwatch(hex, ri, ci) {
+  navigator.clipboard?.writeText(hex).then(() => {
+    const el = document.getElementById(`sw-${ri}-${ci}`)
+    if (el) {
+      el.classList.add('copied')
+      el.querySelector('.swatch-copy').textContent = '✓ copiado!'
+      setTimeout(() => { el.classList.remove('copied'); el.querySelector('.swatch-copy').textContent = 'clique para copiar' }, 1500)
+    }
+  }).catch(()=>{})
+}
+
+function closePaletteModal() {
+  document.getElementById('palette-modal')?.classList.remove('open')
 }
 
 // ── Photo detail modal ────────────────────────────────

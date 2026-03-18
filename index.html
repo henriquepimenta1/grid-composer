@@ -284,6 +284,30 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
 
 /* Result grid also 4:5 */
 .pp-grid .ppc{aspect-ratio:4/5}
+/* Slot hover action icons */
+.slot-actions{
+  position:absolute;bottom:6px;right:6px;
+  display:none;gap:4px;align-items:center;
+  z-index:3;
+}
+.ugslot.filled:hover .slot-actions{display:flex}
+.slot-act{
+  width:24px;height:24px;border-radius:5px;
+  background:rgba(0,0,0,.72);color:white;
+  font-size:12px;border:none;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  transition:background .15s;backdrop-filter:blur(4px);
+  font-family:var(--font);
+}
+.slot-act:hover{background:rgba(0,0,0,.9)}
+.slot-act-dim{opacity:.4}
+
+/* Summary bar above details */
+.plan-post-summary{
+  background:var(--white);border:1px solid var(--border-light);
+  border-radius:var(--r);box-shadow:var(--shadow);overflow:hidden;
+}
+
 .ppc.drag-over{outline:2.5px solid var(--blue);outline-offset:-2px}
 .ppc.result-cell{cursor:grab}
 .ppc.result-cell:active{cursor:grabbing}
