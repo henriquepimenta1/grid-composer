@@ -147,6 +147,19 @@ const TRANSLATIONS = {
     pw_strong: 'Forte',
     pw_very_strong: 'Muito forte',
 
+    // Settings
+    settings: 'Configurações',
+    profile: 'Perfil',
+    security: 'Segurança',
+    plan_tab: 'Plano',
+    upgrade: 'Fazer upgrade',
+    logout: 'Sair',
+    new_password: 'Nova senha',
+    confirm_password: 'Confirmar senha',
+    current_plan: 'Plano atual',
+    credits_available: 'Créditos',
+    email_change_note: 'Mudança de e-mail requer confirmação no novo endereço',
+
     // Pricing page
     pricing_title: 'Planos simples e transparentes',
     pricing_sub: 'Comece grátis. Faça upgrade quando precisar.',
@@ -295,6 +308,19 @@ const TRANSLATIONS = {
     pw_medium: 'Medium',
     pw_strong: 'Strong',
     pw_very_strong: 'Very strong',
+
+    // Settings
+    settings: 'Settings',
+    profile: 'Profile',
+    security: 'Security',
+    plan_tab: 'Plan',
+    upgrade: 'Upgrade',
+    logout: 'Sign out',
+    new_password: 'New password',
+    confirm_password: 'Confirm password',
+    current_plan: 'Current plan',
+    credits_available: 'Credits',
+    email_change_note: 'Email change requires confirmation at new address',
 
     pricing_title: 'Simple, transparent pricing',
     pricing_sub: 'Start free. Upgrade when you need to.',
