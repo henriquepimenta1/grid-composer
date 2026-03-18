@@ -873,6 +873,7 @@ Kelvin: MENOR=quente/laranja MAIOR=frio/azul`
 // currentPlan is mutable — drag-and-drop updates it without re-calling API
 let currentPlan = []
 let currentHarmony = null
+let isManualMode = false
 
 function renderResults(data, H) {
   currentPlan    = data.plan || []
@@ -881,7 +882,7 @@ function renderResults(data, H) {
 
   const allColors = []
   currentPlan.forEach(s => {
-    const p = photos[s.photo-1]
+    const p = repository[s.photo-1]
     if (p) (p.colors||[]).slice(0,2).forEach(c => { if (!allColors.includes(c.hex)) allColors.push(c.hex) })
   })
 
@@ -957,7 +958,7 @@ function renderGrid() {
     if (!cell) return `<div class="ppc empty"><span style="opacity:.2">·</span></div>`
     const { slotNum, s } = cell
     if (!s) return `<div class="ppc empty"><span>+${slotNum}</span></div>`
-    const p  = photos[s.photo - 1]
+    const p  = repository[s.photo - 1]
     const iW = s.temp === 'warm'
     if (!p) return `<div class="ppc empty" data-slot="${slotNum}"><span>+${slotNum}</span></div>`
     return `<div class="ppc result-cell"
@@ -987,15 +988,16 @@ function renderDetails() {
   const sorted = [...currentPlan].sort((a,b) => a.slot - b.slot)
 
   container.innerHTML = sorted.map(s => {
-    const p  = photos[s.photo-1]; if (!p) return ''
+    const p  = repository[s.photo-1]; if (!p) return ''
     const iW = s.temp === 'warm'
     const palDots = (p.colors||[]).slice(0,5).map(c => `<div class="pr-pc" style="background:${c.hex}"></div>`).join('')
     const cBadge  = s.contrast_role
       ? `<span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:100px;background:#f3f4f6;color:#374151;">${axis?.icon||''} ${s.contrast_role}</span>`
       : ''
     const gridPos = getGridPosition(s.slot, currentPlan.length)
+    const imgSrc = p.cropUrl || p.dataUrl
     return `<div class="post-row">
-      <div class="pr-thumb"><img src="${p.dataUrl}"></div>
+      <div class="pr-thumb"><img src="${imgSrc}"></div>
       <div class="pr-body">
         <div class="pr-top">
           <span class="pr-slot">+${s.slot}</span>
@@ -1074,7 +1076,7 @@ function openPhotoModal(slotNum) {
   if (gridDragSlot !== null) return
   const s = currentPlan.find(x => x.slot === slotNum)
   if (!s) return
-  const p = photos[s.photo - 1]
+  const p = repository[s.photo - 1]
   if (!p) return
 
   const iW      = s.temp === 'warm'
@@ -1128,8 +1130,11 @@ function removeSlotPhoto() {
   const slotNum = parseInt(slotEl.textContent.replace('+',''))
   const s = currentPlan.find(x => x.slot === slotNum)
   if (!s) return
-  const photoIdx = s.photo - 1
-  photos[photoIdx] = null
+  // Find which feedSlot points to this photo and clear it
+  const repoIdx = s.photo - 1
+  for (let i = 0; i < feedSlots.length; i++) {
+    if (feedSlots[i] === repoIdx) feedSlots[i] = null
+  }
   closePhotoModal()
   renderUploadGrid()
   // Clear result since plan is now invalid
