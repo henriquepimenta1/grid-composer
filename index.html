@@ -83,6 +83,19 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
 .kdiff-v{font-weight:700;color:var(--text2)}
 
 /* IG context */
+/* Contrast axis */
+.c-chips{display:flex;flex-direction:column;gap:4px}
+.cchip{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:var(--r-sm);border:1.5px solid var(--border-light);background:transparent;cursor:pointer;transition:all .15s;font-size:13px;font-weight:500;color:var(--text2)}
+.cchip:hover{background:var(--bg)}
+.cchip.on{border-color:var(--text);background:var(--text);color:white}
+.cchip-icon{font-size:16px;line-height:1;flex-shrink:0}
+.cchip-body{}
+.cchip-name{font-size:13px;font-weight:600;display:block}
+.cchip-sub{font-size:10px;opacity:.65;display:block;margin-top:1px}
+/* Kelvin section visibility */
+.kelvin-section{transition:opacity .2s}
+.kelvin-section.dim{opacity:.4;pointer-events:none}
+
 .ig-toggle{display:flex;gap:4px;margin-bottom:10px}
 .ig-opt{flex:1;padding:6px;border-radius:var(--r-sm);border:1.5px solid var(--border);background:transparent;cursor:pointer;font-size:12px;font-weight:600;color:var(--text2);transition:all .15s;text-align:center}
 .ig-opt.on{border-color:var(--text);background:var(--text);color:white}
@@ -279,6 +292,11 @@ canvas{display:none}#fin,#ig-fin{display:none}
     </div>
 
     <div class="sb-section">
+      <div class="sb-title">Eixo de contraste</div>
+      <div class="c-chips" id="contrast-list"></div>
+    </div>
+
+    <div class="sb-section kelvin-section" id="kelvin-section">
       <div class="sb-title">Temperatura (Kelvin)</div>
       <div class="ktrack"></div>
       <div class="krow">
@@ -421,10 +439,54 @@ const PATTERNS=[
   {id:'diagonal',name:'Diagonal',cells:[false,false,true,false,true,false]},
   {id:'free',name:'Livre (IA)',cells:[null,null,null,null,null,null]},
 ];
-let selH='complementary',selP='checkerboard',photos=[],igPhotos=[],planSize=3,igMode='skip';
+let selH='complementary',selP='checkerboard',selC='temperature',photos=[],igPhotos=[],planSize=3,igMode='skip';
+
+// ══ CONTRAST AXES ════════════════════════════════════
+const CONTRAST_AXES=[
+  {
+    id:'temperature',
+    icon:'🌡️',
+    name:'Temperatura',
+    sub:'Quente vs Frio · Kelvin',
+    prompt:'Eixo de contraste: TEMPERATURA. Use Kelvin para definir slots quentes (laranjas/dourados, Kelvin baixo) e frios (teals/azuis, Kelvin alto). Alterne quente↔frio conforme o padrão escolhido.',
+    useKelvin:true,
+  },
+  {
+    id:'luminance',
+    icon:'☀️',
+    name:'Luminância',
+    sub:'Claro vs Escuro · independe de cor',
+    prompt:'Eixo de contraste: LUMINANCIA. Ignore temperatura e alterne fotos claras (highlights dominantes, muito céu aberto, areia branca) com fotos escuras (sombras profundas, florestas densas, interior). Funciona mesmo que todas as fotos sejam quentes.',
+    useKelvin:false,
+  },
+  {
+    id:'subject',
+    icon:'🔭',
+    name:'Plano / Sujeito',
+    sub:'Close · Paisagem · Detalhe',
+    prompt:'Eixo de contraste: TIPO DE PLANO. Alterne entre: RETRATO (pessoa próxima, rosto dominante), PAISAGEM (figura pequena ou ausente, ambiente dominante), DETALHE (close de textura, equipamento, elemento isolado). Crie ritmo pelo tipo de enquadramento.',
+    useKelvin:false,
+  },
+  {
+    id:'saturation',
+    icon:'🎨',
+    name:'Saturação',
+    sub:'Vívido vs Dessaturado',
+    prompt:'Eixo de contraste: SATURACAO. Alterne fotos de alta saturação (cores intensas, pôr do sol vibrante, verde floresta saturado) com fotos dessaturadas (névoa, cinza, mist, tons neutros). Cria ritmo visual mesmo com temperaturas similares.',
+    useKelvin:false,
+  },
+  {
+    id:'combined',
+    icon:'✦',
+    name:'Combinado (IA)',
+    sub:'IA escolhe o melhor eixo',
+    prompt:'Eixo de contraste: COMBINADO. Analise o conjunto de fotos e escolha automaticamente o eixo de contraste que gera a maior harmonia visual entre os slots. Pode combinar temperatura + luminância + tipo de plano conforme necessário. Explica qual eixo foi escolhido no harmony_note.',
+    useKelvin:true,
+  },
+];
 
 // ══ INIT ════════════════════════════════════════════
-function init(){renderHarmonies();renderPatterns();setupDrop();kUpdate()}
+function init(){renderHarmonies();renderPatterns();renderContrast();setupDrop();kUpdate()}
 
 function renderHarmonies(){
   document.getElementById('hm-list').innerHTML=HARMONIES.map(h=>
@@ -441,6 +503,22 @@ function renderPatterns(){
 }
 function selHarmony(id){selH=id;renderHarmonies()}
 function selPattern(id){selP=id;renderPatterns()}
+
+function renderContrast(){
+  document.getElementById('contrast-list').innerHTML=CONTRAST_AXES.map(a=>
+    `<div class="cchip ${a.id===selC?'on':''}" onclick="selContrast('${a.id}')">
+      <span class="cchip-icon">${a.icon}</span>
+      <div class="cchip-body">
+        <span class="cchip-name">${a.name}</span>
+        <span class="cchip-sub">${a.sub}</span>
+      </div>
+    </div>`).join('');
+  // Show/hide Kelvin section
+  const axis=CONTRAST_AXES.find(a=>a.id===selC);
+  const ks=document.getElementById('kelvin-section');
+  if(ks)ks.className='sb-section kelvin-section'+(axis?.useKelvin?'':' dim');
+}
+function selContrast(id){selC=id;renderContrast()}
 function kUpdate(){
   const w=document.getElementById('kw').value,c=document.getElementById('kc').value;
   document.getElementById('kwv').textContent=w+'K';
@@ -625,19 +703,24 @@ function step(n){
 }
 
 function buildPrompt(H,P,kw,kc,colorCtx,igCtx,size){
+  const axis=CONTRAST_AXES.find(a=>a.id===selC);
+  const kelvinLine=axis?.useKelvin?`Kelvin-Q=ate${kw}K Kelvin-F=acima${kc}K`:'(Kelvin é referência mas não é o eixo principal de contraste)';
   return`Especialista em color grading e grid Instagram outdoor/adventure.
 
 CORES K-MEANS LAB EXTRAIDAS (valores reais do pixel):
 ${colorCtx}${igCtx}
 
-CONFIG: Harmonia=${H.name} Padrao=${P.name} Kelvin-Q=ate${kw}K Kelvin-F=acima${kc}K Posts=${size}
+CONFIG: Harmonia=${H.name} Padrao=${P.name} ${kelvinLine} Posts=${size}
+
+${axis?.prompt||''}
 
 Monte o melhor plano de ${size} posts. RETORNE APENAS JSON SEM MARKDOWN:
-{"plan":[{"slot":1,"photo":N,"temp":"cool","kelvin":"7500K","type":"TIPO","harmony_role":"papel na harmonia","reason":"max 70 chars","preset":"ajustes PS/LR max 60 chars"}],"overview":"1 frase","harmony_note":"1 frase"}
+{"plan":[{"slot":1,"photo":N,"temp":"cool","kelvin":"7500K","contrast_role":"claro","type":"TIPO","harmony_role":"papel na harmonia","reason":"max 70 chars","preset":"ajustes PS/LR max 60 chars"}],"overview":"1 frase","harmony_note":"1 frase — mencione o eixo de contraste usado"}
 
 Slots: ${Array.from({length:size},(_,i)=>i+1).join(', ')}
 Fotos disponiveis: 1 a ${photos.length}
-Kelvin: MENOR=quente/laranja MAIOR=frio/azul`;
+Kelvin: MENOR=quente/laranja MAIOR=frio/azul
+contrast_role: para temperatura=warm/cool · luminância=light/dark · plano=portrait/landscape/detail · saturação=vivid/muted`;
 }
 
 // ══ RENDER ═══════════════════════════════════════════
@@ -667,12 +750,17 @@ function renderResults(data,H){
   const details=plan.map(s=>{
     const p=photos[s.photo-1];if(!p)return'';const iW=s.temp==='warm';
     const palDots=(p.colors||[]).slice(0,5).map(c=>`<div class="pr-pc" style="background:${c.hex}"></div>`).join('');
+    const axis=CONTRAST_AXES.find(a=>a.id===selC);
+    const contrastBadge=s.contrast_role
+      ?`<span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:100px;background:#f3f4f6;color:#374151;margin-left:2px">${axis?.icon||''} ${s.contrast_role}</span>`
+      :'';
     return`<div class="post-row">
       <div class="pr-thumb"><img src="${p.dataUrl}"></div>
       <div class="pr-body">
         <div class="pr-top">
           <span class="pr-slot">+${s.slot}</span>
           <span class="pr-type">${s.type}</span>
+          ${contrastBadge}
           <span class="pr-temp ${iW?'pr-tw':'pr-tc'}">${iW?'Quente':'Frio'}</span>
         </div>
         <div class="pr-reason">${s.reason}</div>
