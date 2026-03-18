@@ -81,9 +81,10 @@ function updateCreditsUI(credits, plan) {
   const goBtn  = document.getElementById('go')
   if (costEl) {
     if (isUnlimited) {
-      costEl.textContent = ''
+      costEl.textContent = 'analisa o repositório e distribui nos slots · ilimitado'
     } else {
-      costEl.textContent = `· ${credits} crédito${credits !== 1 ? 's' : ''} restante${credits !== 1 ? 's' : ''}`
+      const c = credits
+      costEl.textContent = `analisa o repositório e distribui nos slots · ${c} crédito${c!==1?'s':''} restante${c!==1?'s':''}`
     }
   }
   if (goBtn && !isUnlimited && credits < 3) {

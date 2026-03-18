@@ -447,21 +447,34 @@ function setIG(mode) {
 }
 
 // ══ UPLOAD — REPOSITORY + FEED ══════════════════════
+let repoDragIdx = null
+let dragSource  = null  // 'repo' | 'feed' — tracks which area the drag started from
+
 function setupDrop() {
-  // Repo area: drag files onto it
+  // Repo: accept file drops from OS
   const repoGrid = document.getElementById('repo-grid')
   if (repoGrid) {
-    repoGrid.addEventListener('dragover',  e => { e.preventDefault(); repoGrid.style.outline='2px dashed var(--blue)' })
-    repoGrid.addEventListener('dragleave', () => { repoGrid.style.outline='' })
-    repoGrid.addEventListener('drop',      e => { e.preventDefault(); repoGrid.style.outline=''; handleFiles(e.dataTransfer.files) })
+    repoGrid.addEventListener('dragover',  e => { e.preventDefault() })
+    repoGrid.addEventListener('drop', e => {
+      e.preventDefault()
+      // Only handle OS file drops (not internal drags)
+      if (e.dataTransfer.files.length > 0) handleFiles(e.dataTransfer.files)
+    })
   }
-  // Feed slots: accept drop from repo
-  const feedGrid = document.getElementById('upload-grid')
-  if (feedGrid) {
-    feedGrid.addEventListener('dragover',  e => { e.preventDefault(); feedGrid.classList.add('drop-active') })
-    feedGrid.addEventListener('dragleave', e => { if (!feedGrid.contains(e.relatedTarget)) feedGrid.classList.remove('drop-active') })
-    feedGrid.addEventListener('drop',      e => { e.preventDefault(); feedGrid.classList.remove('drop-active') })
-  }
+}
+
+function repoDragStart(e, i) {
+  repoDragIdx = i
+  dragSource  = 'repo'
+  e.dataTransfer.setData('text/plain', String(i))
+  e.dataTransfer.effectAllowed = 'copy'
+  renderRepo()
+}
+
+function repoDragEnd(e) {
+  repoDragIdx = null
+  dragSource  = null
+  renderRepo()
 }
 
 // ── Add files to REPOSITORY ───────────────────────────
@@ -510,20 +523,6 @@ function renderRepo() {
 
   grid.innerHTML = thumbsHtml + addBtn
   document.getElementById('pcnt').textContent = `${repository.length} / 12`
-}
-
-// ── Drag from REPOSITORY → FEED slot ─────────────────
-let repoDragIdx = null
-
-function repoDragStart(e, i) {
-  repoDragIdx = i
-  e.dataTransfer.setData('text/plain', String(i))
-  e.dataTransfer.effectAllowed = 'copy'
-  renderRepo()
-}
-function repoDragEnd(e) {
-  repoDragIdx = null
-  renderRepo()
 }
 
 function removeFromRepo(i) {
@@ -677,10 +676,16 @@ function updateActionButtons() {
   const hasRepo     = repository.length > 0
   const go      = document.getElementById('go')
   const manBtn  = document.getElementById('manual-btn')
-  // IA: needs repo photos (uses all repo, not just slots)
+  const costEl  = document.getElementById('credit-cost')
+
   if (go)     go.disabled     = !hasRepo
-  // Manual: needs at least planSize slots filled
   if (manBtn) manBtn.disabled = filledSlots < planSize
+
+  // Update credit label
+  if (costEl && typeof updateCreditsUI === 'undefined') {
+    // fallback if auth not loaded yet
+    costEl.textContent = 'analisa o repositório e distribui nos slots · 1 crédito'
+  }
 }
 
 function clearAll() {
@@ -761,7 +766,7 @@ async function compose() {
       content.push({ type:'text', text:`[FOTO ${i+1}]` })
     })
     step(3)
-    content.push({ type:'text', text: buildPrompt(H,P,kw,kc,colorCtx,igCtx,planSize) })
+    content.push({ type:'text', text: buildPrompt(H,P,kw,kc,colorCtx,igCtx,planSize,repoPhotos.length) })
 
     const res = await fetch('/api/analyze', {
       method: 'POST',
@@ -810,7 +815,7 @@ function step(n) {
   document.getElementById('ldtxt').textContent = m[n]
 }
 
-function buildPrompt(H,P,kw,kc,colorCtx,igCtx,size) {
+function buildPrompt(H,P,kw,kc,colorCtx,igCtx,size,totalPhotos) {
   const axis = CONTRAST_AXES.find(a => a.id === selC)
   const kelvinLine = axis?.useKelvin
     ? `Kelvin-Q=ate${kw}K Kelvin-F=acima${kc}K`
@@ -860,7 +865,7 @@ RETORNE APENAS JSON SEM MARKDOWN:
 {"plan":[{"slot":1,"photo":N,"grid_position":"top-right","temp":"cool","kelvin":"7500K","contrast_role":"frio","type":"TIPO","harmony_role":"papel na harmonia","reason":"max 70 chars","preset":"ajustes PS/LR max 60 chars"}],"overview":"1 frase","harmony_note":"1 frase com eixo usado"}
 
 Slots: ${Array.from({length:size},(_,i)=>i+1).join(', ')}
-Fotos: 1 a ${repoPhotos.length}
+Fotos: 1 a ${totalPhotos}
 Kelvin: MENOR=quente/laranja MAIOR=frio/azul`
 }
 
