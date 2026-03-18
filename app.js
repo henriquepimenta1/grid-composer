@@ -175,7 +175,7 @@ const CONTRAST_AXES = [
 ]
 
 let selH = 'complementary', selP = 'checkerboard', selC = 'temperature'
-let photos = [], igPhotos = [], planSize = 3, igMode = 'skip'
+let photos = Array(3).fill(null), igPhotos = [], planSize = 3, igMode = 'skip'
 
 // ══ INIT ═════════════════════════════════════════════
 function init() {
@@ -185,6 +185,7 @@ function init() {
   setupDrop()
   kUpdate()
   applyTranslations()
+  renderUploadGrid()  // show empty grid slots on load
 }
 
 function renderHarmonies() {
@@ -296,13 +297,18 @@ function setPlan(n, btn) {
   planSize = n
   document.querySelectorAll('.topbar-center .plan-tab').forEach(t => t.classList.remove('active'))
   btn.classList.add('active')
-  document.getElementById('go').disabled = photos.length < planSize
+  // Resize photos array to new planSize
+  photos.length = n
+  for (let i = 0; i < n; i++) { if (photos[i] === undefined) photos[i] = null }
+  renderUploadGrid()
 }
 function setPlanM(n, btn) {
   planSize = n
   document.querySelectorAll('.plan-tabs-mobile .plan-tab').forEach(t => t.classList.remove('active'))
   btn.classList.add('active')
-  document.getElementById('go').disabled = photos.length < planSize
+  photos.length = n
+  for (let i = 0; i < n; i++) { if (photos[i] === undefined) photos[i] = null }
+  renderUploadGrid()
 }
 function setIG(mode) {
   igMode = mode
@@ -322,23 +328,29 @@ function setupDrop() {
 }
 
 async function handleFiles(files) {
-  const rem   = 12 - photos.length
-  const toAdd = Array.from(files).slice(0, rem).filter(f => f.type.startsWith('image/'))
+  const toAdd = Array.from(files).filter(f => f.type.startsWith('image/'))
   if (!toAdd.length) return
   setStatus(`Processando ${toAdd.length} foto(s)...`, '')
+
+  // Fill empty slots first, then append
   for (const file of toAdd) {
+    // Find first empty slot
+    let idx = -1
+    for (let i = 0; i < planSize; i++) { if (!photos[i]) { idx = i; break } }
+    if (idx === -1) break // all slots full
+
     const raw        = await readFile(file)
     const img        = await loadImg(raw)
     const colors     = extractColors(img, 5)
     const kelvin     = estimateKelvin(colors)
     const compressed = await compressImage(raw, 800, 0.75)
-    photos.push({ file, dataUrl: raw, compressed, colors, kelvin })
-    renderThumbs()
-    updateCnt()
+    photos[idx] = { file, dataUrl: raw, compressed, colors, kelvin }
+    renderUploadGrid()
   }
-  const estKB = photos.reduce((s,p) => s + Math.round(p.compressed.length * .75 / 1024), 0)
-  setStatus(`✓ ${photos.length} foto(s) · ~${estKB}KB · k-means LAB`, 'ok')
-  document.getElementById('go').disabled = photos.length < planSize
+
+  const filled = photos.filter(Boolean).length
+  setStatus(`✓ ${filled} foto(s) · k-means LAB`, 'ok')
+  document.getElementById('go').disabled = filled < planSize
 }
 
 function readFile(f) { return new Promise(r => { const fr = new FileReader(); fr.onload = e => r(e.target.result); fr.readAsDataURL(f) }) }
@@ -362,15 +374,100 @@ async function handleIG(files) {
   }
 }
 
-function renderThumbs() {
-  document.getElementById('thumbs').innerHTML = photos.map((p, i) => {
-    const pal = (p.colors || []).slice(0,5).map(c => `<div class="tp" style="background:${c.hex}"></div>`).join('')
-    return `<div class="thumb" draggable="true" ondragstart="dragStart(${i})" ondragover="dragOver(event)" ondrop="drop(event,${i})">
-      <img src="${p.dataUrl}"><div class="tov"></div>
-      <div class="tdel" onclick="removePhoto(${i})">✕</div>
-      <div class="tn">${i+1}</div><div class="tpal">${pal}</div>
-    </div>`
-  }).join('')
+// ── Upload grid ───────────────────────────────────────
+// photos is now a sparse array: photos[i] = photo or null/undefined
+// planSize determines how many slots to show
+
+let slotTargetIdx = null
+let ugDragging    = false
+let ugDragIdx     = null
+
+function renderUploadGrid() {
+  const grid = document.getElementById('upload-grid')
+  if (!grid) return
+  const cells = []
+  for (let i = 0; i < planSize; i++) {
+    const photo = photos[i]
+    if (photo) {
+      const pal = (photo.colors||[]).slice(0,5).map(c=>`<div style="flex:1;background:${c.hex}"></div>`).join('')
+      cells.push(`
+        <div class="ugslot filled"
+          draggable="true"
+          ondragstart="ugDragStart(event,${i})"
+          ondragover="ugDragOver(event)"
+          ondrop="ugDrop(event,${i})"
+          ondragend="ugDragEnd(event)"
+          onclick="ugSlotClick(${i})">
+          <img src="${photo.dataUrl}">
+          <button class="ugslot-del" onclick="event.stopPropagation();removePhotoAt(${i})">✕</button>
+          <div class="ugslot-n">${i+1}${i===0?' · 1ª':''}</div>
+          <div class="ugslot-pal">${pal}</div>
+        </div>`)
+    } else {
+      cells.push(`
+        <div class="ugslot" onclick="openSlotPicker(${i})">
+          <div class="ugslot-empty">
+            <div class="ugslot-plus">+</div>
+            <div class="ugslot-num">foto ${i+1}${i===0?' · 1ª a postar':''}</div>
+          </div>
+        </div>`)
+    }
+  }
+  grid.innerHTML = cells.join('')
+  updateCnt()
+  document.getElementById('go').disabled = photos.filter(Boolean).length < planSize
+}
+
+function ugSlotClick(i) {
+  if (ugDragging) return
+  if (photos[i] && currentPlan.length > 0) {
+    const s = currentPlan.find(x => (x.photo - 1) === i)
+    if (s) { openPhotoModal(s.slot); return }
+  }
+  openSlotPicker(i)
+}
+
+function openSlotPicker(idx) {
+  slotTargetIdx = idx
+  const fin = document.getElementById('slot-fin')
+  if (fin) { fin.value = ''; fin.click() }
+}
+
+async function handleSlotFile(files) {
+  if (!files || !files.length || slotTargetIdx === null) return
+  const file = files[0]
+  if (!file.type.startsWith('image/')) return
+  const raw        = await readFile(file)
+  const img        = await loadImg(raw)
+  const colors     = extractColors(img, 5)
+  const kelvin     = estimateKelvin(colors)
+  const compressed = await compressImage(raw, 800, 0.75)
+  photos[slotTargetIdx] = { file, dataUrl: raw, compressed, colors, kelvin }
+  slotTargetIdx = null
+  renderUploadGrid()
+  const filled = photos.filter(Boolean).length
+  setStatus(`✓ ${filled} foto(s) · k-means LAB`, 'ok')
+  document.getElementById('go').disabled = filled < planSize
+}
+
+function ugDragStart(e, i) {
+  ugDragIdx = i; ugDragging = true
+  e.currentTarget.classList.add('ugslot-drag')
+  e.dataTransfer.effectAllowed = 'move'
+}
+function ugDragOver(e) { e.preventDefault(); e.dataTransfer.dropEffect = 'move' }
+function ugDragEnd(e)  { e.currentTarget.classList.remove('ugslot-drag'); setTimeout(()=>ugDragging=false, 50) }
+function ugDrop(e, i) {
+  e.preventDefault()
+  if (ugDragIdx === null || ugDragIdx === i) return
+  const tmp = photos[ugDragIdx]; photos[ugDragIdx] = photos[i]; photos[i] = tmp
+  ugDragIdx = null; renderUploadGrid()
+}
+
+function removePhotoAt(i) {
+  photos[i] = null
+  renderUploadGrid()
+  if (!photos.filter(Boolean).length) setStatus('', '')
 }
 
 function setStatus(msg, cls) {
@@ -378,21 +475,23 @@ function setStatus(msg, cls) {
   el.className = 'up-status' + (cls ? ' ' + cls : '')
   el.innerHTML = cls ? `<div class="status-dot"></div>${msg}` : msg
 }
-function updateCnt() { document.getElementById('pcnt').textContent = `${photos.length} foto${photos.length!==1?'s':''}` }
-function removePhoto(i) { photos.splice(i,1); renderThumbs(); updateCnt(); document.getElementById('go').disabled = photos.length < planSize; if (!photos.length) setStatus('','') }
+
+function updateCnt() {
+  const filled = photos.filter(Boolean).length
+  document.getElementById('pcnt').textContent = `${filled} foto${filled!==1?'s':''}`
+}
+
 function clearAll() {
-  photos = []; renderThumbs(); updateCnt()
+  photos = Array(planSize).fill(null)
+  igPhotos = []
+  renderUploadGrid()
   document.getElementById('fin').value = ''
   document.getElementById('go').disabled = true
   document.getElementById('results').classList.remove('show')
   document.getElementById('results').innerHTML = ''
+  currentPlan = []
   hideErr(); setStatus('', '')
 }
-
-let dragI = null
-function dragStart(i) { dragI = i }
-function dragOver(e)  { e.preventDefault() }
-function drop(e, i)   { e.preventDefault(); if (dragI===null||dragI===i) return; const m=photos.splice(dragI,1)[0]; photos.splice(i,0,m); dragI=null; renderThumbs() }
 
 // ══ ERRORS ═══════════════════════════════════════════
 function showErr(msg) {
@@ -404,7 +503,8 @@ function hideErr() { document.getElementById('err').classList.remove('show') }
 
 // ══ COMPOSE ══════════════════════════════════════════
 async function compose() {
-  if (photos.length < planSize) return
+  const filledPhotos = photos.filter(Boolean)
+  if (filledPhotos.length < planSize) return
   hideErr()
   document.getElementById('results').classList.remove('show')
   document.getElementById('results').innerHTML = ''
@@ -418,7 +518,10 @@ async function compose() {
     const kw = document.getElementById('kw').value
     const kc = document.getElementById('kc').value
 
-    const colorCtx = photos.map((p,i) =>
+    // Use only filled slots, numbered by slot position
+    const filledPhotos = photos.map((p,i) => p ? {p, slotIdx: i} : null).filter(Boolean)
+
+    const colorCtx = filledPhotos.map(({p,slotIdx},i) =>
       `FOTO ${i+1}: kelvin~${p.kelvin}K temp=${p.kelvin<5000?'QUENTE':'FRIO'} cores=[${(p.colors||[]).map(c=>c.hex+'('+c.pct+'%)').join(' ')}]`
     ).join('\n')
 
@@ -431,7 +534,7 @@ async function compose() {
     step(2)
 
     const content = []
-    photos.forEach((p,i) => {
+    filledPhotos.forEach(({p},i) => {
       content.push({ type:'image', source:{ type:'base64', media_type:'image/jpeg', data:p.compressed.split(',')[1] } })
       content.push({ type:'text', text:`[FOTO ${i+1}]` })
     })
@@ -535,7 +638,7 @@ RETORNE APENAS JSON SEM MARKDOWN:
 {"plan":[{"slot":1,"photo":N,"grid_position":"top-right","temp":"cool","kelvin":"7500K","contrast_role":"frio","type":"TIPO","harmony_role":"papel na harmonia","reason":"max 70 chars","preset":"ajustes PS/LR max 60 chars"}],"overview":"1 frase","harmony_note":"1 frase com eixo usado"}
 
 Slots: ${Array.from({length:size},(_,i)=>i+1).join(', ')}
-Fotos: 1 a ${photos.length}
+Fotos: 1 a ${photos.filter(Boolean).length}
 Kelvin: MENOR=quente/laranja MAIOR=frio/azul`
 }
 
@@ -774,6 +877,42 @@ function openPhotoModal(slotNum) {
 
 function closePhotoModal() {
   document.getElementById('photo-modal')?.classList.remove('open')
+}
+
+// Replace photo in current modal slot
+function replaceSlotPhoto() {
+  const slotEl = document.getElementById('pm-slot')
+  if (!slotEl) return
+  const slotNum = parseInt(slotEl.textContent.replace('+',''))
+  const s = currentPlan.find(x => x.slot === slotNum)
+  if (!s) return
+  // Find photos index for this slot
+  const photoIdx = s.photo - 1
+  slotTargetIdx = photoIdx
+  closePhotoModal()
+  const fin = document.getElementById('slot-replace-fin')
+  if (fin) { fin.value = ''; fin.click() }
+}
+
+// Remove photo from current modal slot
+function removeSlotPhoto() {
+  const slotEl = document.getElementById('pm-slot')
+  if (!slotEl) return
+  const slotNum = parseInt(slotEl.textContent.replace('+',''))
+  const s = currentPlan.find(x => x.slot === slotNum)
+  if (!s) return
+  const photoIdx = s.photo - 1
+  photos[photoIdx] = null
+  closePhotoModal()
+  renderUploadGrid()
+  // Clear result since plan is now invalid
+  document.getElementById('results').classList.remove('show')
+  document.getElementById('results').innerHTML = ''
+  currentPlan = []
+}
+
+async function handleSlotReplace(files) {
+  await handleSlotFile(files)
 }
 
 // Close photo modal on Escape

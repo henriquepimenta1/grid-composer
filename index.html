@@ -237,6 +237,49 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
 .pp-caption{padding:0 16px 6px;font-size:13px;line-height:1.5}
 .pp-caption strong{font-weight:700}
 .pp-harmony{padding:0 16px 14px;font-size:12px;color:var(--text3)}
+/* Upload grid — 4:5 ratio, Instagram portrait */
+.upload-grid{
+  display:grid;grid-template-columns:repeat(3,1fr);
+  gap:3px;margin-bottom:12px;
+}
+.ugslot{
+  aspect-ratio:4/5;position:relative;overflow:hidden;
+  border-radius:4px;background:var(--border-light);
+  cursor:pointer;transition:all .15s;
+}
+.ugslot:hover{background:#e8f4fd;outline:2px dashed var(--blue)}
+.ugslot.filled{cursor:grab;background:transparent}
+.ugslot.filled:hover{outline:2px solid var(--blue)}
+.ugslot img{width:100%;height:100%;object-fit:cover;display:block}
+.ugslot-empty{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  height:100%;gap:4px;
+}
+.ugslot-num{font-size:11px;font-weight:700;color:var(--text3)}
+.ugslot-plus{font-size:20px;color:var(--text3);line-height:1}
+.ugslot-del{
+  position:absolute;top:4px;right:4px;
+  width:20px;height:20px;border-radius:50%;
+  background:rgba(0,0,0,.65);color:white;
+  font-size:10px;display:none;align-items:center;justify-content:center;
+  cursor:pointer;z-index:2;border:none;
+}
+.ugslot.filled:hover .ugslot-del{display:flex}
+.ugslot-n{
+  position:absolute;bottom:4px;left:4px;
+  font-size:9px;font-weight:700;color:white;
+  text-shadow:0 1px 3px rgba(0,0,0,.9);z-index:2;
+}
+.ugslot-pal{position:absolute;bottom:0;left:0;right:0;height:3px;display:flex}
+.ugslot-drag{opacity:.4}
+
+/* Compact dz when grid is shown */
+.dz-small{padding:12px;margin-bottom:10px}
+.dz-small .dz-icon{font-size:20px;margin-bottom:2px}
+.dz-small .dz-t{font-size:13px;margin-bottom:0}
+
+/* Result grid also 4:5 */
+.pp-grid .ppc{aspect-ratio:4/5}
 .ppc.drag-over{outline:2.5px solid var(--blue);outline-offset:-2px}
 .ppc.result-cell{cursor:grab}
 .ppc.result-cell:active{cursor:grabbing}
@@ -457,24 +500,33 @@ canvas{display:none}
 
   <!-- MAIN -->
   <main class="main">
+
+    <!-- GRID PLANNER — primary upload UI -->
     <div class="upload-panel">
       <div class="up-hdr">
-        <span class="up-title" data-i18n="your_photos">Suas fotos</span>
+        <span class="up-title">Planejar grid</span>
         <div class="up-meta">
           <span class="up-cnt" id="pcnt">0 fotos</span>
           <button class="up-clear" onclick="clearAll()" data-i18n="clear">Limpar</button>
         </div>
       </div>
       <div class="up-body">
-        <div class="dz" id="dz">
-          <div class="dz-icon">🖼️</div>
-          <div class="dz-t" data-i18n="drop_title">Arraste fotos aqui ou clique para selecionar</div>
-          <div class="dz-s"  data-i18n="drop_sub">JPG · PNG · WEBP · até 12 fotos</div>
-          <div class="dz-btn" data-i18n="select_btn">Selecionar fotos</div>
+
+        <!-- Empty grid preview — shows slots, click to add photo -->
+        <div class="upload-grid" id="upload-grid"></div>
+
+        <!-- Drag-and-drop zone (secondary, for bulk add) -->
+        <div class="dz dz-small" id="dz">
+          <div class="dz-icon" style="font-size:20px">+</div>
+          <div class="dz-t" style="font-size:13px">Adicionar mais fotos</div>
+          <div class="dz-s">arraste ou clique · até 12 no total</div>
         </div>
+
         <input type="file" id="fin" accept="image/*" multiple onchange="handleFiles(this.files)">
+        <!-- Per-slot file input -->
+        <input type="file" id="slot-fin" accept="image/*" style="display:none" onchange="handleSlotFile(this.files)">
         <canvas id="cv"></canvas>
-        <div class="thumbs" id="thumbs"></div>
+
         <div class="up-status" id="exts"></div>
         <button class="compose-btn" id="go" onclick="compose()" disabled>
           <span>✦&nbsp; Compor grid</span>
@@ -518,7 +570,7 @@ canvas{display:none}
         <span class="pm-temp" id="pm-temp"></span>
       </div>
       <div class="pm-section">
-        <div class="pm-label">Análise cromática</div>
+        <div class="pm-label">Análise cromática <span style="font-size:10px;color:var(--text3);font-weight:400">· clique para copiar hex</span></div>
         <div class="pm-palette" id="pm-palette"></div>
       </div>
       <div class="pm-section">
@@ -526,17 +578,19 @@ canvas{display:none}
         <div class="pm-value" id="pm-reason"></div>
       </div>
       <div class="pm-section">
-        <div class="pm-label">Harmonia no grid</div>
+        <div class="pm-label">Papel na harmonia</div>
         <div class="pm-harmony" id="pm-harmony"></div>
       </div>
-      <div class="pm-section">
-        <div class="pm-label">Preset sugerido (PS/LR)</div>
-        <div class="pm-preset" id="pm-preset"></div>
+      <div style="display:flex;gap:8px;margin-top:4px">
+        <button class="pm-close" style="flex:1" onclick="replaceSlotPhoto()">🔄 Trocar foto</button>
+        <button class="pm-close" style="flex:1;color:var(--red);border-color:#fca5a5" onclick="removeSlotPhoto()">🗑 Remover</button>
+        <button class="pm-close" style="flex:1" onclick="closePhotoModal()">Fechar</button>
       </div>
-      <button class="pm-close" onclick="closePhotoModal()">Fechar</button>
     </div>
   </div>
 </div>
+<!-- hidden file input for slot replacement -->
+<input type="file" id="slot-replace-fin" accept="image/*" style="display:none" onchange="handleSlotReplace(this.files)">
 
 <!-- SETTINGS MODAL -->
 <div id="settings-modal" class="modal-overlay" onclick="if(event.target===this)closeSettings()">
