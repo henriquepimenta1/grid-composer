@@ -1,40 +1,43 @@
 import express from 'express';
 import https from 'https';
-import http from 'http';
 import fs from 'fs';
 import crypto from 'crypto';
 import { createClient } from '@supabase/supabase-js';
 
 const app = express();
 
-// Raw body for Stripe webhook — must come before express.json()
+// Raw body for Stripe webhook — must come BEFORE express.json()
 app.use('/api/webhook/stripe', express.raw({ type: 'application/json' }));
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
-// Supabase
+// Supabase admin client (server-side only)
 const sb = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_SERVICE_KEY
 );
 
-// ── Inject env vars into HTML ─────────────────────────
+// ── Inject env vars into HTML files ──────────────────
 function injectKeys(html) {
   return html
-    .replace('__SUPABASE_URL__',      process.env.SUPABASE_URL || '')
+    .replace('__SUPABASE_URL__',      process.env.SUPABASE_URL      || '')
     .replace('__SUPABASE_ANON_KEY__', process.env.SUPABASE_ANON_KEY || '')
     .replace('__STRIPE_PK__',         process.env.STRIPE_PUBLIC_KEY || '');
 }
 
-// ── HTML Routes ───────────────────────────────────────
+// ── HTML page routes ──────────────────────────────────
 app.get('/',        (req, res) => res.redirect('/login'));
 app.get('/login',   (req, res) => res.send(injectKeys(fs.readFileSync('./login.html',   'utf8'))));
 app.get('/app',     (req, res) => res.send(injectKeys(fs.readFileSync('./index.html',   'utf8'))));
 app.get('/comprar', (req, res) => res.send(injectKeys(fs.readFileSync('./pricing.html', 'utf8'))));
 app.get('/pricing', (req, res) => res.send(injectKeys(fs.readFileSync('./pricing.html', 'utf8'))));
-app.get('/i18n.js',  (req, res) => res.sendFile('i18n.js',  { root: '.' }));
-app.get('/auth.js',  (req, res) => res.send(injectKeys(fs.readFileSync('./auth.js', 'utf8'))));
-app.get('/app.js',   (req, res) => res.sendFile('app.js',   { root: '.' }));
+
+// ── JS files (auth.js gets key injection too) ─────────
+app.get('/i18n.js', (req, res) => res.sendFile('i18n.js', { root: '.' }));
+app.get('/app.js',  (req, res) => res.sendFile('app.js',  { root: '.' }));
+app.get('/auth.js', (req, res) => res.send(injectKeys(fs.readFileSync('./auth.js', 'utf8'))));
+
+// Static files fallback
 app.use(express.static('.'));
 
 // ── Auth middleware ───────────────────────────────────
@@ -70,42 +73,45 @@ app.post('/api/analyze', requireAuth, async (req, res) => {
   const body = JSON.stringify(req.body);
   const bodyBytes = Buffer.byteLength(body);
   if (bodyBytes > 30 * 1024 * 1024) {
-    return res.status(413).json({ error: `Payload muito grande: ${Math.round(bodyBytes/1024/1024)}MB.` });
+    return res.status(413).json({
+      error: `Payload muito grande: ${Math.round(bodyBytes / 1024 / 1024)}MB. Reduza o número de fotos.`
+    });
   }
 
   let statusCode = 200, responseData = null;
   await new Promise(resolve => {
-    const options = {
+    const r = https.request({
       hostname: 'api.anthropic.com', path: '/v1/messages', method: 'POST',
       headers: {
         'x-api-key': apiKey, 'anthropic-version': '2023-06-01',
         'Content-Type': 'application/json', 'Content-Length': bodyBytes,
       },
-    };
-    const r = https.request(options, apiRes => {
+    }, apiRes => {
       let d = '';
       apiRes.on('data', chunk => d += chunk);
       apiRes.on('end', () => {
         statusCode = apiRes.statusCode;
-        try { responseData = JSON.parse(d); } catch { responseData = { error: 'Resposta inválida' }; }
+        try { responseData = JSON.parse(d); }
+        catch { responseData = { error: 'Resposta inválida da API' }; }
         resolve();
       });
     });
     r.on('error', e => { responseData = { error: e.message }; statusCode = 500; resolve(); });
-    r.write(body); r.end();
+    r.write(body);
+    r.end();
   });
 
-  // Only deduct credit on success, skip for unlimited plans
+  // Deduct 1 credit on success — skip for paid plans (unlimited)
   if (statusCode === 200 && userData.plan === 'free') {
-    await sb.from('users').update({ credits: userData.credits - 1 }).eq('id', req.user.id);
+    await sb.from('users')
+      .update({ credits: userData.credits - 1 })
+      .eq('id', req.user.id);
   }
 
   res.status(statusCode).json(responseData);
 });
 
-// ══════════════════════════════════════════════════════
-//  STRIPE — Create checkout session
-// ══════════════════════════════════════════════════════
+// ── POST /api/checkout (Stripe) ───────────────────────
 app.post('/api/checkout', requireAuth, async (req, res) => {
   const { plan, interval } = req.body;
 
@@ -120,13 +126,12 @@ app.post('/api/checkout', requireAuth, async (req, res) => {
   if (!priceId) return res.status(400).json({ error: 'Plano inválido' });
 
   const origin = req.headers.origin || `https://${req.headers.host}`;
-
   const params = new URLSearchParams({
     mode: 'subscription',
     'line_items[0][price]': priceId,
     'line_items[0][quantity]': '1',
-    success_url: `${origin}/app?payment=success`,
-    cancel_url:  `${origin}/comprar?payment=cancelled`,
+    success_url:  `${origin}/app?payment=success`,
+    cancel_url:   `${origin}/comprar?payment=cancelled`,
     customer_email: req.user.email,
     client_reference_id: req.user.id,
     'metadata[user_id]': req.user.id,
@@ -135,18 +140,14 @@ app.post('/api/checkout', requireAuth, async (req, res) => {
     'payment_method_types[0]': 'card',
   }).toString();
 
-  const stripeRes = await stripePost('/v1/checkout/sessions', params);
-  if (stripeRes.error) return res.status(400).json({ error: stripeRes.error.message });
-  res.json({ url: stripeRes.url });
+  const result = await stripePost('/v1/checkout/sessions', params);
+  if (result.error) return res.status(400).json({ error: result.error.message });
+  res.json({ url: result.url });
 });
 
-// ══════════════════════════════════════════════════════
-//  STRIPE — Portal (manage subscription)
-// ══════════════════════════════════════════════════════
+// ── POST /api/portal (manage subscription) ────────────
 app.post('/api/portal', requireAuth, async (req, res) => {
   const origin = req.headers.origin || `https://${req.headers.host}`;
-
-  // Find Stripe customer ID
   const { data: userData } = await sb
     .from('users').select('stripe_customer_id').eq('id', req.user.id).single();
 
@@ -159,126 +160,99 @@ app.post('/api/portal', requireAuth, async (req, res) => {
     return_url: `${origin}/app`,
   }).toString();
 
-  const portalRes = await stripePost('/v1/billing_portal/sessions', params);
-  if (portalRes.error) return res.status(400).json({ error: portalRes.error.message });
-  res.json({ url: portalRes.url });
+  const result = await stripePost('/v1/billing_portal/sessions', params);
+  if (result.error) return res.status(400).json({ error: result.error.message });
+  res.json({ url: result.url });
 });
 
-// ══════════════════════════════════════════════════════
-//  STRIPE — Webhook
-// ══════════════════════════════════════════════════════
+// ── POST /api/webhook/stripe ──────────────────────────
 app.post('/api/webhook/stripe', async (req, res) => {
-  const sig = req.headers['stripe-signature'];
+  const sig    = req.headers['stripe-signature'];
   const secret = process.env.STRIPE_WEBHOOK_SECRET;
 
   let event;
-  try {
-    event = constructStripeEvent(req.body, sig, secret);
-  } catch (err) {
+  try { event = constructStripeEvent(req.body, sig, secret); }
+  catch (err) {
     console.error('Webhook error:', err.message);
     return res.status(400).send(`Webhook Error: ${err.message}`);
   }
 
   try {
     if (event.type === 'checkout.session.completed') {
-      const session = event.data.object;
-      const userId = session.client_reference_id;
-      const plan = session.metadata?.plan || 'pro';
-      const customerId = session.customer;
-
+      const s = event.data.object;
+      const userId = s.client_reference_id;
+      const plan   = s.metadata?.plan || 'pro';
       if (userId) {
         await sb.from('users').update({
-          plan,
-          credits: 9999,  // unlimited
-          stripe_customer_id: customerId,
+          plan, credits: 9999, stripe_customer_id: s.customer,
         }).eq('id', userId);
-        console.log(`✓ Checkout complete: ${userId} → ${plan}`);
+        console.log(`✓ Payment: ${userId} → ${plan}`);
       }
     }
-
-    if (event.type === 'invoice.payment_failed') {
-      const invoice = event.data.object;
-      const customerId = invoice.customer;
-      // Notify user — could send email here
-      console.log(`⚠ Payment failed for customer: ${customerId}`);
-    }
-
     if (event.type === 'customer.subscription.deleted') {
-      const sub = event.data.object;
-      const customerId = sub.customer;
-      // Find user by customer ID and downgrade
+      const customerId = event.data.object.customer;
       const { data: users } = await sb
         .from('users').select('id').eq('stripe_customer_id', customerId);
       if (users?.length) {
         await sb.from('users')
           .update({ plan: 'free', credits: 0 })
           .eq('id', users[0].id);
-        console.log(`✓ Subscription cancelled: customer ${customerId} → free`);
+        console.log(`✓ Cancelled: ${customerId} → free`);
       }
     }
-  } catch (err) {
-    console.error('Webhook handler error:', err);
-  }
+    if (event.type === 'invoice.payment_failed') {
+      console.log(`⚠ Payment failed: ${event.data.object.customer}`);
+    }
+  } catch (err) { console.error('Webhook handler error:', err); }
 
   res.json({ received: true });
 });
 
 // ── Stripe helpers ────────────────────────────────────
 function stripePost(path, formBody) {
-  const secretKey = process.env.STRIPE_SECRET_KEY;
   return new Promise(resolve => {
     const bodyBytes = Buffer.byteLength(formBody);
-    const options = {
+    const r = https.request({
       hostname: 'api.stripe.com', path, method: 'POST',
       headers: {
-        'Authorization': `Bearer ${secretKey}`,
+        'Authorization': `Bearer ${process.env.STRIPE_SECRET_KEY}`,
         'Content-Type': 'application/x-www-form-urlencoded',
         'Content-Length': bodyBytes,
       },
-    };
-    const r = https.request(options, apiRes => {
+    }, apiRes => {
       let d = '';
       apiRes.on('data', chunk => d += chunk);
       apiRes.on('end', () => {
-        try { resolve(JSON.parse(d)); } catch { resolve({ error: { message: 'Parse error' } }); }
+        try { resolve(JSON.parse(d)); }
+        catch { resolve({ error: { message: 'Parse error' } }); }
       });
     });
     r.on('error', e => resolve({ error: { message: e.message } }));
-    r.write(formBody); r.end();
+    r.write(formBody);
+    r.end();
   });
 }
 
 function constructStripeEvent(payload, sig, secret) {
   if (!secret) return JSON.parse(payload.toString());
-
   const parts = {};
   sig.split(',').forEach(part => {
     const [k, v] = part.split('=');
     if (!parts[k]) parts[k] = [];
     parts[k].push(v);
   });
-
   const timestamp = parts.t?.[0];
   if (!timestamp) throw new Error('No timestamp in signature');
-
-  const signedPayload = `${timestamp}.${payload}`;
   const expected = crypto
     .createHmac('sha256', secret)
-    .update(signedPayload, 'utf8')
+    .update(`${timestamp}.${payload}`, 'utf8')
     .digest('hex');
-
-  const valid = (parts.v1 || []).some(sig => {
-    return crypto.timingSafeEqual(
-      Buffer.from(sig, 'hex'),
-      Buffer.from(expected, 'hex')
-    );
-  });
-
+  const valid = (parts.v1 || []).some(s =>
+    crypto.timingSafeEqual(Buffer.from(s, 'hex'), Buffer.from(expected, 'hex'))
+  );
   if (!valid) throw new Error('Invalid Stripe signature');
   return JSON.parse(payload.toString());
 }
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Rodando na porta ${PORT}`));
-// Note: Add stripe_customer_id column to Supabase users table:
-// ALTER TABLE public.users ADD COLUMN stripe_customer_id text;
+app.listen(PORT, () => console.log(`GridAI rodando na porta ${PORT}`));

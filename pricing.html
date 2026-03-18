@@ -6,6 +6,7 @@
 <title>GridAI — Planos</title>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="/i18n.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -13,138 +14,46 @@
   --text:#262626;--text2:#737373;--text3:#a8a8a8;
   --blue:#0095f6;--green:#27ae60;--red:#ed4956;
   --ig:linear-gradient(45deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888);
-  --shadow:0 1px 3px rgba(0,0,0,.08);--shadow-md:0 8px 32px rgba(0,0,0,.1);
-  --r:12px;--r-sm:8px;
-  --font:'Plus Jakarta Sans',sans-serif;
+  --shadow-md:0 8px 32px rgba(0,0,0,.1);--r:12px;--r-sm:8px;--font:'Plus Jakarta Sans',sans-serif;
 }
 body{background:var(--bg);color:var(--text);font-family:var(--font);-webkit-font-smoothing:antialiased}
-
-/* TOPBAR */
-.topbar{
-  background:rgba(255,255,255,.96);backdrop-filter:blur(12px);
-  border-bottom:1px solid var(--border-light);
-  height:52px;display:flex;align-items:center;
-  justify-content:space-between;padding:0 24px;
-  position:sticky;top:0;z-index:100;
-}
+.topbar{background:rgba(255,255,255,.96);backdrop-filter:blur(12px);border-bottom:1px solid var(--border-light);height:52px;display:flex;align-items:center;justify-content:space-between;padding:0 24px;position:sticky;top:0;z-index:100}
 .logo{font-size:20px;font-weight:800;background:var(--ig);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;text-decoration:none}
 .topbar-right{display:flex;align-items:center;gap:10px}
 .back-btn{font-size:13px;font-weight:600;color:var(--text2);text-decoration:none;padding:6px 14px;border-radius:100px;border:1.5px solid var(--border);transition:all .15s}
 .back-btn:hover{border-color:var(--text);color:var(--text)}
-.lang-toggle{
-  font-size:12px;font-weight:600;padding:5px 12px;
-  border-radius:100px;border:1.5px solid var(--border);
-  background:transparent;cursor:pointer;color:var(--text2);
-  transition:all .15s;font-family:var(--font);
-}
+.lang-toggle{font-size:12px;font-weight:600;padding:5px 12px;border-radius:100px;border:1.5px solid var(--border);background:transparent;cursor:pointer;color:var(--text2);transition:all .15s;font-family:var(--font)}
 .lang-toggle:hover{border-color:var(--text);color:var(--text)}
-
-/* HERO */
-.hero{
-  text-align:center;padding:56px 24px 48px;
-  max-width:600px;margin:0 auto;
-}
+.hero{text-align:center;padding:56px 24px 40px;max-width:600px;margin:0 auto}
 .hero h1{font-size:32px;font-weight:800;letter-spacing:-.5px;line-height:1.2;margin-bottom:12px}
 .hero p{font-size:16px;color:var(--text2);line-height:1.6}
-
-/* BILLING TOGGLE */
-.billing-toggle{
-  display:flex;align-items:center;justify-content:center;
-  gap:12px;margin-bottom:40px;
-}
+.billing-toggle{display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:40px}
 .billing-opt{font-size:14px;font-weight:600;color:var(--text2);cursor:pointer;transition:color .15s}
 .billing-opt.active{color:var(--text)}
-.toggle-track{
-  width:44px;height:24px;border-radius:100px;
-  background:var(--border);cursor:pointer;
-  position:relative;transition:background .2s;
-}
+.toggle-track{width:44px;height:24px;border-radius:100px;background:var(--border);cursor:pointer;position:relative;transition:background .2s}
 .toggle-track.on{background:var(--text)}
-.toggle-thumb{
-  width:18px;height:18px;border-radius:50%;
-  background:white;position:absolute;top:3px;left:3px;
-  transition:transform .2s;box-shadow:0 1px 3px rgba(0,0,0,.2);
-}
+.toggle-thumb{width:18px;height:18px;border-radius:50%;background:white;position:absolute;top:3px;left:3px;transition:transform .2s;box-shadow:0 1px 3px rgba(0,0,0,.2)}
 .toggle-track.on .toggle-thumb{transform:translateX(20px)}
-.save-badge{
-  font-size:11px;font-weight:700;color:white;
-  background:var(--green);padding:2px 8px;
-  border-radius:100px;
-}
-
-/* PLANS GRID */
-.plans{
-  display:grid;
-  grid-template-columns:repeat(3,1fr);
-  gap:16px;
-  max-width:960px;
-  margin:0 auto;
-  padding:0 24px 80px;
-}
-@media(max-width:768px){
-  .plans{grid-template-columns:1fr;max-width:400px}
-  .hero h1{font-size:26px}
-}
-
-.plan-card{
-  background:var(--white);
-  border:1.5px solid var(--border-light);
-  border-radius:var(--r);
-  padding:28px 24px;
-  position:relative;
-  transition:transform .2s,box-shadow .2s;
-  display:flex;flex-direction:column;
-}
+.save-badge{font-size:11px;font-weight:700;color:white;background:var(--green);padding:2px 8px;border-radius:100px}
+.plans{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;max-width:960px;margin:0 auto;padding:0 24px 80px}
+@media(max-width:768px){.plans{grid-template-columns:1fr;max-width:400px}.hero h1{font-size:26px}}
+.plan-card{background:var(--white);border:1.5px solid var(--border-light);border-radius:var(--r);padding:28px 24px;position:relative;transition:transform .2s,box-shadow .2s;display:flex;flex-direction:column}
 .plan-card:hover{transform:translateY(-3px);box-shadow:var(--shadow-md)}
-.plan-card.featured{
-  border-color:var(--text);
-  box-shadow:0 0 0 2px var(--text),var(--shadow-md);
-}
-
-.popular-badge{
-  position:absolute;top:-12px;left:50%;transform:translateX(-50%);
-  background:var(--text);color:white;
-  font-size:11px;font-weight:700;
-  padding:3px 14px;border-radius:100px;
-  white-space:nowrap;
-}
-
+.plan-card.featured{border-color:var(--text);box-shadow:0 0 0 2px var(--text)}
+.popular-badge{position:absolute;top:-12px;left:50%;transform:translateX(-50%);background:var(--text);color:white;font-size:11px;font-weight:700;padding:3px 14px;border-radius:100px;white-space:nowrap}
 .plan-name{font-size:14px;font-weight:700;color:var(--text2);margin-bottom:8px;text-transform:uppercase;letter-spacing:.08em}
-.plan-price{
-  font-size:36px;font-weight:800;letter-spacing:-1px;
-  line-height:1;margin-bottom:4px;
-  display:flex;align-items:flex-end;gap:4px;
-}
-.plan-price-val{line-height:1}
+.plan-price{font-size:36px;font-weight:800;letter-spacing:-1px;line-height:1;margin-bottom:4px;display:flex;align-items:flex-end;gap:4px}
 .plan-period{font-size:14px;font-weight:500;color:var(--text2);padding-bottom:4px}
 .plan-desc{font-size:13px;color:var(--text2);margin-bottom:24px;line-height:1.5;min-height:36px}
-
-.plan-cta{
-  width:100%;padding:12px;border-radius:var(--r-sm);
-  font-size:14px;font-weight:700;font-family:var(--font);
-  cursor:pointer;transition:all .15s;margin-bottom:24px;
-  border:1.5px solid var(--border);background:transparent;color:var(--text);
-}
-.plan-cta:hover{background:var(--bg)}
-.plan-card.featured .plan-cta{
-  background:var(--text);border-color:var(--text);color:white;
-}
-.plan-card.featured .plan-cta:hover{opacity:.88}
-
+.plan-cta{width:100%;padding:12px;border-radius:var(--r-sm);font-size:14px;font-weight:700;font-family:var(--font);cursor:pointer;transition:all .15s;margin-bottom:24px;border:1.5px solid var(--border);background:transparent;color:var(--text)}
+.plan-cta:hover:not(:disabled){background:var(--bg)}
+.plan-cta:disabled{opacity:.5;cursor:not-allowed}
+.plan-card.featured .plan-cta{background:var(--text);border-color:var(--text);color:white}
+.plan-card.featured .plan-cta:hover:not(:disabled){opacity:.88}
 .features-title{font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px}
 .features{list-style:none;display:flex;flex-direction:column;gap:8px;flex:1}
-.features li{
-  display:flex;align-items:flex-start;gap:8px;
-  font-size:13px;color:var(--text2);line-height:1.4;
-}
-.features li::before{
-  content:'✓';font-size:12px;font-weight:700;
-  color:var(--green);flex-shrink:0;margin-top:1px;
-}
-.features li.muted{color:var(--text3)}
-.features li.muted::before{content:'—';color:var(--text3)}
-
-/* FAQ */
+.features li{display:flex;align-items:flex-start;gap:8px;font-size:13px;color:var(--text2);line-height:1.4}
+.features li::before{content:'✓';font-size:12px;font-weight:700;color:var(--green);flex-shrink:0;margin-top:1px}
 .faq{max-width:640px;margin:0 auto;padding:0 24px 80px}
 .faq-title{font-size:22px;font-weight:800;text-align:center;margin-bottom:28px}
 .faq-item{border-bottom:1px solid var(--border-light);padding:16px 0;cursor:pointer}
@@ -153,8 +62,6 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);-webkit-font
 .faq-item.open .faq-arrow{transform:rotate(180deg)}
 .faq-a{font-size:13px;color:var(--text2);line-height:1.65;margin-top:10px;display:none}
 .faq-item.open .faq-a{display:block}
-
-/* Footer */
 footer{text-align:center;padding:24px;font-size:12px;color:var(--text3);border-top:1px solid var(--border-light)}
 </style>
 </head>
@@ -168,31 +75,23 @@ footer{text-align:center;padding:24px;font-size:12px;color:var(--text3);border-t
   </div>
 </div>
 
-<!-- HERO -->
 <div class="hero">
   <h1 data-i18n="pricing_title">Planos simples e transparentes</h1>
   <p data-i18n="pricing_sub">Comece grátis. Faça upgrade quando precisar.</p>
 </div>
 
-<!-- BILLING TOGGLE -->
 <div class="billing-toggle">
   <span class="billing-opt active" id="billing-monthly" onclick="setBilling('monthly')" data-i18n="monthly">Mensal</span>
-  <div class="toggle-track" id="billing-track" onclick="toggleBilling()">
-    <div class="toggle-thumb"></div>
-  </div>
+  <div class="toggle-track" id="billing-track" onclick="toggleBilling()"><div class="toggle-thumb"></div></div>
   <span class="billing-opt" id="billing-annual" onclick="setBilling('annual')" data-i18n="annual">Anual</span>
   <span class="save-badge" data-i18n="save_badge">Economize 30%</span>
 </div>
 
-<!-- PLANS -->
 <div class="plans">
-
   <!-- FREE -->
   <div class="plan-card">
     <div class="plan-name" data-i18n="free_name">Free</div>
-    <div class="plan-price">
-      <span class="plan-price-val" data-i18n="free_price" id="free-price">R$ 0</span>
-    </div>
+    <div class="plan-price"><span id="free-price">R$ 0</span></div>
     <div class="plan-desc" data-i18n="free_desc">Para experimentar. Sem cartão necessário.</div>
     <button class="plan-cta" onclick="window.location.href='/login'" data-i18n="free_cta">Começar grátis</button>
     <div class="features-title" data-i18n="includes">Inclui</div>
@@ -204,11 +103,11 @@ footer{text-align:center;padding:24px;font-size:12px;color:var(--text3);border-t
     <div class="popular-badge" data-i18n="most_popular">Mais popular</div>
     <div class="plan-name" data-i18n="pro_name">Pro</div>
     <div class="plan-price">
-      <span class="plan-price-val" id="pro-price">R$ 24,90</span>
+      <span id="pro-price">R$ 24,90</span>
       <span class="plan-period" data-i18n="per_month">/mês</span>
     </div>
     <div class="plan-desc" data-i18n="pro_desc">Para fotógrafos ativos que postam toda semana.</div>
-    <button class="plan-cta" onclick="subscribe('pro')" data-i18n="pro_cta">Assinar Pro</button>
+    <button class="plan-cta" id="btn-pro" onclick="subscribe('pro')" data-i18n="pro_cta">Assinar Pro</button>
     <div class="features-title" data-i18n="includes">Inclui</div>
     <ul class="features" id="pro-features"></ul>
   </div>
@@ -217,141 +116,120 @@ footer{text-align:center;padding:24px;font-size:12px;color:var(--text3);border-t
   <div class="plan-card">
     <div class="plan-name" data-i18n="studio_name">Studio</div>
     <div class="plan-price">
-      <span class="plan-price-val" id="studio-price">R$ 59,90</span>
+      <span id="studio-price">R$ 59,90</span>
       <span class="plan-period" data-i18n="per_month">/mês</span>
     </div>
     <div class="plan-desc" data-i18n="studio_desc">Para agências e fotógrafos com múltiplos clientes.</div>
-    <button class="plan-cta" onclick="subscribe('studio')" data-i18n="studio_cta">Assinar Studio</button>
+    <button class="plan-cta" id="btn-studio" onclick="subscribe('studio')" data-i18n="studio_cta">Assinar Studio</button>
     <div class="features-title" data-i18n="includes">Inclui</div>
     <ul class="features" id="studio-features"></ul>
   </div>
-
 </div>
 
-<!-- FAQ -->
 <div class="faq">
   <div class="faq-title" data-i18n="faq_title">Perguntas frequentes</div>
   <div id="faq-list"></div>
 </div>
 
 <footer>
-  <span>GridAI © 2026 · </span>
-  <a href="#" style="color:var(--text3)" data-i18n="terms_link">Termos</a>
-  <span> · </span>
+  GridAI © 2026 ·
+  <a href="#" style="color:var(--text3)" data-i18n="terms_link">Termos</a> ·
   <a href="#" style="color:var(--text3)" data-i18n="privacy_link">Privacidade</a>
 </footer>
 
 <script>
-// Extra translations for pricing page
+// Supabase keys injected by server
+const SUPABASE_URL      = '__SUPABASE_URL__'
+const SUPABASE_ANON_KEY = '__SUPABASE_ANON_KEY__'
+const { createClient } = supabase
+const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+
+// Page-specific translations
 const PRICING_EXTRA = {
   pt: {
-    back_app: '← Voltar ao app',
-    monthly: 'Mensal', annual: 'Anual', save_badge: 'Economize 30%',
-    includes: 'Inclui',
+    back_app: '← Voltar ao app', monthly: 'Mensal', annual: 'Anual',
+    save_badge: 'Economize 30%', includes: 'Inclui',
     free_desc: 'Para experimentar. Sem cartão necessário.',
     pro_desc: 'Para fotógrafos ativos que postam toda semana.',
     studio_desc: 'Para agências e fotógrafos com múltiplos clientes.',
     faq_title: 'Perguntas frequentes',
     faqs: [
-      { q: 'O que é uma análise?', a: 'Uma análise é quando você faz upload de fotos e o GridAI sugere a sequência ideal para o seu grid, baseado em harmonia de cores, temperatura Kelvin e padrão de composição.' },
-      { q: 'Posso cancelar quando quiser?', a: 'Sim. Não há fidelidade. Você cancela a qualquer momento e continua com acesso até o fim do período pago.' },
-      { q: 'O plano Free tem limite de tempo?', a: 'Não. As 5 análises do plano Free não expiram. Use quando quiser.' },
-      { q: 'Como funciona o plano anual?', a: 'Você paga um valor com 30% de desconto cobrado uma vez por ano. Equivale a pagar 8,4 meses e ganhar 3,6.' },
-      { q: 'O Studio serve para agências?', a: 'Sim. O Studio permite gerenciar múltiplos perfis de Instagram — ideal para quem cuida do grid de vários clientes.' },
-      { q: 'Como é feita a análise de cores?', a: 'Usamos k-means clustering no espaço de cores LAB — o mesmo método do Adobe Color. As cores são extraídas diretamente dos pixels da imagem, não estimadas pela IA.' },
+      { q: 'O que é uma análise?', a: 'Uma análise é quando você faz upload de fotos e o GridAI sugere a sequência ideal para o seu grid — baseado em harmonia de cores, Kelvin e padrão de composição.' },
+      { q: 'Posso cancelar quando quiser?', a: 'Sim. Sem fidelidade. Cancele a qualquer momento e continue com acesso até o fim do período pago.' },
+      { q: 'O plano Free expira?', a: 'Não. As 5 análises do plano Free não expiram. Use quando quiser.' },
+      { q: 'Como funciona o plano anual?', a: 'Você paga com 30% de desconto, cobrado uma vez por ano. Equivale a pagar 8,4 meses e ganhar 3,6.' },
+      { q: 'O Studio serve para agências?', a: 'Sim. O Studio permite gerenciar múltiplos perfis — ideal para quem cuida do grid de vários clientes.' },
+      { q: 'Como funciona a análise de cores?', a: 'Usamos k-means clustering no espaço LAB — o mesmo método do Adobe Color. As cores são extraídas dos pixels reais da imagem, não estimadas.' },
     ],
-    free_features_annual: ['5 análises de teste', 'Sem cartão necessário', 'Todas as harmonias', 'Acesso básico'],
-    pro_features_annual: ['Análises ilimitadas', 'Histórico de planos salvo', 'Export em PDF', 'Comparação com referências', 'Sugestão de preset por foto', 'Suporte prioritário'],
-    studio_features_annual: ['Tudo do Pro', 'Até 10 perfis de Instagram', 'Relatório semanal automático', 'Análise em lote', 'API access', 'Suporte dedicado'],
-    pro_price_monthly: 'R$ 24,90', pro_price_annual: 'R$ 17,43',
-    studio_price_monthly: 'R$ 59,90', studio_price_annual: 'R$ 41,93',
+    free_features:   ['5 análises de teste', 'Sem cartão necessário', 'Todas as harmonias', 'Acesso básico'],
+    pro_features:    ['Análises ilimitadas', 'Histórico de planos salvo', 'Export em PDF', 'Comparação com referências', 'Sugestão de preset por foto', 'Suporte prioritário'],
+    studio_features: ['Tudo do Pro', 'Até 10 perfis de Instagram', 'Relatório semanal automático', 'Análise em lote', 'API access', 'Suporte dedicado'],
+    pro_monthly: 'R$ 24,90', pro_annual: 'R$ 17,43',
+    studio_monthly: 'R$ 59,90', studio_annual: 'R$ 41,93',
   },
   en: {
-    back_app: '← Back to app',
-    monthly: 'Monthly', annual: 'Annual', save_badge: 'Save 30%',
-    includes: 'Includes',
+    back_app: '← Back to app', monthly: 'Monthly', annual: 'Annual',
+    save_badge: 'Save 30%', includes: 'Includes',
     free_desc: 'Try it out. No card required.',
     pro_desc: 'For active photographers who post every week.',
     studio_desc: 'For agencies and photographers with multiple clients.',
     faq_title: 'Frequently asked questions',
     faqs: [
-      { q: 'What counts as an analysis?', a: 'One analysis is when you upload photos and GridAI suggests the ideal sequence for your grid, based on color harmony, Kelvin temperature and composition pattern.' },
-      { q: 'Can I cancel anytime?', a: 'Yes. No commitment. Cancel whenever you want and keep access until the end of your billing period.' },
-      { q: 'Do the Free plan analyses expire?', a: 'No. Your 5 free analyses never expire. Use them whenever you want.' },
-      { q: 'How does the annual plan work?', a: 'You pay a discounted rate billed once per year — equivalent to 8.4 months for the price of 12.' },
-      { q: 'Is Studio good for agencies?', a: 'Yes. Studio lets you manage multiple Instagram profiles — perfect for managing grids for multiple clients.' },
-      { q: 'How does color analysis work?', a: 'We use k-means clustering in LAB color space — the same method as Adobe Color. Colors are extracted directly from image pixels, not estimated by AI.' },
+      { q: 'What counts as an analysis?', a: 'One analysis is when you upload photos and GridAI suggests the ideal grid sequence — based on color harmony, Kelvin temperature and composition pattern.' },
+      { q: 'Can I cancel anytime?', a: 'Yes. No commitment. Cancel whenever and keep access until end of billing period.' },
+      { q: 'Do the Free analyses expire?', a: 'No. Your 5 free analyses never expire.' },
+      { q: 'How does annual billing work?', a: 'You pay a 30% discounted rate billed once per year — equivalent to 8.4 months for the price of 12.' },
+      { q: 'Is Studio good for agencies?', a: 'Yes. Studio lets you manage multiple Instagram profiles — perfect for agencies handling multiple clients.' },
+      { q: 'How does color analysis work?', a: 'We use k-means clustering in LAB color space — the same method as Adobe Color. Colors extracted from real pixels, not AI-estimated.' },
     ],
-    free_features_annual: ['5 trial analyses', 'No card required', 'All harmonies', 'Basic access'],
-    pro_features_annual: ['Unlimited analyses', 'Saved plan history', 'PDF export', 'Reference comparison', 'Per-photo preset suggestion', 'Priority support'],
-    studio_features_annual: ['Everything in Pro', 'Up to 10 Instagram profiles', 'Automated weekly report', 'Batch analysis', 'API access', 'Dedicated support'],
-    pro_price_monthly: '$4.99', pro_price_annual: '$3.49',
-    studio_price_monthly: '$11.99', studio_price_annual: '$8.39',
+    free_features:   ['5 trial analyses', 'No card required', 'All harmonies', 'Basic access'],
+    pro_features:    ['Unlimited analyses', 'Saved plan history', 'PDF export', 'Reference comparison', 'Per-photo preset suggestion', 'Priority support'],
+    studio_features: ['Everything in Pro', 'Up to 10 Instagram profiles', 'Automated weekly report', 'Batch analysis', 'API access', 'Dedicated support'],
+    pro_monthly: '$4.99', pro_annual: '$3.49',
+    studio_monthly: '$11.99', studio_annual: '$8.39',
   }
 }
 
-// Merge with base translations
-Object.keys(PRICING_EXTRA).forEach(lang => {
-  Object.assign(TRANSLATIONS[lang], PRICING_EXTRA[lang])
-})
+// Merge into base translations
+Object.keys(PRICING_EXTRA).forEach(lang => Object.assign(TRANSLATIONS[lang], PRICING_EXTRA[lang]))
 
 let billing = 'monthly'
 
 function setBilling(mode) {
   billing = mode
-  const track = document.getElementById('billing-track')
   document.getElementById('billing-monthly').className = 'billing-opt' + (mode==='monthly'?' active':'')
-  document.getElementById('billing-annual').className = 'billing-opt' + (mode==='annual'?' active':'')
-  track.className = 'toggle-track' + (mode==='annual'?' on':'')
+  document.getElementById('billing-annual').className  = 'billing-opt' + (mode==='annual'?' active':'')
+  document.getElementById('billing-track').className   = 'toggle-track' + (mode==='annual'?' on':'')
   updatePrices()
 }
-
-function toggleBilling() {
-  setBilling(billing === 'monthly' ? 'annual' : 'monthly')
-}
+function toggleBilling() { setBilling(billing === 'monthly' ? 'annual' : 'monthly') }
 
 function updatePrices() {
-  const annual = billing === 'annual'
   const pd = PRICING_EXTRA[LANG]
-  document.getElementById('pro-price').textContent = annual ? pd.pro_price_annual : pd.pro_price_monthly
-  document.getElementById('studio-price').textContent = annual ? pd.studio_price_annual : pd.studio_price_monthly
+  const annual = billing === 'annual'
+  document.getElementById('free-price').textContent   = LANG === 'en' ? '$0' : 'R$ 0'
+  document.getElementById('pro-price').textContent    = annual ? pd.pro_annual    : pd.pro_monthly
+  document.getElementById('studio-price').textContent = annual ? pd.studio_annual : pd.studio_monthly
 }
 
 function renderFeatures() {
   const pd = PRICING_EXTRA[LANG]
-  const lists = {
-    'free-features': pd.free_features_annual,
-    'pro-features': pd.pro_features_annual,
-    'studio-features': pd.studio_features_annual,
-  }
-  Object.entries(lists).forEach(([id, items]) => {
-    document.getElementById(id).innerHTML = items
-      .map(f => `<li>${f}</li>`).join('')
+  ;[['free-features', pd.free_features], ['pro-features', pd.pro_features], ['studio-features', pd.studio_features]].forEach(([id, items]) => {
+    document.getElementById(id).innerHTML = items.map(f => `<li>${f}</li>`).join('')
   })
 }
 
 function renderFAQ() {
-  const faqs = PRICING_EXTRA[LANG].faqs
-  document.getElementById('faq-list').innerHTML = faqs.map((f, i) => `
+  document.getElementById('faq-list').innerHTML = PRICING_EXTRA[LANG].faqs.map((f, i) => `
     <div class="faq-item" id="faq-${i}" onclick="toggleFAQ(${i})">
       <div class="faq-q">${f.q}<span class="faq-arrow">⌄</span></div>
       <div class="faq-a">${f.a}</div>
     </div>`).join('')
 }
 
-function toggleFAQ(i) {
-  const el = document.getElementById('faq-' + i)
-  el.classList.toggle('open')
-}
-
-function subscribe(plan) {
-  // Será implementado com Stripe
-  // Por enquanto redireciona para login
-  window.location.href = '/login?plan=' + plan
-}
+function toggleFAQ(i) { document.getElementById('faq-' + i).classList.toggle('open') }
 
 // Override setLang to re-render dynamic content
-const _setLang = setLang
 function setLang(lang) {
   LANG = lang
   localStorage.setItem('gridai_lang', lang)
@@ -359,20 +237,52 @@ function setLang(lang) {
   updatePrices()
   renderFeatures()
   renderFAQ()
-  // Update toggle
   const btn = document.getElementById('lang-toggle')
   if (btn) btn.textContent = lang === 'pt' ? '🇧🇷 PT' : '🇺🇸 EN'
-  // Update html lang
   document.documentElement.lang = lang
 }
 
-// Init
-function init() {
-  setLang(LANG)
-  setBilling('monthly')
+// ── Subscribe — calls Stripe checkout ────────────────
+async function subscribe(plan) {
+  const btn = document.getElementById('btn-' + plan)
+  btn.disabled = true
+  btn.textContent = '...'
+
+  try {
+    const { data: { session } } = await sb.auth.getSession()
+    if (!session) { window.location.href = '/login?plan=' + plan; return }
+
+    const res  = await fetch('/api/checkout', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session.access_token },
+      body: JSON.stringify({ plan, interval: billing })
+    })
+    const data = await res.json()
+
+    if (data.url) {
+      window.location.href = data.url
+    } else {
+      alert(data.error || 'Erro ao iniciar checkout.')
+      btn.disabled = false
+      btn.textContent = LANG === 'en' ? `Subscribe ${plan.charAt(0).toUpperCase()+plan.slice(1)}` : `Assinar ${plan.charAt(0).toUpperCase()+plan.slice(1)}`
+    }
+  } catch(e) {
+    alert('Erro de conexão.')
+    btn.disabled = false
+  }
 }
 
-init()
+// Check for payment result in URL
+const params = new URLSearchParams(window.location.search)
+if (params.get('payment') === 'success') {
+  const banner = document.createElement('div')
+  banner.style.cssText = 'background:#f0fdf4;border:1px solid #86efac;color:#166534;padding:12px 24px;text-align:center;font-size:14px;font-weight:600'
+  banner.textContent = '✓ Pagamento confirmado! Bem-vindo ao GridAI Pro.'
+  document.body.insertBefore(banner, document.body.firstChild)
+}
+
+setLang(LANG)
+setBilling('monthly')
 </script>
 </body>
 </html>
