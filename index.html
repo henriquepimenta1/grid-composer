@@ -2,314 +2,258 @@
 <html lang="pt">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Grid Composer Pro</title>
-<link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital@0;1&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>GridAI</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --bg:#050708;--s1:#090D10;--s2:#0C1216;--s3:#101820;
-  --border:#121A20;--b2:#182430;--b3:#1E3040;
-  --acc:#C4853A;--acc2:#5A90A8;--grn:#4A8A6A;
-  --text:#7A9AB0;--dim:#1E3040;--mid:#345868;
-  --mono:'Space Mono',monospace;--dp:'Syne',sans-serif;
+  --white:#fff;--bg:#fafafa;--surface:#fff;
+  --border:#dbdbdb;--border-light:#efefef;
+  --text:#262626;--text-2:#737373;--text-3:#a8a8a8;
+  --blue:#0095f6;--blue-dark:#0074cc;
+  --red:#ed4956;--green:#27ae60;
+  --warm:#e8920a;--cool:#1976d2;
+  --ig-grad:linear-gradient(45deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888);
+  --shadow-sm:0 1px 3px rgba(0,0,0,.08);
+  --radius:12px;--radius-sm:8px;
+  --font:'Plus Jakarta Sans',sans-serif;
+  --nav-h:60px;
 }
-body{background:var(--bg);color:var(--text);font-family:var(--dp);min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:28px 14px 80px}
+body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:100vh;padding-bottom:calc(var(--nav-h)+20px);-webkit-font-smoothing:antialiased}
 
-/* HDR */
-.hdr{width:100%;max-width:960px;display:flex;justify-content:space-between;align-items:flex-end;border-bottom:1px solid var(--border);padding-bottom:14px;margin-bottom:20px}
-.hdr h1{font-size:18px;font-weight:800;color:#B8CCD8;letter-spacing:-0.02em}
-.hdr p{font-family:var(--mono);font-size:8px;color:var(--dim);letter-spacing:.14em;text-transform:uppercase;margin-top:3px}
-.badge{font-family:var(--mono);font-size:8px;color:var(--acc);border:1px solid #3A2010;background:#100800;padding:3px 9px;border-radius:2px}
+/* TOP BAR */
+.topbar{position:sticky;top:0;z-index:100;background:rgba(255,255,255,.96);backdrop-filter:blur(12px);border-bottom:1px solid var(--border-light);height:54px;display:flex;align-items:center;justify-content:space-between;padding:0 16px}
+.logo{font-size:21px;font-weight:800;background:var(--ig-grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;letter-spacing:-.5px}
+.handle{font-size:13px;font-weight:600;color:var(--text-2)}
+.avatar{width:30px;height:30px;border-radius:50%;background:var(--ig-grad);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff}
 
-/* TABS */
-.tabs{width:100%;max-width:960px;display:flex;gap:2px;margin-bottom:16px;background:var(--s1);border:1px solid var(--border);border-radius:5px;padding:3px}
-.tab{flex:1;padding:8px;font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;text-align:center;cursor:pointer;border-radius:3px;color:var(--dim);transition:all .2s;border:none;background:none}
-.tab:hover{color:var(--text)}
-.tab.active{background:var(--s2);color:var(--acc);border:1px solid var(--b2)}
+/* STORIES TABS */
+.stories{padding:14px 16px;display:flex;gap:10px;overflow-x:auto;scrollbar-width:none}
+.stories::-webkit-scrollbar{display:none}
+.story{display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer;flex-shrink:0;background:none;border:none;padding:0}
+.story-ring{width:62px;height:62px;border-radius:50%;padding:2.5px;background:var(--border);transition:all .2s}
+.story.active .story-ring{background:var(--ig-grad)}
+.story-inner{width:100%;height:100%;border-radius:50%;background:var(--white);display:flex;align-items:center;justify-content:center;font-size:19px;font-weight:800;color:var(--text);border:2.5px solid var(--white)}
+.story.active .story-inner{color:#cc2366}
+.story-lbl{font-size:11px;font-weight:500;color:var(--text-2)}
+.story.active .story-lbl{color:var(--text);font-weight:700}
 
-/* MAIN LAYOUT */
-.layout{width:100%;max-width:960px;display:grid;grid-template-columns:200px 1fr;gap:12px;align-items:start}
+/* SECTION */
+.s{padding:0 16px;margin-bottom:14px}
+.s-title{font-size:13px;font-weight:700;color:var(--text);margin-bottom:10px}
 
-/* PANEL */
-.panel{background:var(--s1);border:1px solid var(--border);border-radius:5px;overflow:hidden}
-.ph{padding:10px 13px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
-.ph-title{font-family:var(--mono);font-size:8px;letter-spacing:.14em;text-transform:uppercase;color:var(--mid)}
-.pb{padding:12px 13px}
+/* HARMONY CHIPS */
+.hscroll{display:flex;gap:7px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
+.hscroll::-webkit-scrollbar{display:none}
+.hchip{display:flex;align-items:center;gap:6px;padding:7px 12px 7px 7px;border-radius:100px;border:1.5px solid var(--border);background:var(--white);cursor:pointer;flex-shrink:0;transition:all .15s;font-size:12px;font-weight:500;color:var(--text-2)}
+.hchip.on{border-color:var(--text);background:var(--text);color:white}
+.hchip-dot{width:18px;height:18px;border-radius:50%;flex-shrink:0}
 
-/* HARMONY LIST */
-.hm-list{display:flex;flex-direction:column;gap:2px}
-.hm{display:flex;align-items:center;gap:7px;padding:7px 8px;border-radius:3px;cursor:pointer;border:1px solid transparent;transition:all .15s}
-.hm:hover{background:var(--s2)}
-.hm.on{background:var(--s2);border-color:var(--b2)}
-.hm-dot{width:24px;height:24px;border-radius:2px;flex-shrink:0}
-.hm-n{font-size:11px;font-weight:600;color:#7A9AB0}
-.hm-s{font-family:var(--mono);font-size:7px;color:var(--dim);margin-top:1px}
-.hm-ck{width:12px;height:12px;border-radius:50%;border:1.5px solid var(--b2);flex-shrink:0;margin-left:auto}
-.hm.on .hm-ck{background:var(--acc);border-color:var(--acc)}
+/* PATTERN */
+.prow{display:flex;gap:6px;flex-wrap:wrap}
+.pchip{display:flex;align-items:center;gap:5px;padding:6px 11px;border-radius:100px;border:1.5px solid var(--border);background:var(--white);cursor:pointer;transition:all .15s;font-size:12px;font-weight:500;color:var(--text-2)}
+.pchip.on{border-color:var(--text);background:var(--text);color:white}
+.pg-mini{display:grid;grid-template-columns:repeat(3,5px);gap:1.5px}
+.pm{width:5px;height:5px;border-radius:1px;background:currentColor;opacity:.35}
+.pm.w{opacity:1}
 
-/* KELVIN SLIDERS */
-.kslider{margin-bottom:4px}
-.krow{display:flex;align-items:center;gap:6px;margin-bottom:5px}
-.klbl{font-family:var(--mono);font-size:8px;width:32px;flex-shrink:0}
-.klbl.w{color:var(--acc)}
-.klbl.c{color:var(--acc2)}
-input[type=range]{flex:1;accent-color:var(--acc2);cursor:pointer}
-.kval{font-family:var(--mono);font-size:8px;color:var(--mid);width:40px;text-align:right;flex-shrink:0}
-.kdiff{font-family:var(--mono);font-size:8px;color:var(--dim);text-align:center;margin-top:4px}
+/* KELVIN CARD */
+.kcard{background:var(--white);border:1px solid var(--border-light);border-radius:var(--radius);padding:14px;box-shadow:var(--shadow-sm)}
+.ktrack{width:100%;height:9px;border-radius:5px;background:linear-gradient(90deg,#FF5500,#FFB830,#FFEEBB,#C8DCFF,#80AAFF);margin-bottom:12px}
+.krow{display:flex;align-items:center;gap:9px;margin-bottom:7px}
+.klbl{font-size:12px;font-weight:700;width:12px;flex-shrink:0}
+.kw{color:var(--warm)}.kc{color:var(--cool)}
+input[type=range]{flex:1;-webkit-appearance:none;height:3px;border-radius:2px;background:var(--border);outline:none;cursor:pointer}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:var(--white);border:2px solid var(--text);cursor:pointer;box-shadow:var(--shadow-sm)}
+.kval{font-size:12px;font-weight:600;color:var(--text-2);width:44px;text-align:right;flex-shrink:0}
+.kdiff-row{text-align:center;font-size:11px;color:var(--text-3)}
+.kdiff-v{font-weight:700;color:var(--text-2)}
 
-/* GRID PATTERNS */
-.pat-list{display:flex;flex-direction:column;gap:3px}
-.pat{display:flex;align-items:center;gap:7px;padding:6px 8px;border-radius:3px;cursor:pointer;border:1px solid transparent;transition:all .15s}
-.pat:hover{background:var(--s2)}
-.pat.on{background:var(--s2);border-color:var(--b2)}
-.pat-g{display:grid;grid-template-columns:repeat(3,9px);gap:1.5px}
-.pg{width:9px;height:9px;border-radius:1px}
-.pg-w{background:var(--acc)}
-.pg-c{background:var(--acc2)}
-.pg-n{background:var(--b2)}
-.pat-n{font-family:var(--mono);font-size:9px;color:var(--mid)}
-
-/* INSTAGRAM BLOCK */
-.ig-block{display:flex;flex-direction:column;gap:6px}
-.ig-toggle{display:flex;gap:6px}
-.ig-opt{flex:1;padding:7px;border-radius:3px;cursor:pointer;font-family:var(--mono);font-size:8px;letter-spacing:.08em;text-transform:uppercase;border:1px solid var(--b2);background:transparent;color:var(--mid);transition:all .2s;text-align:center}
-.ig-opt:hover{color:var(--text)}
-.ig-opt.on{background:var(--s2);color:var(--acc);border-color:#3A2010}
-.ig-input{width:100%;background:var(--s2);border:1px solid var(--b2);border-radius:3px;padding:7px 9px;font-family:var(--mono);font-size:9px;color:var(--text);outline:none}
-.ig-input:focus{border-color:var(--b3)}
-.ig-note{font-family:var(--mono);font-size:7px;color:var(--dim);line-height:1.5}
-.ig-mini-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;border-radius:3px;overflow:hidden}
-.ig-mini-cell{aspect-ratio:1;background:var(--b2);position:relative;overflow:hidden}
-.ig-mini-cell img{width:100%;height:100%;object-fit:cover}
-.ig-mini-lbl{position:absolute;bottom:2px;left:2px;font-family:var(--mono);font-size:6px;background:rgba(0,0,0,.6);color:rgba(255,255,255,.6);padding:1px 3px;border-radius:1px}
-
-/* MAIN RIGHT */
-.main{display:flex;flex-direction:column;gap:10px}
-
-/* UPLOAD */
-.upload-box{background:var(--s1);border:1px solid var(--border);border-radius:5px;padding:14px}
-.upload-hdr{font-family:var(--mono);font-size:8px;letter-spacing:.14em;text-transform:uppercase;color:var(--mid);margin-bottom:10px;display:flex;justify-content:space-between}
-.upload-cnt{color:var(--acc)}
-.dz{border:1px dashed #1A2C38;border-radius:4px;padding:18px;text-align:center;cursor:pointer;transition:all .2s;margin-bottom:10px}
-.dz:hover,.dz.drag{border-color:var(--acc2);background:#060E14}
-.dz-i{font-size:20px;opacity:.2;margin-bottom:5px}
-.dz-t{font-family:var(--mono);font-size:9px;color:var(--dim);line-height:1.7}
-.thumbs{display:grid;grid-template-columns:repeat(6,1fr);gap:4px;margin-bottom:10px}
-.thumb{aspect-ratio:1;border-radius:2px;overflow:hidden;position:relative;cursor:grab;border:1.5px solid transparent;transition:all .15s}
-.thumb:hover{border-color:var(--b2)}
-.thumb.sel{border-color:var(--acc)}
+/* UPLOAD CARD */
+.ucard{background:var(--white);border:1px solid var(--border-light);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow-sm)}
+.ucard-hdr{padding:12px 14px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border-light)}
+.ucard-title{font-size:14px;font-weight:700}
+.ucnt{font-size:12px;font-weight:600;background:var(--bg);border:1px solid var(--border);padding:2px 9px;border-radius:100px;color:var(--text-2)}
+.dz{margin:12px;border:2px dashed var(--border);border-radius:var(--radius-sm);padding:24px 14px;text-align:center;cursor:pointer;transition:all .2s}
+.dz:hover,.dz.drag{border-color:var(--blue);background:#f0f8ff}
+.dz-icon{font-size:28px;margin-bottom:6px}
+.dz-t{font-size:14px;font-weight:600;color:var(--text);margin-bottom:3px}
+.dz-s{font-size:12px;color:var(--text-3)}
+.dz-btn{display:inline-block;margin-top:10px;padding:7px 18px;border-radius:100px;background:var(--blue);color:white;font-size:13px;font-weight:600;cursor:pointer;transition:background .15s}
+.dz:hover .dz-btn{background:var(--blue-dark)}
+.thumbs{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;padding:0 12px 12px}
+.thumb{aspect-ratio:1;position:relative;overflow:hidden;cursor:grab}
 .thumb img{width:100%;height:100%;object-fit:cover;display:block}
-.thumb-del{position:absolute;top:2px;right:2px;width:14px;height:14px;border-radius:50%;background:rgba(0,0,0,.7);color:rgba(255,255,255,.7);font-size:8px;display:none;align-items:center;justify-content:center;cursor:pointer;z-index:2}
-.thumb:hover .thumb-del{display:flex}
-.thumb-n{position:absolute;bottom:2px;left:2px;font-family:var(--mono);font-size:6.5px;background:rgba(0,0,0,.65);color:rgba(255,255,255,.6);padding:1px 3px;border-radius:1px;z-index:2}
-/* color swatch extracted */
-.thumb-pal{position:absolute;bottom:0;left:0;right:0;height:5px;display:flex}
+.tov{position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,.5) 0%,transparent 55%);opacity:0;transition:opacity .15s}
+.thumb:hover .tov{opacity:1}
+.tdel{position:absolute;top:5px;right:5px;width:20px;height:20px;border-radius:50%;background:rgba(0,0,0,.65);color:white;font-size:11px;display:none;align-items:center;justify-content:center;cursor:pointer;z-index:2}
+.thumb:hover .tdel{display:flex}
+.tn{position:absolute;bottom:4px;left:5px;font-size:10px;font-weight:700;color:white;text-shadow:0 1px 3px rgba(0,0,0,.9);z-index:2}
+.tpal{position:absolute;bottom:0;left:0;right:0;height:4px;display:flex}
 .tp{flex:1}
+.exts{padding:0 14px 8px;font-size:12px;color:var(--text-3);min-height:18px}
+.exts.ok{color:var(--green)}
+.go-wrap{padding:0 12px 12px}
+.go-btn{width:100%;padding:13px;border-radius:var(--radius-sm);background:var(--ig-grad);border:none;color:white;cursor:pointer;font-size:14px;font-weight:700;font-family:var(--font);transition:opacity .15s;display:flex;align-items:center;justify-content:center;gap:7px}
+.go-btn:hover:not(:disabled){opacity:.9}
+.go-btn:disabled{opacity:.38;cursor:not-allowed}
+.go-btn:active:not(:disabled){transform:scale(.98)}
 
-/* COLOR EXTRACTION STATUS */
-.extract-status{font-family:var(--mono);font-size:8px;color:var(--dim);margin-bottom:8px;min-height:14px}
-
-/* ACTION BUTTONS */
-.actions{display:flex;gap:6px}
-.btn{flex:1;padding:10px;border-radius:3px;cursor:pointer;font-family:var(--mono);font-size:9px;letter-spacing:.08em;text-transform:uppercase;transition:all .2s;border:1px solid var(--b2);background:transparent;color:var(--mid)}
-.btn:hover{background:var(--s2);color:var(--text)}
-.btn.primary{background:#160C00;border-color:#3A2010;color:var(--acc)}
-.btn.primary:hover:not(:disabled){background:#1E1000;border-color:#5A3018}
-.btn.primary:disabled{opacity:.3;cursor:not-allowed}
-
-/* PLAN SIZE SELECTOR */
-.plan-size{display:flex;gap:4px;margin-bottom:12px}
-.ps-opt{flex:1;padding:8px;font-family:var(--mono);font-size:9px;letter-spacing:.08em;text-transform:uppercase;border:1px solid var(--b2);background:transparent;color:var(--dim);cursor:pointer;border-radius:3px;transition:all .2s;text-align:center}
-.ps-opt:hover{color:var(--text)}
-.ps-opt.on{background:var(--s2);border-color:#2A4050;color:var(--acc2)}
+/* IG CARD */
+.igcard{background:var(--white);border:1px solid var(--border-light);border-radius:var(--radius);padding:14px;box-shadow:var(--shadow-sm)}
+.ig-toggle{display:flex;gap:5px;margin-bottom:10px}
+.ig-opt{flex:1;padding:7px;border-radius:var(--radius-sm);border:1.5px solid var(--border);background:transparent;cursor:pointer;font-size:12px;font-weight:600;color:var(--text-2);transition:all .15s;text-align:center}
+.ig-opt.on{border-color:var(--text);background:var(--text);color:white}
+.ig-mini{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;border-radius:var(--radius-sm);overflow:hidden}
+.igmc{aspect-ratio:1;background:var(--border-light);overflow:hidden;position:relative}
+.igmc img{width:100%;height:100%;object-fit:cover}
+.igmc-empty{display:flex;align-items:center;justify-content:center;height:100%;font-size:20px;color:var(--text-3)}
+.ig-note{font-size:12px;color:var(--text-3);line-height:1.55}
+.ig-up-btn{width:100%;margin-top:9px;padding:8px;background:var(--bg);border:1.5px dashed var(--border);border-radius:var(--radius-sm);cursor:pointer;font-size:12px;font-weight:600;color:var(--text-2);transition:all .15s}
+.ig-up-btn:hover{border-color:var(--blue);color:var(--blue)}
 
 /* LOADING */
-.loading{display:none;background:var(--s1);border:1px solid var(--border);border-radius:5px;padding:24px;text-align:center}
+.loading{display:none;margin:0 16px 14px;background:var(--white);border:1px solid var(--border-light);border-radius:var(--radius);padding:22px 18px;text-align:center;box-shadow:var(--shadow-sm)}
 .loading.show{display:block}
-.ld-t{font-family:var(--mono);font-size:9px;color:var(--dim);letter-spacing:.12em;text-transform:uppercase;margin-bottom:10px}
-.ld-bar{width:100%;height:2px;background:var(--b2);border-radius:1px;overflow:hidden;margin-bottom:10px}
-.ld-fill{height:100%;background:var(--acc);animation:ldp 1.8s ease-in-out infinite}
-@keyframes ldp{0%{width:0;margin-left:0}50%{width:60%;margin-left:20%}100%{width:0;margin-left:100%}}
-.ld-steps{display:flex;justify-content:center;gap:16px;flex-wrap:wrap}
-.ld-s{font-family:var(--mono);font-size:8px;display:flex;align-items:center;gap:4px;color:var(--dim)}
-.ld-s.done{color:var(--grn)}
-.ld-s.now{color:var(--acc)}
+.ld-t{font-size:13px;font-weight:600;margin-bottom:12px}
+.ld-bar{width:100%;height:3px;background:var(--border-light);border-radius:2px;overflow:hidden;margin-bottom:12px}
+.ld-fill{height:100%;border-radius:2px;background:var(--ig-grad);animation:ldp 1.6s ease-in-out infinite}
+@keyframes ldp{0%{width:0;margin-left:0}50%{width:70%;margin-left:15%}100%{width:0;margin-left:100%}}
+.ld-steps{display:flex;justify-content:center;gap:14px;flex-wrap:wrap}
+.ld-s{font-size:11px;font-weight:500;color:var(--text-3);display:flex;align-items:center;gap:3px}
+.ld-s.done{color:var(--green)}.ld-s.now{color:var(--blue);font-weight:700}
 .ld-dot{width:5px;height:5px;border-radius:50%;background:currentColor}
 
-/* RESULTS */
-.results{display:none;flex-direction:column;gap:10px}
-.results.show{display:flex}
-
-/* PLAN GRID — the actual suggested sequence */
-.plan-view{background:var(--s1);border:1px solid var(--border);border-radius:5px;overflow:hidden}
-.plan-hdr{padding:12px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
-.plan-title{font-size:13px;font-weight:700;color:#A8C0CC}
-.plan-sub{font-family:var(--mono);font-size:8px;color:var(--dim)}
-.plan-body{padding:14px}
-
-/* rows of 3 */
-.plan-rows{display:flex;flex-direction:column;gap:3px}
-.plan-row{display:grid;grid-template-columns:repeat(3,1fr);gap:3px}
-.plan-cell{aspect-ratio:1;border-radius:2px;overflow:hidden;position:relative}
-.plan-cell img{width:100%;height:100%;object-fit:cover;display:block}
-.plan-cell.empty{background:var(--b2);border:1px dashed var(--b3);display:flex;align-items:center;justify-content:center}
-.plan-cell.empty span{font-family:var(--mono);font-size:8px;color:var(--dim)}
-.pc-overlay{position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,.7) 0%,transparent 60%);pointer-events:none}
-.pc-num{position:absolute;top:4px;left:4px;font-family:var(--mono);font-size:7px;background:rgba(0,0,0,.65);color:rgba(255,255,255,.8);padding:1px 4px;border-radius:1px;z-index:2}
-.pc-k{position:absolute;bottom:4px;left:50%;transform:translateX(-50%);font-family:var(--mono);font-size:6.5px;background:rgba(0,0,0,.6);color:rgba(255,255,255,.55);padding:1px 4px;border-radius:1px;z-index:2;white-space:nowrap}
-.pc-tw{position:absolute;top:4px;right:4px;width:7px;height:7px;border-radius:50%;z-index:2}
-.pc-type{position:absolute;bottom:4px;left:4px;font-family:var(--mono);font-size:6px;background:rgba(0,0,0,.6);color:rgba(255,255,255,.5);padding:1px 3px;border-radius:1px;z-index:2}
-
-/* ROW ANALYSIS STRIP */
-.row-analysis{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;margin-top:8px;margin-bottom:12px}
-.ra-item{background:var(--s2);border-radius:3px;padding:8px 10px}
-.ra-k{font-family:var(--mono);font-size:7.5px;color:var(--dim);margin-bottom:3px}
-.ra-v{font-size:11px;font-weight:600;color:#7A9AB0}
-.ra-v.good{color:var(--grn)}
-.ra-v.warn{color:var(--acc)}
-
-/* COMBO CARDS (detail) */
-.combo-section{margin-top:12px}
-.cs-title{font-family:var(--mono);font-size:8px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);margin-bottom:8px}
-.combo-cards{display:flex;flex-direction:column;gap:8px}
-.cc{background:var(--s2);border:1px solid var(--border);border-radius:4px;padding:12px}
-.cc-top{display:flex;align-items:center;gap:8px;margin-bottom:8px}
-.cc-rank{font-family:var(--mono);font-size:8px;padding:2px 8px;border-radius:2px}
-.r1{background:#1A0C00;color:#C4853A;border:1px solid #3A2000}
-.r2{background:#0A1420;color:#5A90A8;border:1px solid #1A2A38}
-.r3{background:#0A140E;color:#4A8A6A;border:1px solid #182820}
-.cc-harm{font-size:11px;font-weight:700;color:#80A0B0}
-.cc-score{font-family:var(--mono);font-size:9px;color:var(--dim);margin-left:auto}
-.cc-pal{display:flex;height:10px;border-radius:2px;overflow:hidden;gap:1px;margin-bottom:8px}
-.cc-pal-s{flex:1}
-.cc-reason{font-size:11px;color:var(--mid);line-height:1.6;margin-bottom:8px}
-.cc-presets{display:grid;grid-template-columns:repeat(3,1fr);gap:4px}
-.cp{background:var(--s1);border-radius:2px;padding:7px}
-.cp-n{font-family:var(--mono);font-size:7px;color:var(--dim);margin-bottom:3px}
-.cp-v{font-size:10px;color:var(--mid);line-height:1.5}
-
 /* ERROR */
-.err{display:none;background:#100300;border:1px solid #350C00;border-radius:4px;padding:10px 14px;font-family:var(--mono);font-size:9px;color:#B04020}
+.err{display:none;margin:0 16px 10px;background:#fff5f5;border:1px solid #fecdd3;border-radius:var(--radius-sm);padding:10px 12px;font-size:12px;color:var(--red)}
 .err.show{display:block}
 
-#fin,#ref-fin{display:none}
-canvas{display:none}
+/* RESULTS */
+.results{display:none;flex-direction:column}
+.results.show{display:flex}
+
+/* PLAN CARD — instagram post style */
+.plan-post{background:var(--white);border-top:1px solid var(--border-light);border-bottom:1px solid var(--border-light);margin-bottom:8px}
+.pp-hdr{padding:11px 14px;display:flex;align-items:center;justify-content:space-between}
+.pp-user{display:flex;align-items:center;gap:9px}
+.pp-av{width:30px;height:30px;border-radius:50%;background:var(--ig-grad);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:white;flex-shrink:0}
+.pp-name{font-size:13px;font-weight:600}
+.pp-sub{font-size:11px;color:var(--text-3)}
+.pp-more{font-size:18px;color:var(--text-2);cursor:pointer;padding:0 4px}
+
+/* grid preview */
+.pp-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:2px}
+.ppc{aspect-ratio:1;position:relative;overflow:hidden;background:var(--border-light)}
+.ppc img{width:100%;height:100%;object-fit:cover;display:block}
+.ppc.empty{display:flex;align-items:center;justify-content:center}
+.ppc.empty span{font-size:20px;color:var(--text-3)}
+.ppc-badge{position:absolute;top:4px;left:4px;background:rgba(0,0,0,.6);color:white;font-size:9px;font-weight:700;padding:2px 5px;border-radius:3px;z-index:2;backdrop-filter:blur(4px)}
+.ppc-k{position:absolute;bottom:4px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.6);color:rgba(255,255,255,.9);font-size:8px;font-weight:600;padding:1px 4px;border-radius:2px;z-index:2;white-space:nowrap;backdrop-filter:blur(4px)}
+.ppc-dot{position:absolute;top:4px;right:4px;width:8px;height:8px;border-radius:50%;border:1.5px solid white;z-index:2}
+
+.pp-actions{padding:9px 14px;display:flex;align-items:center;justify-content:space-between}
+.pp-acts-l{display:flex;gap:14px}
+.pp-act{font-size:21px;cursor:pointer;transition:transform .15s;line-height:1}
+.pp-act:hover{transform:scale(1.12)}
+.pp-save{font-size:19px;cursor:pointer}
+
+.pp-pal{padding:0 14px 8px;display:flex;gap:3px}
+.ppal-c{flex:1;height:7px;border-radius:3px}
+
+.pp-row-temps{padding:2px 14px 8px;display:flex;gap:5px;flex-wrap:wrap}
+.rt{font-size:10px;font-weight:600;padding:2px 8px;border-radius:100px}
+.rt-w{background:#fff3e0;color:var(--warm)}.rt-c{background:#e3f2fd;color:var(--cool)}
+
+.pp-caption{padding:0 14px 6px;font-size:13px;line-height:1.5}
+.pp-caption strong{font-weight:700}
+.pp-harmony{padding:0 14px 12px;font-size:11px;color:var(--text-3)}
+
+/* DETAIL LIST */
+.detail-hdr{padding:14px 16px 8px;font-size:15px;font-weight:700}
+.post-item{background:var(--white);border-top:1px solid var(--border-light);padding:12px 14px;display:flex;gap:10px}
+.post-item:last-child{border-bottom:1px solid var(--border-light)}
+.pi-thumb{width:66px;height:66px;border-radius:var(--radius-sm);overflow:hidden;flex-shrink:0}
+.pi-thumb img{width:100%;height:100%;object-fit:cover}
+.pi-body{flex:1;min-width:0}
+.pi-top{display:flex;align-items:center;gap:5px;margin-bottom:4px;flex-wrap:wrap}
+.pi-slot{font-size:10px;font-weight:700;padding:2px 7px;border-radius:100px;background:var(--text);color:white}
+.pi-type{font-size:12px;font-weight:700;color:var(--text)}
+.pi-temp{font-size:10px;font-weight:600;padding:2px 7px;border-radius:100px;margin-left:auto}
+.pi-tw{background:#fff3e0;color:var(--warm)}.pi-tc{background:#e3f2fd;color:var(--cool)}
+.pi-reason{font-size:12px;color:var(--text-2);line-height:1.5;margin-bottom:5px}
+.pi-preset{font-size:11px;color:var(--text-3);background:var(--bg);border-radius:5px;padding:4px 7px;line-height:1.4}
+.pi-pal{display:flex;gap:2px;margin-top:5px}
+.pi-pc{width:14px;height:14px;border-radius:3px}
+
+/* BOTTOM NAV */
+.bnav{position:fixed;bottom:0;left:0;right:0;height:var(--nav-h);background:rgba(255,255,255,.97);backdrop-filter:blur(12px);border-top:1px solid var(--border-light);display:flex;z-index:200;padding:0 6px}
+.bni{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;cursor:pointer;background:none;border:none;transition:all .15s;padding:6px}
+.bni-icon{font-size:21px;line-height:1;transition:transform .15s}
+.bni-lbl{font-size:10px;font-weight:500;color:var(--text-3)}
+.bni.active .bni-lbl{color:var(--text);font-weight:700}
+.bni.active .bni-icon{transform:scale(1.08)}
+
+/* PAGES */
+.page{display:none}.page.active{display:block}
+
+/* ANIMATIONS */
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.results.show>*{animation:fadeUp .3s ease both}
+.results.show>*:nth-child(2){animation-delay:.08s}
+
+canvas{display:none}#fin,#ig-fin{display:none}
 </style>
 </head>
 <body>
 
-<div class="hdr">
-  <div><h1>Grid Composer Pro</h1><p>Extração de cor real · Planejamento 3/6/9 posts</p></div>
-  <div class="badge">@henriq.eu · beta</div>
+<div class="topbar">
+  <div class="logo">GridAI</div>
+  <div class="handle">@henriq.eu</div>
+  <div class="avatar">H</div>
 </div>
 
-<!-- PLAN SIZE TABS -->
-<div class="tabs" style="margin-bottom:16px;">
-  <button class="tab active" onclick="setPlanSize(3,this)">Próximos 3</button>
-  <button class="tab" onclick="setPlanSize(6,this)">Próximos 6</button>
-  <button class="tab" onclick="setPlanSize(9,this)">Próximos 9</button>
-</div>
+<!-- ═══ PAGE: COMPOSE ═══ -->
+<div class="page active" id="page-compose">
 
-<div class="layout">
-
-<!-- ═══ LEFT ═══ -->
-<div style="display:flex;flex-direction:column;gap:10px;">
-
-  <!-- HARMONY -->
-  <div class="panel">
-    <div class="ph"><span class="ph-title">Harmonia</span></div>
-    <div class="pb"><div class="hm-list" id="hm-list"></div></div>
+  <!-- Plan size stories -->
+  <div class="stories">
+    <button class="story active" onclick="setPlan(3,this)">
+      <div class="story-ring"><div class="story-inner">3</div></div>
+      <span class="story-lbl">posts</span>
+    </button>
+    <button class="story" onclick="setPlan(6,this)">
+      <div class="story-ring"><div class="story-inner">6</div></div>
+      <span class="story-lbl">posts</span>
+    </button>
+    <button class="story" onclick="setPlan(9,this)">
+      <div class="story-ring"><div class="story-inner">9</div></div>
+      <span class="story-lbl">posts</span>
+    </button>
   </div>
 
-  <!-- KELVIN -->
-  <div class="panel">
-    <div class="ph"><span class="ph-title">Faixa Kelvin</span></div>
-    <div class="pb">
-      <div style="width:100%;height:10px;border-radius:2px;background:linear-gradient(90deg,#FF5500,#FFB830,#FFEEBB,#C8DCFF,#80AAFF);margin-bottom:10px;"></div>
-      <div class="kslider">
-        <div class="krow">
-          <span class="klbl w">Q</span>
-          <input type="range" id="kw" min="1800" max="5500" step="100" value="3200" oninput="kUpdate()">
-          <span class="kval" id="kwv">3200K</span>
-        </div>
-        <div class="krow">
-          <span class="klbl c">F</span>
-          <input type="range" id="kc" min="5500" max="12000" step="100" value="7500" oninput="kUpdate()">
-          <span class="kval" id="kcv">7500K</span>
-        </div>
+  <!-- Upload -->
+  <div class="s">
+    <div class="ucard">
+      <div class="ucard-hdr">
+        <span class="ucard-title">Suas fotos</span>
+        <span class="ucnt" id="pcnt">0 fotos</span>
       </div>
-      <div class="kdiff">Δ <span id="kdiff" style="color:var(--mid)">4300K</span> contraste</div>
-    </div>
-  </div>
-
-  <!-- PATTERN -->
-  <div class="panel">
-    <div class="ph"><span class="ph-title">Padrão</span></div>
-    <div class="pb"><div class="pat-list" id="pat-list"></div></div>
-  </div>
-
-  <!-- INSTAGRAM -->
-  <div class="panel">
-    <div class="ph"><span class="ph-title">Grid atual</span><span style="font-family:var(--mono);font-size:7px;color:var(--dim)">opcional</span></div>
-    <div class="pb">
-      <div class="ig-block">
-        <div class="ig-toggle">
-          <div class="ig-opt on" id="ig-skip" onclick="setIG('skip')">Ignorar</div>
-          <div class="ig-opt" id="ig-upload" onclick="setIG('upload')">Upload</div>
-        </div>
-
-        <div id="ig-upload-area" style="display:none;flex-direction:column;gap:6px;">
-          <div class="ig-note">Faça upload das últimas 3 fotos do seu grid (da mais recente para a mais antiga)</div>
-          <div class="ig-mini-grid" id="ig-grid">
-            <div class="ig-mini-cell"><span style="font-size:18px;opacity:.2;display:flex;align-items:center;justify-content:center;height:100%">+</span></div>
-            <div class="ig-mini-cell"><span style="font-size:18px;opacity:.2;display:flex;align-items:center;justify-content:center;height:100%">+</span></div>
-            <div class="ig-mini-cell"><span style="font-size:18px;opacity:.2;display:flex;align-items:center;justify-content:center;height:100%">+</span></div>
-          </div>
-          <button class="btn" style="padding:6px;" onclick="document.getElementById('ig-fin').click()">Upload últimas 3 fotos</button>
-          <input type="file" id="ig-fin" accept="image/*" multiple onchange="handleIG(this.files)" style="display:none">
-        </div>
-
-        <div id="ig-note-area">
-          <div class="ig-note" style="margin-top:4px;">Instagram bloqueia acesso direto. Faça upload manual das últimas fotos para contexto de continuidade.</div>
-        </div>
+      <div class="dz" id="dz">
+        <div class="dz-icon">🖼️</div>
+        <div class="dz-t">Adicionar fotos</div>
+        <div class="dz-s">JPG · PNG · WEBP · até 12 fotos</div>
+        <div class="dz-btn">Selecionar</div>
       </div>
-    </div>
-  </div>
-
-</div>
-
-<!-- ═══ RIGHT ═══ -->
-<div class="main">
-
-  <div class="upload-box">
-    <div class="upload-hdr">
-      <span>Fotos para planejar</span>
-      <span class="upload-cnt" id="pcnt">0 fotos</span>
-    </div>
-
-    <!-- Color method badge -->
-    <div style="background:#080E0A;border:1px solid #142010;border-radius:3px;padding:8px 10px;margin-bottom:10px;display:flex;align-items:center;gap:8px;">
-      <span style="font-size:14px;">🔬</span>
-      <div>
-        <div style="font-family:var(--mono);font-size:8px;color:var(--grn);letter-spacing:.1em;text-transform:uppercase;">K-means LAB · Método Adobe Color</div>
-        <div style="font-family:var(--mono);font-size:7.5px;color:var(--dim);margin-top:2px;">Cores extraídas do pixel real — não estimadas pela IA</div>
+      <input type="file" id="fin" accept="image/*" multiple onchange="handleFiles(this.files)">
+      <canvas id="cv"></canvas>
+      <div class="exts" id="exts"></div>
+      <div class="thumbs" id="thumbs"></div>
+      <div class="go-wrap">
+        <button class="go-btn" id="go" onclick="compose()" disabled>
+          ✦&nbsp; Compor grid
+        </button>
       </div>
-    </div>
-
-    <div class="dz" id="dz">
-      <div class="dz-i">⬡</div>
-      <div class="dz-t">Arraste ou clique para adicionar fotos<br><span style="font-size:8px;opacity:.5;">JPG · PNG · WEBP · até 12 fotos</span></div>
-    </div>
-    <input type="file" id="fin" accept="image/*" multiple style="display:none" onchange="handleFiles(this.files)">
-    <canvas id="cv"></canvas>
-
-    <div class="extract-status" id="exts"></div>
-    <div class="thumbs" id="thumbs"></div>
-
-    <div class="actions">
-      <button class="btn" onclick="clearAll()">Limpar</button>
-      <button class="btn primary" id="go" onclick="compose()" disabled>◈ &nbsp;Compor grid</button>
     </div>
   </div>
 
@@ -318,319 +262,144 @@ canvas{display:none}
     <div class="ld-t" id="ldtxt">Analisando...</div>
     <div class="ld-bar"><div class="ld-fill"></div></div>
     <div class="ld-steps">
-      <div class="ld-s now" id="s1"><div class="ld-dot"></div>Extrair cores</div>
-      <div class="ld-s" id="s2"><div class="ld-dot"></div>Analisar conteúdo</div>
-      <div class="ld-s" id="s3"><div class="ld-dot"></div>Testar combinações</div>
-      <div class="ld-s" id="s4"><div class="ld-dot"></div>Montar plano</div>
+      <div class="ld-s now" id="s1"><div class="ld-dot"></div>Cores</div>
+      <div class="ld-s" id="s2"><div class="ld-dot"></div>Conteúdo</div>
+      <div class="ld-s" id="s3"><div class="ld-dot"></div>Combinar</div>
+      <div class="ld-s" id="s4"><div class="ld-dot"></div>Plano</div>
     </div>
   </div>
 
   <div class="results" id="results"></div>
 
 </div>
+
+<!-- ═══ PAGE: SETTINGS ═══ -->
+<div class="page" id="page-settings">
+
+  <div class="s" style="padding-top:18px">
+    <div class="s-title">Harmonia cromática</div>
+    <div class="hscroll" id="hm-list"></div>
+  </div>
+
+  <div class="s">
+    <div class="s-title">Padrão de grid</div>
+    <div class="prow" id="pat-list"></div>
+  </div>
+
+  <div class="s">
+    <div class="s-title">Temperatura (Kelvin)</div>
+    <div class="kcard">
+      <div class="ktrack"></div>
+      <div class="krow">
+        <span class="klbl kw">Q</span>
+        <input type="range" id="kw" min="1800" max="5500" step="100" value="3200" oninput="kUpdate()">
+        <span class="kval" id="kwv">3200K</span>
+      </div>
+      <div class="krow">
+        <span class="klbl kc">F</span>
+        <input type="range" id="kc" min="5500" max="12000" step="100" value="7500" oninput="kUpdate()">
+        <span class="kval" id="kcv">7500K</span>
+      </div>
+      <div class="kdiff-row">Contraste: <span class="kdiff-v" id="kdiff">4300K</span></div>
+    </div>
+  </div>
+
+  <div class="s">
+    <div class="s-title">Grid atual (contexto)</div>
+    <div class="igcard">
+      <div class="ig-toggle">
+        <div class="ig-opt on" id="ig-skip" onclick="setIG('skip')">Ignorar</div>
+        <div class="ig-opt" id="ig-up-opt" onclick="setIG('upload')">Upload das últimas 3</div>
+      </div>
+      <div id="ig-note-area">
+        <div class="ig-note">O Instagram bloqueia acesso direto. Faça upload das suas últimas 3 fotos para melhorar a sugestão de continuidade.</div>
+      </div>
+      <div id="ig-up-area" style="display:none">
+        <div class="ig-mini" id="ig-grid">
+          <div class="igmc"><div class="igmc-empty">+</div></div>
+          <div class="igmc"><div class="igmc-empty">+</div></div>
+          <div class="igmc"><div class="igmc-empty">+</div></div>
+        </div>
+        <button class="ig-up-btn" onclick="document.getElementById('ig-fin').click()">📎 Upload últimas 3 fotos</button>
+        <input type="file" id="ig-fin" accept="image/*" multiple onchange="handleIG(this.files)" style="display:none">
+      </div>
+    </div>
+  </div>
+
 </div>
 
+<!-- BOTTOM NAV -->
+<nav class="bnav">
+  <button class="bni active" onclick="showPage('compose',this)">
+    <span class="bni-icon">⊞</span>
+    <span class="bni-lbl">Compor</span>
+  </button>
+  <button class="bni" onclick="showPage('settings',this)">
+    <span class="bni-icon">⚙</span>
+    <span class="bni-lbl">Ajustes</span>
+  </button>
+</nav>
+
 <script>
-// ══════════════════════════════════════════════
-//  COLOR EXTRACTION — K-MEANS IN LAB SPACE
-//  Same method as Adobe Color
-// ══════════════════════════════════════════════
+// ── COLOR ENGINE ──────────────────────────────────────
+function rgbToLab(r,g,b){let R=r/255,G=g/255,B=b/255;R=R>.04045?Math.pow((R+.055)/1.055,2.4):R/12.92;G=G>.04045?Math.pow((G+.055)/1.055,2.4):G/12.92;B=B>.04045?Math.pow((B+.055)/1.055,2.4):B/12.92;let X=R*.4124564+G*.3575761+B*.1804375,Y=R*.2126729+G*.7151522+B*.0721750,Z=R*.0193339+G*.1191920+B*.9503041;X/=.95047;Z/=1.08883;const f=v=>v>.008856?Math.cbrt(v):(7.787*v)+16/116;return[116*f(Y)-16,500*(f(X)-f(Y)),200*(f(Y)-f(Z))]}
+function labToRgb(L,a,b){let Y=(L+16)/116,X=a/500+Y,Z=Y-b/200;X=(Math.pow(X,3)>.008856?Math.pow(X,3):(X-16/116)/7.787)*.95047;Y=(Math.pow(Y,3)>.008856?Math.pow(Y,3):(Y-16/116)/7.787);Z=(Math.pow(Z,3)>.008856?Math.pow(Z,3):(Z-16/116)/7.787)*1.08883;let R=X*3.2404542+Y*-1.5371385+Z*-.4985314,G=X*-.9692660+Y*1.8760108+Z*.0415560,B=X*.0556434+Y*-.2040259+Z*1.0572252;R=R>.0031308?1.055*Math.pow(R,1/2.4)-.055:12.92*R;G=G>.0031308?1.055*Math.pow(G,1/2.4)-.055:12.92*G;B=B>.0031308?1.055*Math.pow(B,1/2.4)-.055:12.92*B;return[Math.round(Math.max(0,Math.min(255,R*255))),Math.round(Math.max(0,Math.min(255,G*255))),Math.round(Math.max(0,Math.min(255,B*255)))]}
+function labDist(a,b){return Math.sqrt((a[0]-b[0])**2+(a[1]-b[1])**2+(a[2]-b[2])**2)}
+function rgbToHex(r,g,b){return'#'+[r,g,b].map(v=>v.toString(16).padStart(2,'0')).join('')}
+function extractColors(img,k=5){const cv=document.getElementById('cv');const MAX=100;let w=img.width,h=img.height;if(w>MAX||h>MAX){const r=Math.min(MAX/w,MAX/h);w=Math.round(w*r);h=Math.round(h*r)}cv.width=w;cv.height=h;const ctx=cv.getContext('2d');ctx.drawImage(img,0,0,w,h);const data=ctx.getImageData(0,0,w,h).data;const px=[];for(let i=0;i<data.length;i+=16){const r=data[i],g=data[i+1],b=data[i+2],a=data[i+3];if(a<128)continue;px.push(rgbToLab(r,g,b))}const c=[];c.push(px[Math.floor(Math.random()*px.length)]);for(let ci=1;ci<k;ci++){const d=px.map(p=>Math.min(...c.map(cc=>labDist(p,cc))));const t=d.reduce((a,b)=>a+b,0);let r=Math.random()*t;for(let pi=0;pi<px.length;pi++){r-=d[pi];if(r<=0){c.push([...px[pi]]);break}}if(c.length<=ci)c.push([...px[Math.floor(Math.random()*px.length)]])}let asgn=new Array(px.length).fill(0);for(let it=0;it<12;it++){for(let pi=0;pi<px.length;pi++){let best=0,bd=Infinity;for(let ci=0;ci<k;ci++){const dd=labDist(px[pi],c[ci]);if(dd<bd){bd=dd;best=ci}}asgn[pi]=best}for(let ci=0;ci<k;ci++){const cp=px.filter((_,pi)=>asgn[pi]===ci);if(!cp.length)continue;c[ci]=[cp.reduce((s,p)=>s+p[0],0)/cp.length,cp.reduce((s,p)=>s+p[1],0)/cp.length,cp.reduce((s,p)=>s+p[2],0)/cp.length]}}const cnt=new Array(k).fill(0);asgn.forEach(ci=>cnt[ci]++);const res=c.map((cc,ci)=>{const[r,g,b]=labToRgb(cc[0],cc[1],cc[2]);return{hex:rgbToHex(r,g,b),pct:Math.round(cnt[ci]/px.length*100)}});res.sort((a,b)=>b.pct-a.pct);return res.slice(0,5)}
+function estimateKelvin(colors){if(!colors.length)return 6500;const hex=colors[0].hex;const r=parseInt(hex.slice(1,3),16),b=parseInt(hex.slice(5,7),16);const rb=r/(b+1);if(rb>3.5)return 1900+Math.round(Math.random()*400);if(rb>2.5)return 2600+Math.round(Math.random()*500);if(rb>1.8)return 3300+Math.round(Math.random()*600);if(rb>1.3)return 4300+Math.round(Math.random()*600);if(rb>1.0)return 5600+Math.round(Math.random()*800);if(rb>0.7)return 6900+Math.round(Math.random()*800);if(rb>0.5)return 8100+Math.round(Math.random()*1000);return 9500+Math.round(Math.random()*500)}
 
-function rgbToLab(r, g, b) {
-  // sRGB → linear
-  let R = r / 255, G = g / 255, B = b / 255;
-  R = R > 0.04045 ? Math.pow((R + 0.055) / 1.055, 2.4) : R / 12.92;
-  G = G > 0.04045 ? Math.pow((G + 0.055) / 1.055, 2.4) : G / 12.92;
-  B = B > 0.04045 ? Math.pow((B + 0.055) / 1.055, 2.4) : B / 12.92;
-  // linear → XYZ (D65)
-  let X = R * 0.4124564 + G * 0.3575761 + B * 0.1804375;
-  let Y = R * 0.2126729 + G * 0.7151522 + B * 0.0721750;
-  let Z = R * 0.0193339 + G * 0.1191920 + B * 0.9503041;
-  X /= 0.95047; Y /= 1.00000; Z /= 1.08883;
-  const f = v => v > 0.008856 ? Math.cbrt(v) : (7.787 * v) + 16/116;
-  return [116 * f(Y) - 16, 500 * (f(X) - f(Y)), 200 * (f(Y) - f(Z))];
-}
-
-function labToRgb(L, a, b) {
-  let Y = (L + 16) / 116, X = a / 500 + Y, Z = Y - b / 200;
-  X = (Math.pow(X, 3) > 0.008856 ? Math.pow(X, 3) : (X - 16/116) / 7.787) * 0.95047;
-  Y = (Math.pow(Y, 3) > 0.008856 ? Math.pow(Y, 3) : (Y - 16/116) / 7.787) * 1.00000;
-  Z = (Math.pow(Z, 3) > 0.008856 ? Math.pow(Z, 3) : (Z - 16/116) / 7.787) * 1.08883;
-  let R = X *  3.2404542 + Y * -1.5371385 + Z * -0.4985314;
-  let G = X * -0.9692660 + Y *  1.8760108 + Z *  0.0415560;
-  let B = X *  0.0556434 + Y * -0.2040259 + Z *  1.0572252;
-  R = R > 0.0031308 ? 1.055 * Math.pow(R, 1/2.4) - 0.055 : 12.92 * R;
-  G = G > 0.0031308 ? 1.055 * Math.pow(G, 1/2.4) - 0.055 : 12.92 * G;
-  B = B > 0.0031308 ? 1.055 * Math.pow(B, 1/2.4) - 0.055 : 12.92 * B;
-  return [Math.round(Math.max(0,Math.min(255,R*255))), Math.round(Math.max(0,Math.min(255,G*255))), Math.round(Math.max(0,Math.min(255,B*255)))];
-}
-
-function labDist(a, b) {
-  return Math.sqrt((a[0]-b[0])**2 + (a[1]-b[1])**2 + (a[2]-b[2])**2);
-}
-
-function rgbToHex(r, g, b) {
-  return '#' + [r,g,b].map(v => v.toString(16).padStart(2,'0')).join('');
-}
-
-function extractColors(img, k = 5) {
-  const cv = document.getElementById('cv');
-  const MAX = 120;
-  let w = img.width, h = img.height;
-  if (w > MAX || h > MAX) {
-    const ratio = Math.min(MAX/w, MAX/h);
-    w = Math.round(w * ratio); h = Math.round(h * ratio);
-  }
-  cv.width = w; cv.height = h;
-  const ctx = cv.getContext('2d');
-  ctx.drawImage(img, 0, 0, w, h);
-  const data = ctx.getImageData(0, 0, w, h).data;
-
-  // sample pixels → LAB
-  const pixels = [];
-  const step = 4; // sample every 4th pixel for speed
-  for (let i = 0; i < data.length; i += 4 * step) {
-    const r = data[i], g = data[i+1], b = data[i+2], a = data[i+3];
-    if (a < 128) continue; // skip transparent
-    pixels.push(rgbToLab(r, g, b));
-  }
-
-  // k-means init: spread initial centroids
-  const centroids = [];
-  centroids.push(pixels[Math.floor(Math.random() * pixels.length)]);
-  for (let ci = 1; ci < k; ci++) {
-    // k-means++ init: pick next centroid weighted by distance
-    const dists = pixels.map(p => Math.min(...centroids.map(c => labDist(p, c))));
-    const total = dists.reduce((a,b) => a+b, 0);
-    let r = Math.random() * total;
-    for (let pi = 0; pi < pixels.length; pi++) {
-      r -= dists[pi];
-      if (r <= 0) { centroids.push([...pixels[pi]]); break; }
-    }
-    if (centroids.length <= ci) centroids.push([...pixels[Math.floor(Math.random()*pixels.length)]]);
-  }
-
-  // iterate k-means
-  const ITERS = 12;
-  let assignments = new Array(pixels.length).fill(0);
-  for (let iter = 0; iter < ITERS; iter++) {
-    // assign
-    for (let pi = 0; pi < pixels.length; pi++) {
-      let best = 0, bestD = Infinity;
-      for (let ci = 0; ci < k; ci++) {
-        const d = labDist(pixels[pi], centroids[ci]);
-        if (d < bestD) { bestD = d; best = ci; }
-      }
-      assignments[pi] = best;
-    }
-    // update centroids
-    for (let ci = 0; ci < k; ci++) {
-      const clusterPixels = pixels.filter((_,pi) => assignments[pi] === ci);
-      if (clusterPixels.length === 0) continue;
-      centroids[ci] = [
-        clusterPixels.reduce((s,p) => s+p[0], 0) / clusterPixels.length,
-        clusterPixels.reduce((s,p) => s+p[1], 0) / clusterPixels.length,
-        clusterPixels.reduce((s,p) => s+p[2], 0) / clusterPixels.length,
-      ];
-    }
-  }
-
-  // count cluster sizes, sort by size
-  const counts = new Array(k).fill(0);
-  assignments.forEach(ci => counts[ci]++);
-  const results = centroids.map((c, ci) => {
-    const [r,g,b] = labToRgb(c[0], c[1], c[2]);
-    return { hex: rgbToHex(r,g,b), pct: Math.round(counts[ci]/pixels.length*100), lab: c };
-  });
-  results.sort((a,b) => b.pct - a.pct);
-  return results.slice(0, 5);
-}
-
-// Estimate Kelvin from dominant color (heuristic)
-function estimateKelvin(colors) {
-  if (!colors.length) return 6500;
-  const top = colors[0];
-  const hex = top.hex;
-  const r = parseInt(hex.slice(1,3),16);
-  const g = parseInt(hex.slice(3,5),16);
-  const b = parseInt(hex.slice(5,7),16);
-  // ratio based heuristic
-  const rb = r / (b + 1);
-  if (rb > 3.5) return 1800 + Math.round(Math.random()*400);
-  if (rb > 2.5) return 2500 + Math.round(Math.random()*500);
-  if (rb > 1.8) return 3200 + Math.round(Math.random()*600);
-  if (rb > 1.3) return 4200 + Math.round(Math.random()*600);
-  if (rb > 1.0) return 5500 + Math.round(Math.random()*800);
-  if (rb > 0.7) return 6800 + Math.round(Math.random()*800);
-  if (rb > 0.5) return 8000 + Math.round(Math.random()*1000);
-  return 9500 + Math.round(Math.random()*500);
-}
-
-// ══════════════════════════════════════════════
-//  STATE
-// ══════════════════════════════════════════════
-const HARMONIES = [
-  {id:'complementary',name:'Complementar',sub:'180° · máximo',dot:'linear-gradient(135deg,#C4853A,#3A5870)'},
-  {id:'analogous',name:'Análogo',sub:'0–60° · suave',dot:'linear-gradient(135deg,#4A8A9A,#5A8A6A,#8A9A4A)'},
-  {id:'split',name:'Split Complementar',sub:'±30° split',dot:'linear-gradient(135deg,#C4853A,#3A7870,#3A4A88)'},
-  {id:'triad',name:'Tríade',sub:'120° · vibrante',dot:'linear-gradient(135deg,#C4853A,#3A7A9A,#8A3A9A)'},
-  {id:'monochrome',name:'Monocromático',sub:'1 matiz',dot:'linear-gradient(135deg,#0A2A3A,#1A5A7A,#4A9AB8)'},
-  {id:'square',name:'Quadrado',sub:'4×90° · complexo',dot:'linear-gradient(135deg,#C4853A,#3A8A4A,#3A5870,#8A3A7A)'},
-  {id:'shades',name:'Sombras',sub:'dark · moody',dot:'linear-gradient(135deg,#0A0E12,#142028,#1C3040)'},
-  {id:'custom',name:'IA decide',sub:'melhor harmonia',dot:'linear-gradient(135deg,#3A3A3A,#5A5A5A,#7A7A7A)'},
+// ── STATE ────────────────────────────────────────────
+const HARMONIES=[
+  {id:'complementary',name:'Complementar',dot:'linear-gradient(135deg,#C4853A,#3A5870)'},
+  {id:'analogous',name:'Análogo',dot:'linear-gradient(135deg,#4A8A9A,#5A8A6A)'},
+  {id:'split',name:'Split',dot:'linear-gradient(135deg,#C4853A,#3A7870,#3A4A88)'},
+  {id:'triad',name:'Tríade',dot:'linear-gradient(135deg,#C4853A,#3A7A9A,#8A3A9A)'},
+  {id:'monochrome',name:'Monocrom.',dot:'linear-gradient(135deg,#0A2A3A,#4A9AB8)'},
+  {id:'square',name:'Quadrado',dot:'linear-gradient(135deg,#C4853A,#3A8A4A,#8A3A7A)'},
+  {id:'shades',name:'Sombras',dot:'linear-gradient(135deg,#111,#1C3040)'},
+  {id:'custom',name:'IA decide',dot:'linear-gradient(135deg,#888,#444)'},
 ];
-
-const PATTERNS = [
+const PATTERNS=[
   {id:'checkerboard',name:'Xadrez',cells:[false,true,false,true,false,true]},
   {id:'columns',name:'Colunas',cells:[false,false,true,false,false,true]},
   {id:'rows',name:'Linhas',cells:[true,true,true,false,false,false]},
   {id:'diagonal',name:'Diagonal',cells:[false,false,true,false,true,false]},
-  {id:'free',name:'Livre (IA)',cells:[null,null,null,null,null,null]},
+  {id:'free',name:'Livre',cells:[null,null,null,null,null,null]},
 ];
+let selH='complementary',selP='checkerboard',photos=[],igPhotos=[],planSize=3,igMode='skip';
 
-let selH = 'complementary', selP = 'checkerboard';
-let photos = []; // {file, dataUrl, colors, kelvin, idx}
-let igPhotos = []; // last 3 IG photos
-let planSize = 3;
-let igMode = 'skip';
-
-// ══════════════════════════════════════════════
-//  INIT
-// ══════════════════════════════════════════════
-function init() {
-  renderHarmonies(); renderPatterns();
-  setupDrop();
-  kUpdate();
-}
-
-function renderHarmonies() {
-  document.getElementById('hm-list').innerHTML = HARMONIES.map(h => `
-    <div class="hm ${h.id===selH?'on':''}" onclick="selHarmony('${h.id}')">
-      <div class="hm-dot" style="background:${h.dot}"></div>
-      <div><div class="hm-n">${h.name}</div><div class="hm-s">${h.sub}</div></div>
-      <div class="hm-ck"></div>
-    </div>`).join('');
-}
-
-function renderPatterns() {
-  document.getElementById('pat-list').innerHTML = PATTERNS.map(p => {
-    const cells = p.cells.map(v=>`<div class="pg ${v===true?'pg-w':v===false?'pg-c':'pg-n'}"></div>`).join('');
-    return `<div class="pat ${p.id===selP?'on':''}" onclick="selPattern('${p.id}')">
-      <div class="pat-g">${cells}</div>
-      <span class="pat-n">${p.name}</span>
-    </div>`;
-  }).join('');
-}
-
+function init(){renderHarmonies();renderPatterns();setupDrop();kUpdate()}
+function renderHarmonies(){document.getElementById('hm-list').innerHTML=HARMONIES.map(h=>`<div class="hchip ${h.id===selH?'on':''}" onclick="selHarmony('${h.id}')"><div class="hchip-dot" style="background:${h.dot}"></div>${h.name}</div>`).join('')}
+function renderPatterns(){document.getElementById('pat-list').innerHTML=PATTERNS.map(p=>{const cells=p.cells.map(v=>`<div class="pm ${v===true?'w':''}"></div>`).join('');return`<div class="pchip ${p.id===selP?'on':''}" onclick="selPattern('${p.id}')"><div class="pg-mini">${cells}</div>${p.name}</div>`}).join('')}
 function selHarmony(id){selH=id;renderHarmonies()}
 function selPattern(id){selP=id;renderPatterns()}
-function kUpdate(){
-  const w=document.getElementById('kw').value,c=document.getElementById('kc').value;
-  document.getElementById('kwv').textContent=w+'K';
-  document.getElementById('kcv').textContent=c+'K';
-  document.getElementById('kdiff').textContent=(c-w)+'K';
-}
-function setPlanSize(n,btn){
-  planSize=n;
-  document.querySelectorAll('.tabs .tab').forEach(t=>t.classList.remove('active'));
-  btn.classList.add('active');
-}
-function setIG(mode){
-  igMode=mode;
-  document.getElementById('ig-skip').className='ig-opt'+(mode==='skip'?' on':'');
-  document.getElementById('ig-upload').className='ig-opt'+(mode==='upload'?' on':'');
-  document.getElementById('ig-upload-area').style.display=mode==='upload'?'flex':'none';
-  document.getElementById('ig-note-area').style.display=mode==='skip'?'block':'none';
-}
+function kUpdate(){const w=document.getElementById('kw').value,c=document.getElementById('kc').value;document.getElementById('kwv').textContent=w+'K';document.getElementById('kcv').textContent=c+'K';document.getElementById('kdiff').textContent=(c-w)+'K'}
+function setPlan(n,btn){planSize=n;document.querySelectorAll('.story').forEach(t=>t.classList.remove('active'));btn.classList.add('active');document.getElementById('go').disabled=photos.length<planSize}
+function setIG(mode){igMode=mode;document.getElementById('ig-skip').className='ig-opt'+(mode==='skip'?' on':'');document.getElementById('ig-up-opt').className='ig-opt'+(mode==='upload'?' on':'');document.getElementById('ig-up-area').style.display=mode==='upload'?'block':'none';document.getElementById('ig-note-area').style.display=mode==='skip'?'block':'none'}
+function showPage(id,btn){document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));document.querySelectorAll('.bni').forEach(b=>b.classList.remove('active'));document.getElementById('page-'+id).classList.add('active');btn.classList.add('active');window.scrollTo({top:0,behavior:'smooth'})}
 
-// ══════════════════════════════════════════════
-//  UPLOAD + COLOR EXTRACTION
-// ══════════════════════════════════════════════
-function setupDrop(){
-  const dz=document.getElementById('dz');
-  dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('drag')});
-  dz.addEventListener('dragleave',()=>dz.classList.remove('drag'));
-  dz.addEventListener('drop',e=>{e.preventDefault();dz.classList.remove('drag');handleFiles(e.dataTransfer.files)});
-  dz.addEventListener('click',()=>document.getElementById('fin').click());
+function setupDrop(){const dz=document.getElementById('dz');dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('drag')});dz.addEventListener('dragleave',()=>dz.classList.remove('drag'));dz.addEventListener('drop',e=>{e.preventDefault();dz.classList.remove('drag');handleFiles(e.dataTransfer.files)});dz.addEventListener('click',()=>document.getElementById('fin').click())}
+
+async function handleFiles(files){
+  const rem=12-photos.length;
+  const toAdd=Array.from(files).slice(0,rem).filter(f=>f.type.startsWith('image/'));
+  const exts=document.getElementById('exts');exts.className='exts';exts.textContent=`Extraindo cores de ${toAdd.length} foto(s)...`;
+  for(const file of toAdd){const url=await readFile(file);const img=await loadImg(url);const colors=extractColors(img,5);const kelvin=estimateKelvin(colors);photos.push({file,dataUrl:url,colors,kelvin});renderThumbs();updateCnt()}
+  exts.className='exts ok';exts.textContent=`✓ ${photos.length} foto(s) · k-means LAB`;
+  document.getElementById('go').disabled=photos.length<planSize;
 }
-
-async function handleFiles(files) {
-  const remaining = 12 - photos.length;
-  const toAdd = Array.from(files).slice(0,remaining).filter(f=>f.type.startsWith('image/'));
-  document.getElementById('exts').textContent = `Extraindo cores de ${toAdd.length} foto(s)...`;
-
-  for (const file of toAdd) {
-    const dataUrl = await readFile(file);
-    const img = await loadImage(dataUrl);
-    const colors = extractColors(img, 5);
-    const kelvin = estimateKelvin(colors);
-    photos.push({file, dataUrl, colors, kelvin, idx: photos.length});
-    renderThumbs();
-    updateCount();
-  }
-  document.getElementById('exts').textContent = `✓ Cores extraídas via k-means LAB — ${photos.length} foto(s) prontas`;
-  document.getElementById('go').disabled = photos.length < planSize;
-}
-
-function readFile(file){
-  return new Promise(res=>{const r=new FileReader();r.onload=e=>res(e.target.result);r.readAsDataURL(file)});
-}
-function loadImage(src){
-  return new Promise(res=>{const i=new Image();i.onload=()=>res(i);i.src=src});
-}
-
-async function handleIG(files){
-  const list = Array.from(files).slice(0,3);
-  igPhotos = [];
-  const grid = document.getElementById('ig-grid');
-  grid.innerHTML = '';
-  for (const f of list) {
-    const dataUrl = await readFile(f);
-    const img = await loadImage(dataUrl);
-    const colors = extractColors(img,5);
-    const kelvin = estimateKelvin(colors);
-    igPhotos.push({dataUrl,colors,kelvin});
-    const cell = document.createElement('div');
-    cell.className='ig-mini-cell';
-    cell.innerHTML=`<img src="${dataUrl}"><div class="ig-mini-lbl">IG</div>`;
-    grid.appendChild(cell);
-  }
-  // pad
-  while(grid.children.length < 3){
-    const cell=document.createElement('div');cell.className='ig-mini-cell';
-    cell.innerHTML='<span style="font-size:16px;opacity:.2;display:flex;align-items:center;justify-content:center;height:100%">+</span>';
-    grid.appendChild(cell);
-  }
-}
-
-function renderThumbs(){
-  document.getElementById('thumbs').innerHTML = photos.map((p,i)=>{
-    const pal = (p.colors||[]).slice(0,5).map(c=>`<div class="tp" style="background:${c.hex}"></div>`).join('');
-    return `<div class="thumb" draggable="true"
-      ondragstart="dragStart(${i})" ondragover="dragOver(event)" ondrop="drop(event,${i})">
-      <img src="${p.dataUrl}">
-      <div class="thumb-del" onclick="removePhoto(${i})">×</div>
-      <div class="thumb-n">${i+1}</div>
-      <div class="thumb-pal">${pal}</div>
-    </div>`;
-  }).join('');
-}
-
-function updateCount(){
-  document.getElementById('pcnt').textContent=`${photos.length} foto${photos.length!==1?'s':''}`;
-}
-
-function removePhoto(i){photos.splice(i,1);photos.forEach((p,j)=>p.idx=j);renderThumbs();updateCount();document.getElementById('go').disabled=photos.length<planSize}
-function clearAll(){photos=[];igPhotos=[];renderThumbs();updateCount();document.getElementById('fin').value='';document.getElementById('go').disabled=true;document.getElementById('results').classList.remove('show');document.getElementById('results').innerHTML='';document.getElementById('err').classList.remove('show');document.getElementById('exts').textContent=''}
-
+function readFile(f){return new Promise(r=>{const fr=new FileReader();fr.onload=e=>r(e.target.result);fr.readAsDataURL(f)})}
+function loadImg(s){return new Promise(r=>{const i=new Image();i.onload=()=>r(i);i.src=s})}
+async function handleIG(files){igPhotos=[];const g=document.getElementById('ig-grid');g.innerHTML='';for(const f of Array.from(files).slice(0,3)){const url=await readFile(f);const img=await loadImg(url);igPhotos.push({dataUrl:url,colors:extractColors(img,5),kelvin:estimateKelvin(extractColors(img,5))});const c=document.createElement('div');c.className='igmc';c.innerHTML=`<img src="${url}">`;g.appendChild(c)}while(g.children.length<3){const c=document.createElement('div');c.className='igmc';c.innerHTML='<div class="igmc-empty">+</div>';g.appendChild(c)}}
+function renderThumbs(){document.getElementById('thumbs').innerHTML=photos.map((p,i)=>{const pal=(p.colors||[]).slice(0,5).map(c=>`<div class="tp" style="background:${c.hex}"></div>`).join('');return`<div class="thumb" draggable="true" ondragstart="dragStart(${i})" ondragover="dragOver(event)" ondrop="drop(event,${i})"><img src="${p.dataUrl}"><div class="tov"></div><div class="tdel" onclick="removePhoto(${i})">✕</div><div class="tn">${i+1}</div><div class="tpal">${pal}</div></div>`}).join('')}
+function updateCnt(){document.getElementById('pcnt').textContent=`${photos.length} foto${photos.length!==1?'s':''}`}
+function removePhoto(i){photos.splice(i,1);photos.forEach((p,j)=>p.idx=j);renderThumbs();updateCnt();document.getElementById('go').disabled=photos.length<planSize}
 let dragI=null;
 function dragStart(i){dragI=i}
 function dragOver(e){e.preventDefault()}
 function drop(e,i){e.preventDefault();if(dragI===null||dragI===i)return;const m=photos.splice(dragI,1)[0];photos.splice(i,0,m);dragI=null;renderThumbs()}
 
-// ══════════════════════════════════════════════
-//  COMPOSE
-// ══════════════════════════════════════════════
 async function compose(){
   if(photos.length<planSize)return;
   document.getElementById('err').classList.remove('show');
@@ -639,187 +408,77 @@ async function compose(){
   document.getElementById('loading').classList.add('show');
   document.getElementById('go').disabled=true;
   step(1);
-
-  try {
-    const harmony = HARMONIES.find(h=>h.id===selH);
-    const pattern = PATTERNS.find(p=>p.id===selP);
-    const kw = document.getElementById('kw').value;
-    const kc = document.getElementById('kc').value;
-
-    // Build color context string from extracted colors
-    const colorContext = photos.map((p,i)=>{
-      const cols = (p.colors||[]).map(c=>`${c.hex}(${c.pct}%)`).join(' ');
-      const temp = p.kelvin < 5000 ? 'QUENTE' : 'FRIO';
-      return `FOTO ${i+1}: kelvin~${p.kelvin}K temp=${temp} cores=[${cols}]`;
-    }).join('\n');
-
-    const igContext = igPhotos.length > 0
-      ? '\nÚLTIMAS 3 FOTOS DO GRID ATUAL (contexto de continuidade):\n' +
-        igPhotos.map((p,i)=>`IG${i+1}: kelvin~${p.kelvin}K cores=[${(p.colors||[]).map(c=>c.hex+'('+c.pct+'%)').join(' ')}]`).join('\n')
-      : '';
-
+  try{
+    const H=HARMONIES.find(h=>h.id===selH),P=PATTERNS.find(p=>p.id===selP);
+    const kw=document.getElementById('kw').value,kc=document.getElementById('kc').value;
+    const colorCtx=photos.map((p,i)=>`FOTO ${i+1}: kelvin~${p.kelvin}K temp=${p.kelvin<5000?'QUENTE':'FRIO'} cores=[${(p.colors||[]).map(c=>c.hex+'('+c.pct+'%)').join(' ')}]`).join('\n');
+    const igCtx=igPhotos.length>0?'\nULTIMAS 3 IG:\n'+igPhotos.map((p,i)=>`IG${i+1}: kelvin~${p.kelvin}K cores=[${(p.colors||[]).map(c=>c.hex+'('+c.pct+'%)').join(' ')}]`).join('\n'):'';
     step(2);
-
-    // Build content: only send images + text prompt (no image for IG, just color data)
-    const content = [];
-    photos.forEach((p,i)=>{
-      content.push({type:'image',source:{type:'base64',media_type:p.file.type||'image/jpeg',data:p.dataUrl.split(',')[1]}});
-      content.push({type:'text',text:`[FOTO ${i+1}]`});
-    });
-
+    const content=[];
+    photos.forEach((p,i)=>{content.push({type:'image',source:{type:'base64',media_type:p.file.type||'image/jpeg',data:p.dataUrl.split(',')[1]}});content.push({type:'text',text:`[FOTO ${i+1}]`})});
     step(3);
-
-    const prompt = buildPrompt(harmony, pattern, kw, kc, colorContext, igContext, planSize);
-    content.push({type:'text',text:prompt});
-
-    const res = await fetch('/api/analyze',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:4000,messages:[{role:'user',content}]})
-    });
-
+    content.push({type:'text',text:`Especialista grid Instagram outdoor/adventure.\n\nCORES K-MEANS LAB:\n${colorCtx}\n${igCtx}\n\nCONFIG: Harmonia=${H.name} Padrao=${P.name} Kelvin-Q=ate${kw}K Kelvin-F=acima${kc}K Posts=${planSize}\n\nMonte o melhor plano de ${planSize} posts. Retorne APENAS JSON sem markdown:\n{"plan":[{"slot":1,"photo":N,"temp":"cool","kelvin":"7500K","type":"TIPO","harmony_role":"papel","reason":"razao max 70 chars","preset":"ajustes PS/LR max 60 chars"}],"overview":"visao geral 1 frase","harmony_note":"harmonia em 1 frase"}\n\nSlots:${Array.from({length:planSize},(_,i)=>i+1).join(',')} Fotos:1-${photos.length} Kelvin:menor=quente maior=frio`});
+    const res=await fetch('/api/analyze',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:4000,messages:[{role:'user',content}]})});
     if(!res.ok){const e=await res.json();throw new Error(e.error?.message||`HTTP ${res.status}`)}
-    const data = await res.json();
-    const raw = data.content.filter(b=>b.type==='text').map(b=>b.text).join('');
-
+    const data=await res.json();
+    const raw=data.content.filter(b=>b.type==='text').map(b=>b.text).join('');
     step(4);
-
-    const cleaned = raw.replace(/```json\s*/gi,'').replace(/```\s*/g,'').trim();
+    const cleaned=raw.replace(/```json\s*/gi,'').replace(/```\s*/g,'').trim();
     let parsed;
-    try { parsed = JSON.parse(cleaned); }
-    catch {
-      try {
-        const m = cleaned.match(/\{[\s\S]*\}/);
-        if(!m) throw new Error('no json');
-        parsed = JSON.parse(m[0].replace(/,\s*([}\]])/g,'$1'));
-      } catch {
-        const arrM = cleaned.match(/"plan"\s*:\s*(\[[\s\S]*?\])\s*[,}]/);
-        if(arrM) parsed = {plan: JSON.parse(arrM[1])};
-        else throw new Error('JSON inválido. Tente novamente.');
-      }
-    }
-
+    try{parsed=JSON.parse(cleaned)}catch{try{const m=cleaned.match(/\{[\s\S]*\}/);if(!m)throw 0;parsed=JSON.parse(m[0].replace(/,\s*([}\]])/g,'$1'))}catch{const a=cleaned.match(/"plan"\s*:\s*(\[[\s\S]*?\])\s*[,}]/);if(a)parsed={plan:JSON.parse(a[1])};else throw new Error('JSON inválido — tente novamente.')}}
     renderResults(parsed);
-
-  } catch(e) {
-    document.getElementById('err').textContent='⚠ '+e.message;
-    document.getElementById('err').classList.add('show');
-  } finally {
-    document.getElementById('loading').classList.remove('show');
-    document.getElementById('go').disabled=false;
-  }
+  }catch(e){document.getElementById('err').textContent='⚠ '+e.message;document.getElementById('err').classList.add('show')}
+  finally{document.getElementById('loading').classList.remove('show');document.getElementById('go').disabled=false}
 }
 
-function step(n){
-  ['s1','s2','s3','s4'].forEach((id,i)=>{
-    const el=document.getElementById(id);
-    el.className='ld-s'+(i+1<n?' done':i+1===n?' now':'');
-  });
-  const msgs=['','Extraindo e validando cores reais...','Analisando composição e conteúdo...','Testando combinações e harmonia...','Montando plano de '+planSize+' posts...'];
-  document.getElementById('ldtxt').textContent=msgs[n];
-}
+function step(n){['s1','s2','s3','s4'].forEach((id,i)=>{document.getElementById(id).className='ld-s'+(i+1<n?' done':i+1===n?' now':'')});const m=['','Extraindo cores...','Analisando fotos...','Combinando...','Montando plano...'];document.getElementById('ldtxt').textContent=m[n]}
 
-function buildPrompt(harmony, pattern, kw, kc, colorCtx, igCtx, size){
-  return `Especialista em color grading e grid Instagram outdoor/adventure.
-
-DADOS DE COR EXTRAÍDOS VIA K-MEANS LAB (valores reais do pixel — use estes, não tente reestimar):
-${colorCtx}
-${igCtx}
-
-CONFIGURAÇÃO:
-- Harmonia: ${harmony.name}
-- Padrão: ${pattern.name}  
-- Kelvin quente: até ${kw}K · frio: acima ${kc}K
-- Posts a planejar: ${size} (${Math.ceil(size/3)} linha${size>3?'s':''} de 3)
-
-TAREFA: Monte o melhor plano de ${size} posts com as fotos disponíveis (pode repetir fotos em sequências maiores). Para cada slot indique: qual foto, por que funciona cromaticamente, tipo composicional, preset rápido.
-
-Retorne APENAS este JSON (sem texto fora, sem markdown, sem backticks):
-{"plan":[{"slot":1,"photo":N,"col":"col1","temp":"cool","kelvin":"${kw>4000?'7500K':'3500K'}","type":"TIPO","harmony_role":"papel na harmonia","reason":"razao max 70 chars","preset":"ajustes PS/LR max 60 chars"}],"overview":"visao geral do plano em 1 frase","harmony_note":"como a harmonia ${harmony.name} se manifesta"}
-
-Slots: ${Array.from({length:size},(_,i)=>i+1).join(', ')}
-Fotos disponíveis: 1 a ${photos.length}
-Xadrez correto: slot ímpar=frio slot par=quente (se padrão xadrez)
-Kelvin: menor=quente/laranja, maior=frio/azul`;
-}
-
-// ══════════════════════════════════════════════
-//  RENDER
-// ══════════════════════════════════════════════
 function renderResults(data){
-  const plan = data.plan || [];
-  const results = document.getElementById('results');
-
-  // build rows of 3
-  const rows = [];
-  for(let i=0;i<plan.length;i+=3){rows.push(plan.slice(i,i+3))}
-
-  const rowsHtml = rows.map((row,ri) => {
-    const cells = row.map((slot,ci) => {
-      const photo = photos[slot.photo - 1];
-      const isWarm = slot.temp === 'warm';
-      if(!photo) return `<div class="plan-cell empty"><span>+${slot.slot}</span></div>`;
-      return `<div class="plan-cell">
-        <img src="${photo.dataUrl}">
-        <div class="pc-overlay"></div>
-        <div class="pc-num">+${slot.slot}</div>
-        <div class="pc-k">${slot.kelvin}</div>
-        <div class="pc-tw" style="background:${isWarm?'var(--acc)':'var(--acc2)'}"></div>
-        <div class="pc-type">${slot.type}</div>
-      </div>`;
-    }).join('');
-    // row analysis
-    const rowTemps = row.map(s=>s.temp==='warm'?'Q':'F').join(' · ');
-    const rowHarmony = row[0]?.harmony_role||'';
-    return `
-      <div class="plan-row">${cells}</div>
-      <div class="row-analysis">
-        <div class="ra-item"><div class="ra-k">Temperatura</div><div class="ra-v">${rowTemps}</div></div>
-        <div class="ra-item"><div class="ra-k">Linha ${ri+1}</div><div class="ra-v good">${rowHarmony}</div></div>
-        <div class="ra-item"><div class="ra-k">Padrão</div><div class="ra-v">${selP}</div></div>
-      </div>`;
+  const plan=data.plan||[];
+  const results=document.getElementById('results');
+  const allColors=[];
+  plan.forEach(s=>{const p=photos[s.photo-1];if(p)(p.colors||[]).slice(0,2).forEach(c=>{if(!allColors.includes(c.hex))allColors.push(c.hex)})});
+  const gridCells=plan.map(s=>{
+    const p=photos[s.photo-1];const iW=s.temp==='warm';
+    if(!p)return`<div class="ppc empty"><span>+${s.slot}</span></div>`;
+    return`<div class="ppc"><img src="${p.dataUrl}"><div class="ppc-badge">+${s.slot}</div><div class="ppc-k">${s.kelvin}</div><div class="ppc-dot" style="background:${iW?'#e8920a':'#1976d2'}"></div></div>`;
   }).join('');
-
-  // detail cards
-  const detailCards = plan.map((slot,i) => {
-    const photo = photos[slot.photo-1];
-    if(!photo) return '';
-    const pal = (photo.colors||[]).slice(0,5).map(c=>`<div class="cc-pal-s" style="background:${c.hex}"></div>`).join('');
-    const rankClass = i===0?'r1':i===1?'r2':'r3';
-    return `<div class="cc">
-      <div class="cc-top">
-        <span class="cc-rank ${rankClass}">+${slot.slot}</span>
-        <span class="cc-harm">${slot.type}</span>
-        <span class="cc-score">${slot.harmony_role}</span>
-      </div>
-      <div class="cc-pal">${pal}</div>
-      <div class="cc-reason">${slot.reason}</div>
-      <div class="cc-presets">
-        <div class="cp"><div class="cp-n">Foto ${slot.photo}</div><div class="cp-v">${slot.preset}</div></div>
-        <div class="cp"><div class="cp-n">Kelvin</div><div class="cp-v">${slot.kelvin}</div></div>
-        <div class="cp"><div class="cp-n">Temp</div><div class="cp-v">${slot.temp==='warm'?'🟠 QUENTE':'🔵 FRIO'}</div></div>
-      </div>
-    </div>`;
+  const rows=[];for(let i=0;i<plan.length;i+=3)rows.push(plan.slice(i,i+3));
+  const tempBadges=rows.map(row=>row.map(s=>`<span class="rt ${s.temp==='warm'?'rt-w':'rt-c'}">${s.temp==='warm'?'🟠':'🔵'} ${s.kelvin}</span>`).join('')).join('');
+  const palHtml=allColors.slice(0,8).map(hex=>`<div class="ppal-c" style="background:${hex}"></div>`).join('');
+  const H=HARMONIES.find(h=>h.id===selH);
+  const details=plan.map(s=>{
+    const p=photos[s.photo-1];if(!p)return'';const iW=s.temp==='warm';
+    const palDots=(p.colors||[]).slice(0,5).map(c=>`<div class="pi-pc" style="background:${c.hex}"></div>`).join('');
+    return`<div class="post-item"><div class="pi-thumb"><img src="${p.dataUrl}"></div><div class="pi-body"><div class="pi-top"><span class="pi-slot">+${s.slot}</span><span class="pi-type">${s.type}</span><span class="pi-temp ${iW?'pi-tw':'pi-tc'}">${iW?'Quente':'Frio'}</span></div><div class="pi-reason">${s.reason}</div><div class="pi-preset">⚙ ${s.preset}</div><div class="pi-pal">${palDots}</div></div></div>`;
   }).join('');
-
-  results.innerHTML = `
-    <div class="plan-view">
-      <div class="plan-hdr">
-        <div>
-          <div class="plan-title">Plano — próximos ${planSize} posts</div>
-          <div class="plan-sub">${data.harmony_note||''}</div>
+  results.innerHTML=`
+    <div class="plan-post">
+      <div class="pp-hdr">
+        <div class="pp-user">
+          <div class="pp-av">H</div>
+          <div><div class="pp-name">henriq.eu</div><div class="pp-sub">Próximos ${planSize} posts · ${H?.name}</div></div>
         </div>
-        <div style="font-family:var(--mono);font-size:8px;color:var(--dim);text-align:right;max-width:200px;">${data.overview||''}</div>
+        <div class="pp-more">···</div>
       </div>
-      <div class="plan-body">
-        <div class="plan-rows">${rowsHtml}</div>
+      <div class="pp-grid">${gridCells}</div>
+      <div class="pp-actions">
+        <div class="pp-acts-l">
+          <span class="pp-act">♡</span>
+          <span class="pp-act">💬</span>
+          <span class="pp-act">↗</span>
+        </div>
+        <span class="pp-save">🔖</span>
       </div>
+      <div class="pp-pal">${palHtml}</div>
+      <div class="pp-row-temps">${tempBadges}</div>
+      <div class="pp-caption"><strong>henriq.eu</strong> ${data.overview||''}</div>
+      <div class="pp-harmony">${data.harmony_note||''}</div>
     </div>
-    <div class="combo-section">
-      <div class="cs-title">Detalhe por post</div>
-      <div class="combo-cards">${detailCards}</div>
-    </div>
-  `;
+    <div>
+      <div class="detail-hdr">Detalhe por post</div>
+      ${details}
+    </div>`;
   results.classList.add('show');
   results.scrollIntoView({behavior:'smooth',block:'start'});
 }
