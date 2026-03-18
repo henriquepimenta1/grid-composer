@@ -16,55 +16,82 @@
   --warm:#e8920a;--cool:#1976d2;
   --ig:linear-gradient(45deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888);
   --shadow:0 1px 3px rgba(0,0,0,.08);--shadow-md:0 4px 16px rgba(0,0,0,.1);
-  --r:10px;--r-sm:7px;
-  --font:'Plus Jakarta Sans',sans-serif;
+  --r:10px;--r-sm:7px;--font:'Plus Jakarta Sans',sans-serif;
   --sidebar:280px;--topbar:52px;
 }
 html,body{height:100%;overflow:hidden}
 body{background:var(--bg);color:var(--text);font-family:var(--font);-webkit-font-smoothing:antialiased;display:flex;flex-direction:column}
 
-/* ── TOPBAR ── */
-.topbar{
-  height:var(--topbar);flex-shrink:0;
-  background:var(--white);border-bottom:1px solid var(--border-light);
-  display:flex;align-items:center;justify-content:space-between;
-  padding:0 24px;position:relative;z-index:100;
-}
+/* TOPBAR */
+.topbar{height:var(--topbar);flex-shrink:0;background:var(--white);border-bottom:1px solid var(--border-light);display:flex;align-items:center;justify-content:space-between;padding:0 24px;position:relative;z-index:100}
 .logo{font-size:20px;font-weight:800;background:var(--ig);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;letter-spacing:-.5px}
 .topbar-center{display:flex;gap:4px}
-.plan-tab{
-  padding:6px 16px;border-radius:100px;
-  border:1.5px solid var(--border);background:transparent;
-  font-size:13px;font-weight:600;color:var(--text2);
-  cursor:pointer;transition:all .15s;font-family:var(--font);
-}
+.plan-tab{padding:6px 16px;border-radius:100px;border:1.5px solid var(--border);background:transparent;font-size:13px;font-weight:600;color:var(--text2);cursor:pointer;transition:all .15s;font-family:var(--font)}
 .plan-tab:hover{border-color:var(--text);color:var(--text)}
 .plan-tab.active{background:var(--text);border-color:var(--text);color:white}
 .topbar-right{display:flex;align-items:center;gap:10px}
 .handle{font-size:13px;font-weight:600;color:var(--text2)}
-.avatar{width:28px;height:28px;border-radius:50%;background:var(--ig);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:white}
+.avatar{width:28px;height:28px;border-radius:50%;background:var(--ig);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:white;cursor:pointer;user-select:none}
 
-/* ── BODY LAYOUT ── */
+/* DROPDOWN */
+.user-dropdown{display:none;position:absolute;top:calc(100% + 8px);right:0;background:var(--white);border:1px solid var(--border-light);border-radius:var(--r);box-shadow:var(--shadow-md);min-width:220px;z-index:500;overflow:hidden}
+.user-dropdown.open{display:block;animation:fadeUp .15s ease}
+@keyframes fadeUp{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
+.dd-user{padding:14px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border-light)}
+.dd-av{width:34px;height:34px;border-radius:50%;background:var(--ig);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:white;flex-shrink:0}
+.dd-name{font-size:13px;font-weight:700}
+.dd-email{font-size:11px;color:var(--text3);margin-top:1px}
+.dd-divider{height:1px;background:var(--border-light)}
+.dd-item{padding:10px 14px;font-size:13px;font-weight:500;color:var(--text2);cursor:pointer;display:flex;align-items:center;gap:8px;transition:background .1s}
+.dd-item:hover{background:var(--bg);color:var(--text)}
+.dd-logout{color:var(--red)}
+.dd-logout:hover{background:#fff5f5;color:var(--red)}
+
+/* SETTINGS MODAL */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);backdrop-filter:blur(4px);z-index:1000;align-items:center;justify-content:center;padding:20px}
+.modal-overlay.open{display:flex;animation:fadeIn .2s ease}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.modal-box{background:var(--white);border-radius:var(--r);width:100%;max-width:460px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.2)}
+.modal-hdr{padding:16px 20px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border-light)}
+.modal-title{font-size:15px;font-weight:700}
+.modal-close{font-size:18px;background:none;border:none;cursor:pointer;color:var(--text2);padding:4px;border-radius:4px;line-height:1}
+.modal-close:hover{background:var(--bg)}
+.modal-tabs{display:flex;border-bottom:1px solid var(--border-light)}
+.stab{flex:1;padding:11px;font-size:13px;font-weight:600;color:var(--text2);background:none;border:none;border-bottom:2px solid transparent;cursor:pointer;font-family:var(--font);transition:all .15s}
+.stab.active{color:var(--text);border-bottom-color:var(--text)}
+.spanel{display:none;padding:20px}
+.spanel.active{display:block}
+.sfield{margin-bottom:14px}
+.slabel{display:block;font-size:12px;font-weight:600;color:var(--text2);margin-bottom:5px}
+.sinput{width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:var(--r-sm);font-size:14px;font-family:var(--font);color:var(--text);background:var(--white);outline:none;transition:border-color .15s}
+.sinput:focus{border-color:var(--text)}
+.shint{font-size:11px;color:var(--text3);margin-top:4px}
+.smsg{font-size:12px;padding:7px 10px;border-radius:var(--r-sm);margin-bottom:12px;display:none}
+.smsg.error{display:block;background:#fff5f5;border:1px solid #fca5a5;color:var(--red)}
+.smsg.success{display:block;background:#f0fdf4;border:1px solid #86efac;color:#166534}
+.sbtn{padding:9px 18px;border-radius:var(--r-sm);background:var(--text);border:none;color:white;font-size:13px;font-weight:600;font-family:var(--font);cursor:pointer;transition:opacity .15s}
+.sbtn:hover:not(:disabled){opacity:.85}
+.sbtn:disabled{opacity:.4;cursor:not-allowed}
+.sbtn-outline{background:transparent;border:1.5px solid var(--border);color:var(--text)}
+.sbtn-outline:hover{background:var(--bg);opacity:1}
+.plan-info-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;background:var(--bg);border-radius:var(--r-sm);padding:14px;margin-bottom:16px}
+
+/* APP BODY */
 .app-body{flex:1;display:flex;overflow:hidden;min-height:0}
 
-/* ── SIDEBAR ── */
-.sidebar{
-  width:var(--sidebar);flex-shrink:0;
-  background:var(--white);border-right:1px solid var(--border-light);
-  overflow-y:auto;overflow-x:hidden;
-  display:flex;flex-direction:column;
-}
+/* SIDEBAR */
+.sidebar{width:var(--sidebar);flex-shrink:0;background:var(--white);border-right:1px solid var(--border-light);overflow-y:auto;overflow-x:hidden;display:flex;flex-direction:column}
 .sb-section{padding:16px;border-bottom:1px solid var(--border-light)}
 .sb-title{font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px}
 
-/* Harmony chips */
+/* Harmony */
 .h-chips{display:flex;flex-direction:column;gap:4px}
 .hchip{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:var(--r-sm);border:1.5px solid var(--border-light);background:transparent;cursor:pointer;transition:all .15s;font-size:13px;font-weight:500;color:var(--text2)}
 .hchip:hover{background:var(--bg)}
 .hchip.on{border-color:var(--text);background:var(--text);color:white}
 .hchip-dot{width:20px;height:20px;border-radius:50%;flex-shrink:0}
 
-/* Pattern chips */
+/* Patterns */
 .p-chips{display:flex;flex-direction:column;gap:4px}
 .pchip{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:var(--r-sm);border:1.5px solid var(--border-light);background:transparent;cursor:pointer;transition:all .15s;font-size:13px;font-weight:500;color:var(--text2)}
 .pchip:hover{background:var(--bg)}
@@ -72,6 +99,17 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);-webkit-font
 .pg-mini{display:grid;grid-template-columns:repeat(3,6px);gap:1.5px;flex-shrink:0}
 .pm{width:6px;height:6px;border-radius:1px;background:currentColor;opacity:.3}
 .pm.w{opacity:1}
+
+/* Contrast */
+.c-chips{display:flex;flex-direction:column;gap:4px}
+.cchip{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:var(--r-sm);border:1.5px solid var(--border-light);background:transparent;cursor:pointer;transition:all .15s;font-size:13px;font-weight:500;color:var(--text2)}
+.cchip:hover{background:var(--bg)}
+.cchip.on{border-color:var(--text);background:var(--text);color:white}
+.cchip-icon{font-size:16px;line-height:1;flex-shrink:0}
+.cchip-name{font-size:13px;font-weight:600;display:block}
+.cchip-sub{font-size:10px;opacity:.65;display:block;margin-top:1px}
+.kelvin-section{transition:opacity .2s}
+.kelvin-section.dim{opacity:.4;pointer-events:none}
 
 /* Kelvin */
 .ktrack{width:100%;height:8px;border-radius:4px;background:linear-gradient(90deg,#FF5500,#FFB830,#FFEEBB,#C8DCFF,#80AAFF);margin-bottom:12px}
@@ -85,19 +123,6 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
 .kdiff-v{font-weight:700;color:var(--text2)}
 
 /* IG context */
-/* Contrast axis */
-.c-chips{display:flex;flex-direction:column;gap:4px}
-.cchip{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:var(--r-sm);border:1.5px solid var(--border-light);background:transparent;cursor:pointer;transition:all .15s;font-size:13px;font-weight:500;color:var(--text2)}
-.cchip:hover{background:var(--bg)}
-.cchip.on{border-color:var(--text);background:var(--text);color:white}
-.cchip-icon{font-size:16px;line-height:1;flex-shrink:0}
-.cchip-body{}
-.cchip-name{font-size:13px;font-weight:600;display:block}
-.cchip-sub{font-size:10px;opacity:.65;display:block;margin-top:1px}
-/* Kelvin section visibility */
-.kelvin-section{transition:opacity .2s}
-.kelvin-section.dim{opacity:.4;pointer-events:none}
-
 .ig-toggle{display:flex;gap:4px;margin-bottom:10px}
 .ig-opt{flex:1;padding:6px;border-radius:var(--r-sm);border:1.5px solid var(--border);background:transparent;cursor:pointer;font-size:12px;font-weight:600;color:var(--text2);transition:all .15s;text-align:center}
 .ig-opt.on{border-color:var(--text);background:var(--text);color:white}
@@ -109,29 +134,27 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
 .ig-up-btn{width:100%;margin-top:8px;padding:7px;background:var(--bg);border:1.5px dashed var(--border);border-radius:var(--r-sm);cursor:pointer;font-size:12px;font-weight:600;color:var(--text2);transition:all .15s;font-family:var(--font)}
 .ig-up-btn:hover{border-color:var(--blue);color:var(--blue)}
 
-/* ── MAIN CONTENT ── */
+/* MAIN */
 .main{flex:1;overflow-y:auto;overflow-x:hidden;padding:24px;display:flex;flex-direction:column;gap:20px;min-height:0}
 
-/* UPLOAD AREA */
+/* Upload */
 .upload-panel{background:var(--white);border:1px solid var(--border-light);border-radius:var(--r);box-shadow:var(--shadow)}
 .up-hdr{padding:14px 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border-light)}
 .up-title{font-size:14px;font-weight:700}
 .up-meta{display:flex;align-items:center;gap:8px}
 .up-cnt{font-size:12px;font-weight:600;background:var(--bg);border:1px solid var(--border);padding:2px 9px;border-radius:100px;color:var(--text2)}
-.up-clear{font-size:12px;font-weight:600;color:var(--text3);cursor:pointer;padding:2px 6px;border-radius:4px;transition:color .15s;background:none;border:none;font-family:var(--font)}
+.up-clear{font-size:12px;font-weight:600;color:var(--text3);cursor:pointer;padding:2px 6px;border-radius:4px;background:none;border:none;font-family:var(--font)}
 .up-clear:hover{color:var(--red)}
 .up-body{padding:16px}
-
-/* Drop zone */
 .dz{border:2px dashed var(--border);border-radius:var(--r-sm);padding:24px;text-align:center;cursor:pointer;transition:all .2s;margin-bottom:14px}
 .dz:hover,.dz.drag{border-color:var(--blue);background:#f0f8ff}
 .dz-icon{font-size:28px;margin-bottom:6px}
 .dz-t{font-size:14px;font-weight:600;color:var(--text);margin-bottom:2px}
 .dz-s{font-size:12px;color:var(--text3)}
-.dz-btn{display:inline-block;margin-top:10px;padding:7px 18px;border-radius:100px;background:var(--blue);color:white;font-size:13px;font-weight:600;cursor:pointer;transition:background .15s}
+.dz-btn{display:inline-block;margin-top:10px;padding:7px 18px;border-radius:100px;background:var(--blue);color:white;font-size:13px;font-weight:600;cursor:pointer}
 .dz:hover .dz-btn,.dz.drag .dz-btn{background:var(--blue-d)}
 
-/* Thumbnails — smaller, desktop grid */
+/* Thumbs */
 .thumbs{display:grid;grid-template-columns:repeat(6,1fr);gap:3px;margin-bottom:10px}
 @media(max-width:900px){.thumbs{grid-template-columns:repeat(4,1fr)}}
 .thumb{aspect-ratio:1;position:relative;overflow:hidden;cursor:grab;border-radius:3px}
@@ -144,36 +167,23 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
 .tpal{position:absolute;bottom:0;left:0;right:0;height:3px;display:flex}
 .tp{flex:1}
 
-/* Status + compress info */
 .up-status{font-size:12px;color:var(--text3);margin-bottom:10px;min-height:16px;display:flex;align-items:center;gap:6px}
 .up-status.ok{color:var(--green)}
-.up-status.warn{color:var(--warm)}
 .status-dot{width:6px;height:6px;border-radius:50%;background:currentColor;flex-shrink:0}
 
-/* Compose button */
-.compose-btn{
-  width:100%;padding:12px;border-radius:var(--r-sm);
-  background:var(--ig);border:none;color:white;
-  cursor:pointer;font-size:14px;font-weight:700;font-family:var(--font);
-  transition:opacity .15s;display:flex;align-items:center;justify-content:center;gap:6px;
-}
+.compose-btn{width:100%;padding:12px;border-radius:var(--r-sm);background:var(--ig);border:none;color:white;cursor:pointer;font-size:14px;font-weight:700;font-family:var(--font);transition:opacity .15s;display:flex;align-items:center;justify-content:center;gap:6px}
 .compose-btn:hover:not(:disabled){opacity:.88}
 .compose-btn:disabled{opacity:.35;cursor:not-allowed}
 .compose-btn:active:not(:disabled){transform:scale(.99)}
 
-/* ERROR PANEL — prominent */
-.err-panel{
-  display:none;background:#fff5f5;
-  border:1.5px solid #fca5a5;border-left:4px solid var(--red);
-  border-radius:var(--r);padding:14px 16px;
-}
+/* Error */
+.err-panel{display:none;background:#fff5f5;border:1.5px solid #fca5a5;border-left:4px solid var(--red);border-radius:var(--r);padding:14px 16px}
 .err-panel.show{display:flex;gap:10px;align-items:flex-start}
 .err-icon{font-size:18px;flex-shrink:0;margin-top:1px}
-.err-body{}
 .err-title{font-size:13px;font-weight:700;color:var(--red);margin-bottom:3px}
 .err-msg{font-size:12px;color:#c0392b;line-height:1.5;font-family:monospace;background:#fee2e2;padding:6px 8px;border-radius:4px;margin-top:4px;word-break:break-all}
 
-/* LOADING */
+/* Loading */
 .loading{display:none;background:var(--white);border:1px solid var(--border-light);border-radius:var(--r);padding:24px;text-align:center;box-shadow:var(--shadow)}
 .loading.show{display:block}
 .ld-t{font-size:13px;font-weight:600;margin-bottom:12px}
@@ -185,11 +195,9 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
 .ld-s.done{color:var(--green)}.ld-s.now{color:var(--blue);font-weight:700}
 .ld-dot{width:5px;height:5px;border-radius:50%;background:currentColor}
 
-/* RESULTS */
+/* Results */
 .results{display:none;flex-direction:column;gap:16px}
 .results.show{display:flex}
-
-/* Plan post card — desktop wider */
 .plan-post{background:var(--white);border:1px solid var(--border-light);border-radius:var(--r);box-shadow:var(--shadow-md);overflow:hidden}
 .pp-hdr{padding:12px 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border-light)}
 .pp-user{display:flex;align-items:center;gap:10px}
@@ -197,10 +205,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
 .pp-name{font-size:14px;font-weight:700}
 .pp-sub{font-size:11px;color:var(--text3)}
 .pp-more{font-size:18px;color:var(--text2);cursor:pointer;padding:0 4px}
-
-/* grid — fixed width for desktop */
-.pp-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;max-width:480px}
-@media(min-width:800px){.pp-grid{max-width:none}}
+.pp-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:2px}
 .ppc{aspect-ratio:1;position:relative;overflow:hidden;background:var(--border-light)}
 .ppc img{width:100%;height:100%;object-fit:cover;display:block}
 .ppc.empty{display:flex;align-items:center;justify-content:center}
@@ -220,8 +225,6 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
 .pp-caption{padding:0 16px 6px;font-size:13px;line-height:1.5}
 .pp-caption strong{font-weight:700}
 .pp-harmony{padding:0 16px 14px;font-size:12px;color:var(--text3)}
-
-/* Detail table */
 .detail-panel{background:var(--white);border:1px solid var(--border-light);border-radius:var(--r);box-shadow:var(--shadow);overflow:hidden}
 .detail-hdr{padding:14px 16px;border-bottom:1px solid var(--border-light);font-size:14px;font-weight:700}
 .post-row{display:flex;gap:12px;padding:12px 16px;border-bottom:1px solid var(--border-light);align-items:flex-start}
@@ -239,20 +242,19 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
 .pr-pal{display:flex;gap:2px;margin-top:5px}
 .pr-pc{width:14px;height:14px;border-radius:3px}
 
-/* MOBILE — stack layout */
+/* Mobile */
 @media(max-width:768px){
   html,body{height:auto;overflow:auto}
   .app-body{flex-direction:column;overflow:visible}
   .sidebar{width:100%;border-right:none;border-bottom:1px solid var(--border-light);overflow:visible}
   .main{overflow:visible;padding:16px}
   .topbar-center{display:none}
-  .plan-tabs-mobile{display:flex;gap:6px;padding:12px 16px;border-bottom:1px solid var(--border-light);overflow-x:auto}
+  .plan-tabs-mobile{display:flex!important;gap:6px;padding:12px 16px;border-bottom:1px solid var(--border-light);overflow-x:auto}
 }
-@media(min-width:769px){
-  .plan-tabs-mobile{display:none}
-}
+.plan-tabs-mobile{display:none}
 
-canvas{display:none}#fin,#ig-fin{display:none}
+canvas{display:none}
+#fin,#ig-fin{display:none}
 </style>
 </head>
 <body>
@@ -266,10 +268,28 @@ canvas{display:none}#fin,#ig-fin{display:none}
     <button class="plan-tab" onclick="setPlan(9,this)">Próximos 9</button>
   </div>
   <div class="topbar-right">
-    <span class="handle" id="user-handle">@henriq.eu</span>
-    <button id="lang-toggle" onclick="toggleLang()" style="font-size:11px;font-weight:600;padding:4px 10px;border-radius:100px;border:1.5px solid var(--border);background:transparent;cursor:pointer;font-family:var(--font);color:var(--text2);transition:all .15s;">🇧🇷 PT</button>
-    <span id="credits-badge" style="font-size:12px;font-weight:600;background:#f3f4f6;border:1px solid #e5e7eb;padding:2px 10px;border-radius:100px;color:#374151;cursor:pointer;" onclick="window.location.href='/comprar'" title="Créditos disponíveis">— créditos</span>
-    <div class="avatar" id="user-avatar" style="cursor:pointer" onclick="doLogout()" title="Sair">H</div>
+    <span class="handle" id="user-handle"></span>
+    <button id="lang-toggle" onclick="toggleLang()" style="font-size:11px;font-weight:600;padding:4px 10px;border-radius:100px;border:1.5px solid var(--border);background:transparent;cursor:pointer;font-family:var(--font);color:var(--text2)">🇧🇷 PT</button>
+    <span id="credits-badge" style="font-size:12px;font-weight:600;background:#f3f4f6;border:1px solid #e5e7eb;padding:2px 10px;border-radius:100px;color:#374151;cursor:pointer" onclick="window.location.href='/comprar'">—</span>
+    <div style="position:relative" id="user-avatar-wrap">
+      <div class="avatar" id="user-avatar" onclick="toggleDropdown()">?</div>
+      <div id="user-dropdown" class="user-dropdown">
+        <div class="dd-user">
+          <div class="dd-av" id="dd-av">?</div>
+          <div>
+            <div class="dd-name" id="dd-name"></div>
+            <div class="dd-email" id="dd-email"></div>
+          </div>
+        </div>
+        <div class="dd-divider"></div>
+        <div class="dd-item" onclick="openSettings('profile')">👤 <span data-i18n="profile">Perfil</span></div>
+        <div class="dd-item" onclick="openSettings('security')">🔒 <span data-i18n="security">Segurança</span></div>
+        <div class="dd-item" onclick="openSettings('plan')">⭐ <span data-i18n="plan_tab">Plano</span></div>
+        <div class="dd-item" onclick="window.location.href='/comprar'">💳 <span data-i18n="upgrade">Fazer upgrade</span></div>
+        <div class="dd-divider"></div>
+        <div class="dd-item dd-logout" onclick="doLogout()">↩ <span data-i18n="logout">Sair</span></div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -280,28 +300,25 @@ canvas{display:none}#fin,#ig-fin{display:none}
   <button class="plan-tab" onclick="setPlanM(9,this)">Próximos 9</button>
 </div>
 
-<div class="app-body">
+<!-- APP BODY (hidden until auth confirmed) -->
+<div class="app-body" id="app-body" style="visibility:hidden">
 
   <!-- SIDEBAR -->
   <aside class="sidebar">
-
     <div class="sb-section">
-      <div class="sb-title">Harmonia</div>
+      <div class="sb-title" data-i18n="harmony">Harmonia</div>
       <div class="h-chips" id="hm-list"></div>
     </div>
-
     <div class="sb-section">
-      <div class="sb-title">Padrão de grid</div>
+      <div class="sb-title" data-i18n="grid_pattern">Padrão de grid</div>
       <div class="p-chips" id="pat-list"></div>
     </div>
-
     <div class="sb-section">
-      <div class="sb-title">Eixo de contraste</div>
+      <div class="sb-title" data-i18n="contrast_axis">Eixo de contraste</div>
       <div class="c-chips" id="contrast-list"></div>
     </div>
-
     <div class="sb-section kelvin-section" id="kelvin-section">
-      <div class="sb-title">Temperatura (Kelvin)</div>
+      <div class="sb-title" data-i18n="kelvin_temp">Temperatura (Kelvin)</div>
       <div class="ktrack"></div>
       <div class="krow">
         <span class="klbl kw">Q</span>
@@ -315,15 +332,14 @@ canvas{display:none}#fin,#ig-fin{display:none}
       </div>
       <div class="kdiff-row">Contraste: <span class="kdiff-v" id="kdiff">4300K</span></div>
     </div>
-
     <div class="sb-section">
-      <div class="sb-title">Grid atual (contexto)</div>
+      <div class="sb-title" data-i18n="current_grid">Grid atual (contexto)</div>
       <div class="ig-toggle">
-        <div class="ig-opt on" id="ig-skip" onclick="setIG('skip')">Ignorar</div>
-        <div class="ig-opt" id="ig-up-opt" onclick="setIG('upload')">Últimas 3</div>
+        <div class="ig-opt on" id="ig-skip"   onclick="setIG('skip')"   data-i18n="ignore">Ignorar</div>
+        <div class="ig-opt"   id="ig-up-opt" onclick="setIG('upload')" data-i18n="last_3">Últimas 3</div>
       </div>
       <div id="ig-note">
-        <div class="ig-note">Upload das últimas 3 fotos do seu grid para melhorar a continuidade.</div>
+        <div class="ig-note" data-i18n="ig_note">Upload das últimas 3 fotos do seu grid para melhorar a continuidade.</div>
       </div>
       <div id="ig-up-area" style="display:none">
         <div class="ig-mini" id="ig-grid">
@@ -331,537 +347,133 @@ canvas{display:none}#fin,#ig-fin{display:none}
           <div class="igmc"><div class="igmc-e">+</div></div>
           <div class="igmc"><div class="igmc-e">+</div></div>
         </div>
-        <button class="ig-up-btn" onclick="document.getElementById('ig-fin').click()">📎 Selecionar fotos</button>
-        <input type="file" id="ig-fin" accept="image/*" multiple onchange="handleIG(this.files)" style="display:none">
+        <button class="ig-up-btn" onclick="document.getElementById('ig-fin').click()" data-i18n="select_photos">📎 Selecionar fotos</button>
+        <input type="file" id="ig-fin" accept="image/*" multiple onchange="handleIG(this.files)">
       </div>
     </div>
-
   </aside>
 
   <!-- MAIN -->
   <main class="main">
-
-    <!-- Upload panel -->
     <div class="upload-panel">
       <div class="up-hdr">
-        <span class="up-title">Suas fotos</span>
+        <span class="up-title" data-i18n="your_photos">Suas fotos</span>
         <div class="up-meta">
           <span class="up-cnt" id="pcnt">0 fotos</span>
-          <button class="up-clear" onclick="clearAll()">Limpar</button>
+          <button class="up-clear" onclick="clearAll()" data-i18n="clear">Limpar</button>
         </div>
       </div>
       <div class="up-body">
         <div class="dz" id="dz">
           <div class="dz-icon">🖼️</div>
-          <div class="dz-t">Arraste fotos aqui ou clique para selecionar</div>
-          <div class="dz-s">JPG · PNG · WEBP · até 12 fotos · comprimidas automaticamente</div>
-          <div class="dz-btn">Selecionar fotos</div>
+          <div class="dz-t" data-i18n="drop_title">Arraste fotos aqui ou clique para selecionar</div>
+          <div class="dz-s"  data-i18n="drop_sub">JPG · PNG · WEBP · até 12 fotos</div>
+          <div class="dz-btn" data-i18n="select_btn">Selecionar fotos</div>
         </div>
         <input type="file" id="fin" accept="image/*" multiple onchange="handleFiles(this.files)">
         <canvas id="cv"></canvas>
-
         <div class="thumbs" id="thumbs"></div>
         <div class="up-status" id="exts"></div>
-
-        <button class="compose-btn" id="go" onclick="compose()" disabled>
-          ✦&nbsp; Compor grid
-        </button>
+        <button class="compose-btn" id="go" onclick="compose()" disabled data-i18n="compose_btn">✦&nbsp; Compor grid</button>
       </div>
     </div>
 
-    <!-- Error — always visible when present -->
     <div class="err-panel" id="err">
       <div class="err-icon">⚠️</div>
       <div class="err-body">
-        <div class="err-title">Erro</div>
+        <div class="err-title" data-i18n="error_title">Erro</div>
         <div class="err-msg" id="err-msg"></div>
       </div>
     </div>
 
-    <!-- Loading -->
     <div class="loading" id="loading">
       <div class="ld-t" id="ldtxt">Analisando...</div>
       <div class="ld-bar"><div class="ld-fill"></div></div>
       <div class="ld-steps">
         <div class="ld-s now" id="s1"><div class="ld-dot"></div>Extraindo cores</div>
-        <div class="ld-s" id="s2"><div class="ld-dot"></div>Analisando conteúdo</div>
-        <div class="ld-s" id="s3"><div class="ld-dot"></div>Combinando</div>
-        <div class="ld-s" id="s4"><div class="ld-dot"></div>Montando plano</div>
+        <div class="ld-s"     id="s2"><div class="ld-dot"></div>Analisando</div>
+        <div class="ld-s"     id="s3"><div class="ld-dot"></div>Combinando</div>
+        <div class="ld-s"     id="s4"><div class="ld-dot"></div>Montando plano</div>
       </div>
     </div>
 
-    <!-- Results -->
     <div class="results" id="results"></div>
-
   </main>
 </div>
 
-<script>
-// ══ COLOR ENGINE (k-means LAB) ═══════════════════════
-function rgbToLab(r,g,b){let R=r/255,G=g/255,B=b/255;R=R>.04045?Math.pow((R+.055)/1.055,2.4):R/12.92;G=G>.04045?Math.pow((G+.055)/1.055,2.4):G/12.92;B=B>.04045?Math.pow((B+.055)/1.055,2.4):B/12.92;let X=R*.4124564+G*.3575761+B*.1804375,Y=R*.2126729+G*.7151522+B*.072175,Z=R*.0193339+G*.119192+B*.9503041;X/=.95047;Z/=1.08883;const f=v=>v>.008856?Math.cbrt(v):(7.787*v)+16/116;return[116*f(Y)-16,500*(f(X)-f(Y)),200*(f(Y)-f(Z))]}
-function labToRgb(L,a,b){let Y=(L+16)/116,X=a/500+Y,Z=Y-b/200;X=(Math.pow(X,3)>.008856?Math.pow(X,3):(X-16/116)/7.787)*.95047;Y=(Math.pow(Y,3)>.008856?Math.pow(Y,3):(Y-16/116)/7.787);Z=(Math.pow(Z,3)>.008856?Math.pow(Z,3):(Z-16/116)/7.787)*1.08883;let R=X*3.2404542+Y*-1.5371385+Z*-.4985314,G=X*-.969266+Y*1.8760108+Z*.041556,B=X*.0556434+Y*-.2040259+Z*1.0572252;R=R>.0031308?1.055*Math.pow(R,1/2.4)-.055:12.92*R;G=G>.0031308?1.055*Math.pow(G,1/2.4)-.055:12.92*G;B=B>.0031308?1.055*Math.pow(B,1/2.4)-.055:12.92*B;return[Math.round(Math.max(0,Math.min(255,R*255))),Math.round(Math.max(0,Math.min(255,G*255))),Math.round(Math.max(0,Math.min(255,B*255)))]}
-function labDist(a,b){return Math.sqrt((a[0]-b[0])**2+(a[1]-b[1])**2+(a[2]-b[2])**2)}
-function rgbToHex(r,g,b){return'#'+[r,g,b].map(v=>v.toString(16).padStart(2,'0')).join('')}
-function extractColors(img,k=5){const cv=document.getElementById('cv');const MAX=80;let w=img.width,h=img.height;if(w>MAX||h>MAX){const r=Math.min(MAX/w,MAX/h);w=Math.round(w*r);h=Math.round(h*r)}cv.width=w;cv.height=h;const ctx=cv.getContext('2d');ctx.drawImage(img,0,0,w,h);const data=ctx.getImageData(0,0,w,h).data;const px=[];for(let i=0;i<data.length;i+=16){if(data[i+3]<128)continue;px.push(rgbToLab(data[i],data[i+1],data[i+2]))}if(!px.length)return[];const c=[px[Math.floor(Math.random()*px.length)]];for(let ci=1;ci<k;ci++){const d=px.map(p=>Math.min(...c.map(cc=>labDist(p,cc))));const t=d.reduce((a,b)=>a+b,0);let r=Math.random()*t;for(let pi=0;pi<px.length;pi++){r-=d[pi];if(r<=0){c.push([...px[pi]]);break}}if(c.length<=ci)c.push([...px[Math.floor(Math.random()*px.length)]])}let asgn=new Array(px.length).fill(0);for(let it=0;it<10;it++){for(let pi=0;pi<px.length;pi++){let b=0,bd=Infinity;for(let ci=0;ci<k;ci++){const dd=labDist(px[pi],c[ci]);if(dd<bd){bd=dd;b=ci}}asgn[pi]=b}for(let ci=0;ci<k;ci++){const cp=px.filter((_,pi)=>asgn[pi]===ci);if(!cp.length)continue;c[ci]=[cp.reduce((s,p)=>s+p[0],0)/cp.length,cp.reduce((s,p)=>s+p[1],0)/cp.length,cp.reduce((s,p)=>s+p[2],0)/cp.length]}}const cnt=new Array(k).fill(0);asgn.forEach(ci=>cnt[ci]++);return c.map((cc,ci)=>{const[r,g,b]=labToRgb(cc[0],cc[1],cc[2]);return{hex:rgbToHex(r,g,b),pct:Math.round(cnt[ci]/px.length*100)}}).sort((a,b)=>b.pct-a.pct).slice(0,5)}
-function estimateKelvin(colors){if(!colors.length)return 6500;const hex=colors[0].hex;const r=parseInt(hex.slice(1,3),16),b=parseInt(hex.slice(5,7),16);const rb=r/(b+1);if(rb>3.5)return 1900;if(rb>2.5)return 2800;if(rb>1.8)return 3500;if(rb>1.3)return 4500;if(rb>1.0)return 5800;if(rb>0.7)return 7200;if(rb>0.5)return 8500;return 9800}
-
-// ══ IMAGE COMPRESSION ════════════════════════════════
-// Resize + compress to JPEG before sending — avoids Render payload limit
-async function compressImage(dataUrl, maxDim=800, quality=0.75) {
-  return new Promise(resolve => {
-    const img = new Image();
-    img.onload = () => {
-      const cv2 = document.createElement('canvas');
-      let w = img.width, h = img.height;
-      if (w > maxDim || h > maxDim) {
-        const r = Math.min(maxDim/w, maxDim/h);
-        w = Math.round(w * r); h = Math.round(h * r);
-      }
-      cv2.width = w; cv2.height = h;
-      cv2.getContext('2d').drawImage(img, 0, 0, w, h);
-      resolve(cv2.toDataURL('image/jpeg', quality));
-    };
-    img.src = dataUrl;
-  });
-}
-
-// ══ STATE ═══════════════════════════════════════════
-const HARMONIES=[
-  {id:'complementary',name:'Complementar',dot:'linear-gradient(135deg,#C4853A,#3A5870)'},
-  {id:'analogous',name:'Análogo',dot:'linear-gradient(135deg,#4A8A9A,#5A8A6A)'},
-  {id:'split',name:'Split Complementar',dot:'linear-gradient(135deg,#C4853A,#3A7870,#3A4A88)'},
-  {id:'triad',name:'Tríade',dot:'linear-gradient(135deg,#C4853A,#3A7A9A,#8A3A9A)'},
-  {id:'monochrome',name:'Monocromático',dot:'linear-gradient(135deg,#0A2A3A,#4A9AB8)'},
-  {id:'square',name:'Quadrado',dot:'linear-gradient(135deg,#C4853A,#3A8A4A,#8A3A7A)'},
-  {id:'shades',name:'Sombras',dot:'linear-gradient(135deg,#111,#1C3040)'},
-  {id:'custom',name:'IA decide',dot:'linear-gradient(135deg,#888,#444)'},
-];
-const PATTERNS=[
-  {id:'checkerboard',name:'Xadrez',cells:[false,true,false,true,false,true]},
-  {id:'columns',name:'Colunas',cells:[false,false,true,false,false,true]},
-  {id:'rows',name:'Linhas',cells:[true,true,true,false,false,false]},
-  {id:'diagonal',name:'Diagonal',cells:[false,false,true,false,true,false]},
-  {id:'free',name:'Livre (IA)',cells:[null,null,null,null,null,null]},
-];
-let selH='complementary',selP='checkerboard',selC='temperature',photos=[],igPhotos=[],planSize=3,igMode='skip';
-
-// ══ CONTRAST AXES ════════════════════════════════════
-const CONTRAST_AXES=[
-  {
-    id:'temperature',
-    icon:'🌡️',
-    name:'Temperatura',
-    sub:'Quente vs Frio · Kelvin',
-    prompt:'Eixo de contraste: TEMPERATURA. Use Kelvin para definir slots quentes (laranjas/dourados, Kelvin baixo) e frios (teals/azuis, Kelvin alto). Alterne quente↔frio conforme o padrão escolhido.',
-    useKelvin:true,
-  },
-  {
-    id:'luminance',
-    icon:'☀️',
-    name:'Luminância',
-    sub:'Claro vs Escuro · independe de cor',
-    prompt:'Eixo de contraste: LUMINANCIA. Ignore temperatura e alterne fotos claras (highlights dominantes, muito céu aberto, areia branca) com fotos escuras (sombras profundas, florestas densas, interior). Funciona mesmo que todas as fotos sejam quentes.',
-    useKelvin:false,
-  },
-  {
-    id:'subject',
-    icon:'🔭',
-    name:'Plano / Sujeito',
-    sub:'Close · Paisagem · Detalhe',
-    prompt:'Eixo de contraste: TIPO DE PLANO. Alterne entre: RETRATO (pessoa próxima, rosto dominante), PAISAGEM (figura pequena ou ausente, ambiente dominante), DETALHE (close de textura, equipamento, elemento isolado). Crie ritmo pelo tipo de enquadramento.',
-    useKelvin:false,
-  },
-  {
-    id:'saturation',
-    icon:'🎨',
-    name:'Saturação',
-    sub:'Vívido vs Dessaturado',
-    prompt:'Eixo de contraste: SATURACAO. Alterne fotos de alta saturação (cores intensas, pôr do sol vibrante, verde floresta saturado) com fotos dessaturadas (névoa, cinza, mist, tons neutros). Cria ritmo visual mesmo com temperaturas similares.',
-    useKelvin:false,
-  },
-  {
-    id:'combined',
-    icon:'✦',
-    name:'Combinado (IA)',
-    sub:'IA escolhe o melhor eixo',
-    prompt:'Eixo de contraste: COMBINADO. Analise o conjunto de fotos e escolha automaticamente o eixo de contraste que gera a maior harmonia visual entre os slots. Pode combinar temperatura + luminância + tipo de plano conforme necessário. Explica qual eixo foi escolhido no harmony_note.',
-    useKelvin:true,
-  },
-];
-
-// ══ INIT ════════════════════════════════════════════
-function init(){renderHarmonies();renderPatterns();renderContrast();setupDrop();kUpdate();applyTranslations()}
-
-function renderHarmonies(){
-  document.getElementById('hm-list').innerHTML=HARMONIES.map(h=>
-    `<div class="hchip ${h.id===selH?'on':''}" onclick="selHarmony('${h.id}')">
-      <div class="hchip-dot" style="background:${h.dot}"></div>${h.name}
-    </div>`).join('');
-}
-function renderPatterns(){
-  document.getElementById('pat-list').innerHTML=PATTERNS.map(p=>{
-    const cells=p.cells.map(v=>`<div class="pm ${v===true?'w':''}"></div>`).join('');
-    return`<div class="pchip ${p.id===selP?'on':''}" onclick="selPattern('${p.id}')">
-      <div class="pg-mini">${cells}</div>${p.name}</div>`;
-  }).join('');
-}
-function selHarmony(id){selH=id;renderHarmonies()}
-function selPattern(id){selP=id;renderPatterns()}
-
-function renderContrast(){
-  document.getElementById('contrast-list').innerHTML=CONTRAST_AXES.map(a=>
-    `<div class="cchip ${a.id===selC?'on':''}" onclick="selContrast('${a.id}')">
-      <span class="cchip-icon">${a.icon}</span>
-      <div class="cchip-body">
-        <span class="cchip-name">${a.name}</span>
-        <span class="cchip-sub">${a.sub}</span>
-      </div>
-    </div>`).join('');
-  // Show/hide Kelvin section
-  const axis=CONTRAST_AXES.find(a=>a.id===selC);
-  const ks=document.getElementById('kelvin-section');
-  if(ks)ks.className='sb-section kelvin-section'+(axis?.useKelvin?'':' dim');
-}
-function selContrast(id){selC=id;renderContrast()}
-function kUpdate(){
-  const w=document.getElementById('kw').value,c=document.getElementById('kc').value;
-  document.getElementById('kwv').textContent=w+'K';
-  document.getElementById('kcv').textContent=c+'K';
-  document.getElementById('kdiff').textContent=(c-w)+'K';
-}
-function setPlan(n,btn){
-  planSize=n;
-  document.querySelectorAll('.topbar-center .plan-tab').forEach(t=>t.classList.remove('active'));
-  btn.classList.add('active');
-  document.getElementById('go').disabled=photos.length<planSize;
-}
-function setPlanM(n,btn){
-  planSize=n;
-  document.querySelectorAll('.plan-tabs-mobile .plan-tab').forEach(t=>t.classList.remove('active'));
-  btn.classList.add('active');
-  document.getElementById('go').disabled=photos.length<planSize;
-}
-function setIG(mode){
-  igMode=mode;
-  document.getElementById('ig-skip').className='ig-opt'+(mode==='skip'?' on':'');
-  document.getElementById('ig-up-opt').className='ig-opt'+(mode==='upload'?' on':'');
-  document.getElementById('ig-up-area').style.display=mode==='upload'?'block':'none';
-  document.getElementById('ig-note').style.display=mode==='skip'?'block':'none';
-}
-
-// ══ UPLOAD ══════════════════════════════════════════
-function setupDrop(){
-  const dz=document.getElementById('dz');
-  dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('drag')});
-  dz.addEventListener('dragleave',()=>dz.classList.remove('drag'));
-  dz.addEventListener('drop',e=>{e.preventDefault();dz.classList.remove('drag');handleFiles(e.dataTransfer.files)});
-  dz.addEventListener('click',()=>document.getElementById('fin').click());
-}
-
-async function handleFiles(files){
-  const rem=12-photos.length;
-  const toAdd=Array.from(files).slice(0,rem).filter(f=>f.type.startsWith('image/'));
-  if(!toAdd.length)return;
-  setStatus(`Processando ${toAdd.length} foto(s)...`,'');
-  for(const file of toAdd){
-    const raw=await readFile(file);
-    const img=await loadImg(raw);
-    const colors=extractColors(img,5);
-    const kelvin=estimateKelvin(colors);
-    // Compress for API sending (smaller payload)
-    const compressed=await compressImage(raw,800,0.75);
-    photos.push({file,dataUrl:raw,compressed,colors,kelvin});
-    renderThumbs();updateCnt();
-  }
-  // Show payload estimate
-  const estKB=photos.reduce((s,p)=>s+Math.round(p.compressed.length*.75/1024),0);
-  setStatus(`✓ ${photos.length} foto(s) prontas · ~${estKB}KB comprimido · k-means LAB`,'ok');
-  document.getElementById('go').disabled=photos.length<planSize;
-}
-
-function setStatus(msg,cls){
-  const el=document.getElementById('exts');
-  el.className='up-status'+(cls?' '+cls:'');
-  el.innerHTML=cls?`<div class="status-dot"></div>${msg}`:msg;
-}
-
-function readFile(f){return new Promise(r=>{const fr=new FileReader();fr.onload=e=>r(e.target.result);fr.readAsDataURL(f)})}
-function loadImg(s){return new Promise(r=>{const i=new Image();i.onload=()=>r(i);i.src=s})}
-
-async function handleIG(files){
-  igPhotos=[];const g=document.getElementById('ig-grid');g.innerHTML='';
-  for(const f of Array.from(files).slice(0,3)){
-    const url=await readFile(f);const img=await loadImg(url);
-    igPhotos.push({dataUrl:url,colors:extractColors(img,5),kelvin:estimateKelvin(extractColors(img,5))});
-    const c=document.createElement('div');c.className='igmc';c.innerHTML=`<img src="${url}">`;g.appendChild(c);
-  }
-  while(g.children.length<3){const c=document.createElement('div');c.className='igmc';c.innerHTML='<div class="igmc-e">+</div>';g.appendChild(c)}
-}
-
-function renderThumbs(){
-  document.getElementById('thumbs').innerHTML=photos.map((p,i)=>{
-    const pal=(p.colors||[]).slice(0,5).map(c=>`<div class="tp" style="background:${c.hex}"></div>`).join('');
-    return`<div class="thumb" draggable="true" ondragstart="dragStart(${i})" ondragover="dragOver(event)" ondrop="drop(event,${i})">
-      <img src="${p.dataUrl}"><div class="tov"></div>
-      <div class="tdel" onclick="removePhoto(${i})">✕</div>
-      <div class="tn">${i+1}</div><div class="tpal">${pal}</div>
-    </div>`;
-  }).join('');
-}
-function updateCnt(){document.getElementById('pcnt').textContent=`${photos.length} foto${photos.length!==1?'s':''}`}
-function removePhoto(i){
-  photos.splice(i,1);renderThumbs();updateCnt();
-  document.getElementById('go').disabled=photos.length<planSize;
-  if(!photos.length)setStatus('','');
-}
-function clearAll(){
-  photos=[];renderThumbs();updateCnt();
-  document.getElementById('fin').value='';
-  document.getElementById('go').disabled=true;
-  document.getElementById('results').classList.remove('show');
-  document.getElementById('results').innerHTML='';
-  hideErr();setStatus('','');
-}
-let dragI=null;
-function dragStart(i){dragI=i}
-function dragOver(e){e.preventDefault()}
-function drop(e,i){e.preventDefault();if(dragI===null||dragI===i)return;const m=photos.splice(dragI,1)[0];photos.splice(i,0,m);dragI=null;renderThumbs()}
-
-// ══ ERROR HANDLING ═══════════════════════════════════
-function showErr(msg){
-  document.getElementById('err-msg').textContent=msg;
-  document.getElementById('err').classList.add('show');
-  document.getElementById('err').scrollIntoView({behavior:'smooth',block:'nearest'});
-}
-function hideErr(){document.getElementById('err').classList.remove('show')}
-
-// ══ COMPOSE ══════════════════════════════════════════
-async function compose(){
-  if(photos.length<planSize)return;
-  hideErr();
-  document.getElementById('results').classList.remove('show');
-  document.getElementById('results').innerHTML='';
-  document.getElementById('loading').classList.add('show');
-  document.getElementById('go').disabled=true;
-  step(1);
-  try{
-    const H=HARMONIES.find(h=>h.id===selH),P=PATTERNS.find(p=>p.id===selP);
-    const kw=document.getElementById('kw').value,kc=document.getElementById('kc').value;
-    const colorCtx=photos.map((p,i)=>
-      `FOTO ${i+1}: kelvin~${p.kelvin}K temp=${p.kelvin<5000?'QUENTE':'FRIO'} cores=[${(p.colors||[]).map(c=>c.hex+'('+c.pct+'%)').join(' ')}]`
-    ).join('\n');
-    const igCtx=igPhotos.length>0
-      ?'\nULTIMAS 3 FOTOS DO GRID (continuidade):\n'+igPhotos.map((p,i)=>`IG${i+1}: kelvin~${p.kelvin}K cores=[${(p.colors||[]).map(c=>c.hex+'('+c.pct+'%)').join(' ')}]`).join('\n')
-      :'';
-    step(2);
-
-    // Use compressed images for API call
-    const content=[];
-    photos.forEach((p,i)=>{
-      const b64=p.compressed.split(',')[1];
-      content.push({type:'image',source:{type:'base64',media_type:'image/jpeg',data:b64}});
-      content.push({type:'text',text:`[FOTO ${i+1}]`});
-    });
-    step(3);
-    content.push({type:'text',text:buildPrompt(H,P,kw,kc,colorCtx,igCtx,planSize)});
-
-    const res=await fetch('/api/analyze',{
-      method:'POST',
-      headers:{
-        'Content-Type':'application/json',
-        'Authorization': 'Bearer ' + authToken
-      },
-      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:4000,messages:[{role:'user',content}]})
-    });
-
-    const data=await res.json();
-    if(!res.ok){
-      if(data.code==='NO_CREDITS'){
-        throw new Error('Sem créditos disponíveis. Clique no saldo no topo para comprar mais.')
-      }
-      throw new Error(data.error?.message||data.error||`HTTP ${res.status}`)
-    }
-
-    const raw=data.content.filter(b=>b.type==='text').map(b=>b.text).join('');
-    step(4);
-
-    const cleaned=raw.replace(/```json\s*/gi,'').replace(/```\s*/g,'').trim();
-    let parsed;
-    try{parsed=JSON.parse(cleaned)}
-    catch{
-      const m=cleaned.match(/\{[\s\S]*\}/);
-      if(m){try{parsed=JSON.parse(m[0].replace(/,\s*([}\]])/g,'$1'))}catch{}}
-      if(!parsed){
-        const a=cleaned.match(/"plan"\s*:\s*(\[[\s\S]*?\])/);
-        if(a)parsed={plan:JSON.parse(a[1])};
-        else throw new Error('JSON inválido — resposta: '+cleaned.slice(0,300));
-      }
-    }
-    renderResults(parsed,H);
-    loadCredits(); // atualiza saldo após análise
-  }catch(e){
-    showErr(e.message);
-  }finally{
-    document.getElementById('loading').classList.remove('show');
-    document.getElementById('go').disabled=false;
-  }
-}
-
-function step(n){
-  ['s1','s2','s3','s4'].forEach((id,i)=>{
-    document.getElementById(id).className='ld-s'+(i+1<n?' done':i+1===n?' now':'');
-  });
-  const m=['','Extraindo cores reais...','Analisando composição...','Testando combinações...','Montando plano...'];
-  document.getElementById('ldtxt').textContent=m[n];
-}
-
-function buildPrompt(H,P,kw,kc,colorCtx,igCtx,size){
-  const axis=CONTRAST_AXES.find(a=>a.id===selC);
-  const kelvinLine=axis?.useKelvin?`Kelvin-Q=ate${kw}K Kelvin-F=acima${kc}K`:'(Kelvin é referência mas não é o eixo principal de contraste)';
-  return`Especialista em color grading e grid Instagram outdoor/adventure.
-
-CORES K-MEANS LAB EXTRAIDAS (valores reais do pixel):
-${colorCtx}${igCtx}
-
-CONFIG: Harmonia=${H.name} Padrao=${P.name} ${kelvinLine} Posts=${size}
-
-${axis?.prompt||''}
-
-Monte o melhor plano de ${size} posts. RETORNE APENAS JSON SEM MARKDOWN:
-{"plan":[{"slot":1,"photo":N,"temp":"cool","kelvin":"7500K","contrast_role":"claro","type":"TIPO","harmony_role":"papel na harmonia","reason":"max 70 chars","preset":"ajustes PS/LR max 60 chars"}],"overview":"1 frase","harmony_note":"1 frase — mencione o eixo de contraste usado"}
-
-Slots: ${Array.from({length:size},(_,i)=>i+1).join(', ')}
-Fotos disponiveis: 1 a ${photos.length}
-Kelvin: MENOR=quente/laranja MAIOR=frio/azul
-contrast_role: para temperatura=warm/cool · luminância=light/dark · plano=portrait/landscape/detail · saturação=vivid/muted`;
-}
-
-// ══ RENDER ═══════════════════════════════════════════
-function renderResults(data,H){
-  const plan=data.plan||[];
-  const results=document.getElementById('results');
-
-  // Collect unique palette colors
-  const allColors=[];
-  plan.forEach(s=>{const p=photos[s.photo-1];if(p)(p.colors||[]).slice(0,2).forEach(c=>{if(!allColors.includes(c.hex))allColors.push(c.hex)})});
-
-  const gridCells=plan.map(s=>{
-    const p=photos[s.photo-1];const iW=s.temp==='warm';
-    if(!p)return`<div class="ppc empty"><span>+${s.slot}</span></div>`;
-    return`<div class="ppc">
-      <img src="${p.dataUrl}">
-      <div class="ppc-badge">+${s.slot}</div>
-      <div class="ppc-k">${s.kelvin}</div>
-      <div class="ppc-dot" style="background:${iW?'#e8920a':'#1976d2'}"></div>
-    </div>`;
-  }).join('');
-
-  const rows=[];for(let i=0;i<plan.length;i+=3)rows.push(plan.slice(i,i+3));
-  const tempBadges=rows.map(row=>row.map(s=>`<span class="rt ${s.temp==='warm'?'rt-w':'rt-c'}">${s.temp==='warm'?'🟠':'🔵'} ${s.kelvin}</span>`).join('')).join('');
-  const palHtml=allColors.slice(0,10).map(hex=>`<div class="ppal-c" style="background:${hex}"></div>`).join('');
-
-  const details=plan.map(s=>{
-    const p=photos[s.photo-1];if(!p)return'';const iW=s.temp==='warm';
-    const palDots=(p.colors||[]).slice(0,5).map(c=>`<div class="pr-pc" style="background:${c.hex}"></div>`).join('');
-    const axis=CONTRAST_AXES.find(a=>a.id===selC);
-    const contrastBadge=s.contrast_role
-      ?`<span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:100px;background:#f3f4f6;color:#374151;margin-left:2px">${axis?.icon||''} ${s.contrast_role}</span>`
-      :'';
-    return`<div class="post-row">
-      <div class="pr-thumb"><img src="${p.dataUrl}"></div>
-      <div class="pr-body">
-        <div class="pr-top">
-          <span class="pr-slot">+${s.slot}</span>
-          <span class="pr-type">${s.type}</span>
-          ${contrastBadge}
-          <span class="pr-temp ${iW?'pr-tw':'pr-tc'}">${iW?'Quente':'Frio'}</span>
-        </div>
-        <div class="pr-reason">${s.reason}</div>
-        <div class="pr-preset">⚙ ${s.preset}</div>
-        <div class="pr-pal">${palDots}</div>
-      </div>
-    </div>`;
-  }).join('');
-
-  results.innerHTML=`
-    <div class="plan-post">
-      <div class="pp-hdr">
-        <div class="pp-user">
-          <div class="pp-av">H</div>
-          <div><div class="pp-name">henriq.eu</div><div class="pp-sub">Próximos ${planSize} posts · ${H?.name||''}</div></div>
-        </div>
-        <div class="pp-more">···</div>
-      </div>
-      <div class="pp-grid">${gridCells}</div>
-      <div class="pp-actions">
-        <div class="pp-acts"><span class="pp-act">♡</span><span class="pp-act">💬</span><span class="pp-act">↗</span></div>
-        <span class="pp-act">🔖</span>
-      </div>
-      <div class="pp-pal">${palHtml}</div>
-      <div class="pp-temps">${tempBadges}</div>
-      <div class="pp-caption"><strong>henriq.eu</strong> ${data.overview||''}</div>
-      <div class="pp-harmony">${data.harmony_note||''}</div>
+<!-- SETTINGS MODAL -->
+<div id="settings-modal" class="modal-overlay" onclick="if(event.target===this)closeSettings()">
+  <div class="modal-box">
+    <div class="modal-hdr">
+      <div class="modal-title" data-i18n="settings">Configurações</div>
+      <button class="modal-close" onclick="closeSettings()">✕</button>
     </div>
-    <div class="detail-panel">
-      <div class="detail-hdr">Detalhe por post</div>
-      ${details}
-    </div>`;
+    <div class="modal-tabs">
+      <button class="stab active" id="stab-profile"  onclick="switchSettingsTab('profile')"  data-i18n="profile">Perfil</button>
+      <button class="stab"        id="stab-security" onclick="switchSettingsTab('security')" data-i18n="security">Segurança</button>
+      <button class="stab"        id="stab-plan"     onclick="switchSettingsTab('plan')"     data-i18n="plan_tab">Plano</button>
+    </div>
 
-  results.classList.add('show');
-  // Scroll main area to results
-  document.querySelector('.main').scrollTo({top:0,behavior:'smooth'});
-}
+    <!-- Profile -->
+    <div class="spanel active" id="spanel-profile">
+      <div class="sfield">
+        <label class="slabel" data-i18n="name_label">Nome</label>
+        <input class="sinput" id="settings-name" type="text">
+      </div>
+      <div class="sfield">
+        <label class="slabel" data-i18n="email_label">E-mail</label>
+        <input class="sinput" id="settings-email" type="email">
+        <div class="shint" data-i18n="email_change_note">Mudança requer confirmação no novo endereço</div>
+      </div>
+      <div class="smsg" id="profile-msg"></div>
+      <div style="display:flex;gap:8px">
+        <button class="sbtn" id="save-profile-btn" onclick="saveProfile()">Salvar nome</button>
+        <button class="sbtn sbtn-outline" id="save-email-btn" onclick="saveEmail()">Atualizar e-mail</button>
+      </div>
+    </div>
 
-// ══ SUPABASE AUTH ════════════════════════════════════
-// SUBSTITUA pelas suas credenciais
-const SUPABASE_URL = '__SUPABASE_URL__'
-const SUPABASE_ANON_KEY = '__SUPABASE_ANON_KEY__'
-const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+    <!-- Security -->
+    <div class="spanel" id="spanel-security">
+      <div class="sfield">
+        <label class="slabel" data-i18n="new_password">Nova senha</label>
+        <input class="sinput" id="settings-pw1" type="password" placeholder="mínimo 8 caracteres">
+      </div>
+      <div class="sfield">
+        <label class="slabel" data-i18n="confirm_password">Confirmar senha</label>
+        <input class="sinput" id="settings-pw2" type="password" placeholder="repita a senha">
+      </div>
+      <div class="smsg" id="pw-msg"></div>
+      <button class="sbtn" id="save-pw-btn" onclick="savePassword()">Atualizar senha</button>
+    </div>
 
-let currentUser = null
-let authToken = null
+    <!-- Plan -->
+    <div class="spanel" id="spanel-plan">
+      <div class="plan-info-row">
+        <div>
+          <div class="slabel" data-i18n="current_plan">Plano atual</div>
+          <div id="dd-plan" style="font-size:18px;font-weight:800;margin-top:4px">—</div>
+        </div>
+        <div>
+          <div class="slabel" data-i18n="credits_available">Créditos</div>
+          <div id="dd-credits" style="font-size:18px;font-weight:800;margin-top:4px">—</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="sbtn" onclick="window.location.href='/comprar'" data-i18n="upgrade">Fazer upgrade</button>
+        <button class="sbtn sbtn-outline" id="manage-sub-btn" onclick="manageSubscription()">Gerenciar assinatura</button>
+      </div>
+    </div>
+  </div>
+</div>
 
-async function initAuth() {
-  const { data: { session } } = await sb.auth.getSession()
-  if (!session) {
-    window.location.href = '/login'
-    return
-  }
-  currentUser = session.user
-  authToken = session.access_token
-
-  // Update UI
-  const name = currentUser.user_metadata?.name || currentUser.email?.split('@')[0] || 'user'
-  document.getElementById('user-handle').textContent = '@' + name.toLowerCase().replace(/\s+/g, '')
-  document.getElementById('user-avatar').textContent = name[0].toUpperCase()
-
-  // Load credits
-  loadCredits()
-}
-
-async function loadCredits() {
-  try {
-    const res = await fetch('/api/credits', {
-      headers: { 'Authorization': 'Bearer ' + authToken }
-    })
-    const data = await res.json()
-    const badge = document.getElementById('credits-badge')
-    badge.textContent = `${data.credits} crédito${data.credits !== 1 ? 's' : ''}`
-    badge.style.color = data.credits < 3 ? '#dc2626' : '#374151'
-    badge.title = `${data.credits} análises disponíveis · clique para comprar`
-    badge.onclick = () => window.location.href = '/comprar'
-    badge.style.cursor = 'pointer'
-  } catch {}
-}
-
-async function doLogout() {
-  if (!confirm('Sair da conta?')) return
-  await sb.auth.signOut()
-  window.location.href = '/login'
-}
-
-init()
-initAuth()
+<script src="/auth.js"></script>
+<script src="/app.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', async () => {
+  setLang(LANG)
+  await initAuth()   // blocks until session verified — redirects to /login if not logged in
+  init()             // app init only runs if user is logged in
+})
 </script>
 </body>
 </html>
