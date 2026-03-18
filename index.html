@@ -508,9 +508,13 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
 .mode-btn-icon{font-size:22px;flex-shrink:0;line-height:1}
 .mode-btn-title{font-size:13px;font-weight:700;color:var(--text);margin-bottom:2px}
 .mode-btn-sub{font-size:11px;color:var(--text3);line-height:1.4}
-.mode-btn-ai:not(:disabled) .mode-btn-title{
-  background:var(--ig);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+.mode-btn-advanced:not(:disabled){border-color:#dbdbdb}
+.mode-btn-advanced:not(:disabled):hover{border-color:#7c3aed;background:#faf5ff}
+.mode-btn-advanced:not(:disabled) .mode-btn-title{
+  background:linear-gradient(45deg,#7c3aed,#a855f7);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
 }
+.mode-btn-advanced .mode-btn-icon{font-size:16px}
 
 /* ── CROP MODAL ── */
 .crop-modal{
@@ -769,17 +773,29 @@ canvas{display:none}
       </div>
     </div>
 
-    <!-- ③ AÇÃO -->
+    <!-- ③ ORGANIZAR O FEED -->
     <div class="mode-panel" id="mode-panel">
       <div class="mode-hint">Organizar o feed</div>
       <div class="mode-btns">
-        <button class="mode-btn mode-btn-ai" id="go" onclick="compose()" disabled>
+
+        <!-- Compor por cores -->
+        <button class="mode-btn mode-btn-ai" id="go" onclick="compose('basic')" disabled>
           <span class="mode-btn-icon">✦</span>
           <div>
-            <div class="mode-btn-title">Compor com IA</div>
-            <div class="mode-btn-sub" id="credit-cost">analisa o repositório e distribui nos slots · 1 crédito</div>
+            <div class="mode-btn-title">Compor por cores</div>
+            <div class="mode-btn-sub" id="credit-cost">temperatura · paleta · harmonia · 1 crédito</div>
           </div>
         </button>
+
+        <!-- Composição avançada -->
+        <button class="mode-btn mode-btn-advanced" id="go-advanced" onclick="compose('advanced')" disabled>
+          <span class="mode-btn-icon">✦✦</span>
+          <div>
+            <div class="mode-btn-title">Composição avançada</div>
+            <div class="mode-btn-sub">leitura visual completa · 2 créditos</div>
+          </div>
+        </button>
+
       </div>
     </div>
 

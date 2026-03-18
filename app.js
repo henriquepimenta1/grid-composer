@@ -705,19 +705,16 @@ function updateCnt() {
 }
 
 function updateActionButtons() {
-  const filledSlots = feedSlots.filter(s => s !== null && s !== undefined).length
-  const hasRepo     = repository.length > 0
+  const hasRepo = repository.length > 0
   const go      = document.getElementById('go')
-  const manBtn  = document.getElementById('manual-btn')
+  const goAdv   = document.getElementById('go-advanced')
   const costEl  = document.getElementById('credit-cost')
 
-  if (go)     go.disabled = !hasRepo
-  if (manBtn) manBtn.style.display = 'none'  // removed per UX decision
+  if (go)    go.disabled    = !hasRepo
+  if (goAdv) goAdv.disabled = !hasRepo
 
-  // Update credit label
   if (costEl && typeof updateCreditsUI === 'undefined') {
-    // fallback if auth not loaded yet
-    costEl.textContent = 'analisa o repositório e distribui nos slots · 1 crédito'
+    costEl.textContent = 'temperatura · paleta · harmonia · 1 crédito'
   }
 }
 
@@ -766,16 +763,19 @@ function showErr(msg) {
 function hideErr() { document.getElementById('err').classList.remove('show') }
 
 // ══ COMPOSE ══════════════════════════════════════════
-async function compose() {
-  // IA uses all repository photos as candidates
+async function compose(mode = 'basic') {
   const repoPhotos = repository.filter(Boolean)
   if (repoPhotos.length < 1) return
-  const filledPhotos = repoPhotos  // alias for rest of compose
+
+  const isAdvanced = mode === 'advanced'
+  const creditCost = isAdvanced ? 2 : 1
+
   hideErr()
   document.getElementById('results').classList.remove('show')
   document.getElementById('results').innerHTML = ''
   document.getElementById('loading').classList.add('show')
   document.getElementById('go').disabled = true
+  document.getElementById('go-advanced').disabled = true
   step(1)
 
   try {
@@ -784,7 +784,6 @@ async function compose() {
     const kw = document.getElementById('kw').value
     const kc = document.getElementById('kc').value
 
-    // Use only filled slots, numbered by slot position
     const colorCtx = repoPhotos.map((p,i) =>
       `FOTO ${i+1}: kelvin~${p.kelvin}K temp=${p.kelvin<5000?'QUENTE':'FRIO'} cores=[${(p.colors||[]).map(c=>c.hex+'('+c.pct+'%)').join(' ')}]`
     ).join('\n')
@@ -795,20 +794,67 @@ async function compose() {
         ).join('\n')
       : ''
 
-    step(2)
+    let visualCtx = ''
+
+    // ── Advanced: Stage 1 — visual description of each photo ──
+    if (isAdvanced) {
+      step(2)
+      document.getElementById('ldtxt').textContent = 'Lendo as fotos...'
+
+      const descContent = []
+      repoPhotos.forEach((p,i) => {
+        descContent.push({ type:'image', source:{ type:'base64', media_type:'image/jpeg', data:p.compressed.split(',')[1] } })
+        descContent.push({ type:'text', text:`[FOTO ${i+1}]` })
+      })
+      descContent.push({ type:'text', text: `Analise cada foto e retorne APENAS JSON sem markdown:
+{"photos":[{"id":1,"subject":"pessoa|paisagem|detalhe|grupo|animal","framing":"close|medio|aberto","energy":"estatico|dinamico","luminosity":"claro|medio|escuro","dominant_element":"descrição curta em português"}]}`
+      })
+
+      const descRes = await fetch('/api/analyze', {
+        method: 'POST',
+        headers: { 'Content-Type':'application/json', 'Authorization':'Bearer ' + authToken },
+        body: JSON.stringify({
+          model:'claude-sonnet-4-20250514',
+          max_tokens: 800,
+          messages:[{ role:'user', content: descContent }],
+          _creditOverride: 0  // first stage costs 0, second costs 2 total
+        })
+      })
+
+      if (descRes.ok) {
+        const descData = await descRes.json()
+        const rawDesc  = descData.content?.filter(b=>b.type==='text').map(b=>b.text).join('') || ''
+        try {
+          const cleaned = rawDesc.replace(/```json\s*/gi,'').replace(/```\s*/g,'').trim()
+          const parsed  = JSON.parse(cleaned.match(/\{[\s\S]*\}/)?.[0] || cleaned)
+          if (parsed.photos) {
+            visualCtx = '\nANÁLISE VISUAL DAS FOTOS:\n' + parsed.photos.map(ph =>
+              `FOTO ${ph.id}: sujeito=${ph.subject} plano=${ph.framing} energia=${ph.energy} luminosidade=${ph.luminosity} elemento="${ph.dominant_element}"`
+            ).join('\n')
+          }
+        } catch {}
+      }
+    }
+
+    step(isAdvanced ? 3 : 2)
 
     const content = []
     repoPhotos.forEach((p,i) => {
       content.push({ type:'image', source:{ type:'base64', media_type:'image/jpeg', data:p.compressed.split(',')[1] } })
       content.push({ type:'text', text:`[FOTO ${i+1}]` })
     })
-    step(3)
-    content.push({ type:'text', text: buildPrompt(H,P,kw,kc,colorCtx,igCtx,planSize,repoPhotos.length) })
+    step(isAdvanced ? 4 : 3)
+    content.push({ type:'text', text: buildPrompt(H,P,kw,kc,colorCtx+visualCtx,igCtx,planSize,repoPhotos.length,isAdvanced) })
 
     const res = await fetch('/api/analyze', {
       method: 'POST',
       headers: { 'Content-Type':'application/json', 'Authorization':'Bearer ' + authToken },
-      body: JSON.stringify({ model:'claude-sonnet-4-20250514', max_tokens:4000, messages:[{ role:'user', content }] })
+      body: JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens: 4000,
+        messages:[{ role:'user', content }],
+        _creditCost: creditCost
+      })
     })
 
     const data = await res.json()
@@ -841,6 +887,7 @@ async function compose() {
   } finally {
     document.getElementById('loading').classList.remove('show')
     document.getElementById('go').disabled = false
+    document.getElementById('go-advanced').disabled = false
   }
 }
 
@@ -852,7 +899,7 @@ function step(n) {
   document.getElementById('ldtxt').textContent = m[n]
 }
 
-function buildPrompt(H,P,kw,kc,colorCtx,igCtx,size,totalPhotos) {
+function buildPrompt(H,P,kw,kc,colorCtx,igCtx,size,totalPhotos,isAdvanced=false) {
   const axis = CONTRAST_AXES.find(a => a.id === selC)
   const kelvinLine = axis?.useKelvin
     ? `Kelvin-Q=ate${kw}K Kelvin-F=acima${kc}K`

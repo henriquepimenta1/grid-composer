@@ -71,7 +71,15 @@ app.post('/api/analyze', requireAuth, async (req, res) => {
     return res.status(402).json({ error: 'Sem créditos.', code: 'NO_CREDITS' });
   }
 
-  const body = JSON.stringify(req.body);
+  // Advanced mode costs 2 credits
+  const creditCost = req.body._creditCost === 2 ? 2 : 1;
+  if (userData.credits < creditCost) {
+    return res.status(402).json({ error: `Créditos insuficientes. Esta análise requer ${creditCost} créditos.`, code: 'NO_CREDITS' });
+  }
+
+  // Remove internal fields before forwarding to Anthropic
+  const { _creditCost, _creditOverride, ...anthropicBody } = req.body;
+  const body      = JSON.stringify(anthropicBody);
   const bodyBytes = Buffer.byteLength(body);
   if (bodyBytes > 30 * 1024 * 1024) {
     return res.status(413).json({
@@ -105,7 +113,7 @@ app.post('/api/analyze', requireAuth, async (req, res) => {
   // Deduct 1 credit on success — skip for paid plans (unlimited)
   if (statusCode === 200 && userData.plan === 'free') {
     await sb.from('users')
-      .update({ credits: userData.credits - 1 })
+      .update({ credits: userData.credits - creditCost })
       .eq('id', req.user.id);
   }
 
