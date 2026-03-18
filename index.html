@@ -1,0 +1,830 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Grid Composer Pro</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital@0;1&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#050708;--s1:#090D10;--s2:#0C1216;--s3:#101820;
+  --border:#121A20;--b2:#182430;--b3:#1E3040;
+  --acc:#C4853A;--acc2:#5A90A8;--grn:#4A8A6A;
+  --text:#7A9AB0;--dim:#1E3040;--mid:#345868;
+  --mono:'Space Mono',monospace;--dp:'Syne',sans-serif;
+}
+body{background:var(--bg);color:var(--text);font-family:var(--dp);min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:28px 14px 80px}
+
+/* HDR */
+.hdr{width:100%;max-width:960px;display:flex;justify-content:space-between;align-items:flex-end;border-bottom:1px solid var(--border);padding-bottom:14px;margin-bottom:20px}
+.hdr h1{font-size:18px;font-weight:800;color:#B8CCD8;letter-spacing:-0.02em}
+.hdr p{font-family:var(--mono);font-size:8px;color:var(--dim);letter-spacing:.14em;text-transform:uppercase;margin-top:3px}
+.badge{font-family:var(--mono);font-size:8px;color:var(--acc);border:1px solid #3A2010;background:#100800;padding:3px 9px;border-radius:2px}
+
+/* TABS */
+.tabs{width:100%;max-width:960px;display:flex;gap:2px;margin-bottom:16px;background:var(--s1);border:1px solid var(--border);border-radius:5px;padding:3px}
+.tab{flex:1;padding:8px;font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;text-align:center;cursor:pointer;border-radius:3px;color:var(--dim);transition:all .2s;border:none;background:none}
+.tab:hover{color:var(--text)}
+.tab.active{background:var(--s2);color:var(--acc);border:1px solid var(--b2)}
+
+/* MAIN LAYOUT */
+.layout{width:100%;max-width:960px;display:grid;grid-template-columns:200px 1fr;gap:12px;align-items:start}
+
+/* PANEL */
+.panel{background:var(--s1);border:1px solid var(--border);border-radius:5px;overflow:hidden}
+.ph{padding:10px 13px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
+.ph-title{font-family:var(--mono);font-size:8px;letter-spacing:.14em;text-transform:uppercase;color:var(--mid)}
+.pb{padding:12px 13px}
+
+/* HARMONY LIST */
+.hm-list{display:flex;flex-direction:column;gap:2px}
+.hm{display:flex;align-items:center;gap:7px;padding:7px 8px;border-radius:3px;cursor:pointer;border:1px solid transparent;transition:all .15s}
+.hm:hover{background:var(--s2)}
+.hm.on{background:var(--s2);border-color:var(--b2)}
+.hm-dot{width:24px;height:24px;border-radius:2px;flex-shrink:0}
+.hm-n{font-size:11px;font-weight:600;color:#7A9AB0}
+.hm-s{font-family:var(--mono);font-size:7px;color:var(--dim);margin-top:1px}
+.hm-ck{width:12px;height:12px;border-radius:50%;border:1.5px solid var(--b2);flex-shrink:0;margin-left:auto}
+.hm.on .hm-ck{background:var(--acc);border-color:var(--acc)}
+
+/* KELVIN SLIDERS */
+.kslider{margin-bottom:4px}
+.krow{display:flex;align-items:center;gap:6px;margin-bottom:5px}
+.klbl{font-family:var(--mono);font-size:8px;width:32px;flex-shrink:0}
+.klbl.w{color:var(--acc)}
+.klbl.c{color:var(--acc2)}
+input[type=range]{flex:1;accent-color:var(--acc2);cursor:pointer}
+.kval{font-family:var(--mono);font-size:8px;color:var(--mid);width:40px;text-align:right;flex-shrink:0}
+.kdiff{font-family:var(--mono);font-size:8px;color:var(--dim);text-align:center;margin-top:4px}
+
+/* GRID PATTERNS */
+.pat-list{display:flex;flex-direction:column;gap:3px}
+.pat{display:flex;align-items:center;gap:7px;padding:6px 8px;border-radius:3px;cursor:pointer;border:1px solid transparent;transition:all .15s}
+.pat:hover{background:var(--s2)}
+.pat.on{background:var(--s2);border-color:var(--b2)}
+.pat-g{display:grid;grid-template-columns:repeat(3,9px);gap:1.5px}
+.pg{width:9px;height:9px;border-radius:1px}
+.pg-w{background:var(--acc)}
+.pg-c{background:var(--acc2)}
+.pg-n{background:var(--b2)}
+.pat-n{font-family:var(--mono);font-size:9px;color:var(--mid)}
+
+/* INSTAGRAM BLOCK */
+.ig-block{display:flex;flex-direction:column;gap:6px}
+.ig-toggle{display:flex;gap:6px}
+.ig-opt{flex:1;padding:7px;border-radius:3px;cursor:pointer;font-family:var(--mono);font-size:8px;letter-spacing:.08em;text-transform:uppercase;border:1px solid var(--b2);background:transparent;color:var(--mid);transition:all .2s;text-align:center}
+.ig-opt:hover{color:var(--text)}
+.ig-opt.on{background:var(--s2);color:var(--acc);border-color:#3A2010}
+.ig-input{width:100%;background:var(--s2);border:1px solid var(--b2);border-radius:3px;padding:7px 9px;font-family:var(--mono);font-size:9px;color:var(--text);outline:none}
+.ig-input:focus{border-color:var(--b3)}
+.ig-note{font-family:var(--mono);font-size:7px;color:var(--dim);line-height:1.5}
+.ig-mini-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;border-radius:3px;overflow:hidden}
+.ig-mini-cell{aspect-ratio:1;background:var(--b2);position:relative;overflow:hidden}
+.ig-mini-cell img{width:100%;height:100%;object-fit:cover}
+.ig-mini-lbl{position:absolute;bottom:2px;left:2px;font-family:var(--mono);font-size:6px;background:rgba(0,0,0,.6);color:rgba(255,255,255,.6);padding:1px 3px;border-radius:1px}
+
+/* MAIN RIGHT */
+.main{display:flex;flex-direction:column;gap:10px}
+
+/* UPLOAD */
+.upload-box{background:var(--s1);border:1px solid var(--border);border-radius:5px;padding:14px}
+.upload-hdr{font-family:var(--mono);font-size:8px;letter-spacing:.14em;text-transform:uppercase;color:var(--mid);margin-bottom:10px;display:flex;justify-content:space-between}
+.upload-cnt{color:var(--acc)}
+.dz{border:1px dashed #1A2C38;border-radius:4px;padding:18px;text-align:center;cursor:pointer;transition:all .2s;margin-bottom:10px}
+.dz:hover,.dz.drag{border-color:var(--acc2);background:#060E14}
+.dz-i{font-size:20px;opacity:.2;margin-bottom:5px}
+.dz-t{font-family:var(--mono);font-size:9px;color:var(--dim);line-height:1.7}
+.thumbs{display:grid;grid-template-columns:repeat(6,1fr);gap:4px;margin-bottom:10px}
+.thumb{aspect-ratio:1;border-radius:2px;overflow:hidden;position:relative;cursor:grab;border:1.5px solid transparent;transition:all .15s}
+.thumb:hover{border-color:var(--b2)}
+.thumb.sel{border-color:var(--acc)}
+.thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.thumb-del{position:absolute;top:2px;right:2px;width:14px;height:14px;border-radius:50%;background:rgba(0,0,0,.7);color:rgba(255,255,255,.7);font-size:8px;display:none;align-items:center;justify-content:center;cursor:pointer;z-index:2}
+.thumb:hover .thumb-del{display:flex}
+.thumb-n{position:absolute;bottom:2px;left:2px;font-family:var(--mono);font-size:6.5px;background:rgba(0,0,0,.65);color:rgba(255,255,255,.6);padding:1px 3px;border-radius:1px;z-index:2}
+/* color swatch extracted */
+.thumb-pal{position:absolute;bottom:0;left:0;right:0;height:5px;display:flex}
+.tp{flex:1}
+
+/* COLOR EXTRACTION STATUS */
+.extract-status{font-family:var(--mono);font-size:8px;color:var(--dim);margin-bottom:8px;min-height:14px}
+
+/* ACTION BUTTONS */
+.actions{display:flex;gap:6px}
+.btn{flex:1;padding:10px;border-radius:3px;cursor:pointer;font-family:var(--mono);font-size:9px;letter-spacing:.08em;text-transform:uppercase;transition:all .2s;border:1px solid var(--b2);background:transparent;color:var(--mid)}
+.btn:hover{background:var(--s2);color:var(--text)}
+.btn.primary{background:#160C00;border-color:#3A2010;color:var(--acc)}
+.btn.primary:hover:not(:disabled){background:#1E1000;border-color:#5A3018}
+.btn.primary:disabled{opacity:.3;cursor:not-allowed}
+
+/* PLAN SIZE SELECTOR */
+.plan-size{display:flex;gap:4px;margin-bottom:12px}
+.ps-opt{flex:1;padding:8px;font-family:var(--mono);font-size:9px;letter-spacing:.08em;text-transform:uppercase;border:1px solid var(--b2);background:transparent;color:var(--dim);cursor:pointer;border-radius:3px;transition:all .2s;text-align:center}
+.ps-opt:hover{color:var(--text)}
+.ps-opt.on{background:var(--s2);border-color:#2A4050;color:var(--acc2)}
+
+/* LOADING */
+.loading{display:none;background:var(--s1);border:1px solid var(--border);border-radius:5px;padding:24px;text-align:center}
+.loading.show{display:block}
+.ld-t{font-family:var(--mono);font-size:9px;color:var(--dim);letter-spacing:.12em;text-transform:uppercase;margin-bottom:10px}
+.ld-bar{width:100%;height:2px;background:var(--b2);border-radius:1px;overflow:hidden;margin-bottom:10px}
+.ld-fill{height:100%;background:var(--acc);animation:ldp 1.8s ease-in-out infinite}
+@keyframes ldp{0%{width:0;margin-left:0}50%{width:60%;margin-left:20%}100%{width:0;margin-left:100%}}
+.ld-steps{display:flex;justify-content:center;gap:16px;flex-wrap:wrap}
+.ld-s{font-family:var(--mono);font-size:8px;display:flex;align-items:center;gap:4px;color:var(--dim)}
+.ld-s.done{color:var(--grn)}
+.ld-s.now{color:var(--acc)}
+.ld-dot{width:5px;height:5px;border-radius:50%;background:currentColor}
+
+/* RESULTS */
+.results{display:none;flex-direction:column;gap:10px}
+.results.show{display:flex}
+
+/* PLAN GRID — the actual suggested sequence */
+.plan-view{background:var(--s1);border:1px solid var(--border);border-radius:5px;overflow:hidden}
+.plan-hdr{padding:12px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.plan-title{font-size:13px;font-weight:700;color:#A8C0CC}
+.plan-sub{font-family:var(--mono);font-size:8px;color:var(--dim)}
+.plan-body{padding:14px}
+
+/* rows of 3 */
+.plan-rows{display:flex;flex-direction:column;gap:3px}
+.plan-row{display:grid;grid-template-columns:repeat(3,1fr);gap:3px}
+.plan-cell{aspect-ratio:1;border-radius:2px;overflow:hidden;position:relative}
+.plan-cell img{width:100%;height:100%;object-fit:cover;display:block}
+.plan-cell.empty{background:var(--b2);border:1px dashed var(--b3);display:flex;align-items:center;justify-content:center}
+.plan-cell.empty span{font-family:var(--mono);font-size:8px;color:var(--dim)}
+.pc-overlay{position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,.7) 0%,transparent 60%);pointer-events:none}
+.pc-num{position:absolute;top:4px;left:4px;font-family:var(--mono);font-size:7px;background:rgba(0,0,0,.65);color:rgba(255,255,255,.8);padding:1px 4px;border-radius:1px;z-index:2}
+.pc-k{position:absolute;bottom:4px;left:50%;transform:translateX(-50%);font-family:var(--mono);font-size:6.5px;background:rgba(0,0,0,.6);color:rgba(255,255,255,.55);padding:1px 4px;border-radius:1px;z-index:2;white-space:nowrap}
+.pc-tw{position:absolute;top:4px;right:4px;width:7px;height:7px;border-radius:50%;z-index:2}
+.pc-type{position:absolute;bottom:4px;left:4px;font-family:var(--mono);font-size:6px;background:rgba(0,0,0,.6);color:rgba(255,255,255,.5);padding:1px 3px;border-radius:1px;z-index:2}
+
+/* ROW ANALYSIS STRIP */
+.row-analysis{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;margin-top:8px;margin-bottom:12px}
+.ra-item{background:var(--s2);border-radius:3px;padding:8px 10px}
+.ra-k{font-family:var(--mono);font-size:7.5px;color:var(--dim);margin-bottom:3px}
+.ra-v{font-size:11px;font-weight:600;color:#7A9AB0}
+.ra-v.good{color:var(--grn)}
+.ra-v.warn{color:var(--acc)}
+
+/* COMBO CARDS (detail) */
+.combo-section{margin-top:12px}
+.cs-title{font-family:var(--mono);font-size:8px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);margin-bottom:8px}
+.combo-cards{display:flex;flex-direction:column;gap:8px}
+.cc{background:var(--s2);border:1px solid var(--border);border-radius:4px;padding:12px}
+.cc-top{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.cc-rank{font-family:var(--mono);font-size:8px;padding:2px 8px;border-radius:2px}
+.r1{background:#1A0C00;color:#C4853A;border:1px solid #3A2000}
+.r2{background:#0A1420;color:#5A90A8;border:1px solid #1A2A38}
+.r3{background:#0A140E;color:#4A8A6A;border:1px solid #182820}
+.cc-harm{font-size:11px;font-weight:700;color:#80A0B0}
+.cc-score{font-family:var(--mono);font-size:9px;color:var(--dim);margin-left:auto}
+.cc-pal{display:flex;height:10px;border-radius:2px;overflow:hidden;gap:1px;margin-bottom:8px}
+.cc-pal-s{flex:1}
+.cc-reason{font-size:11px;color:var(--mid);line-height:1.6;margin-bottom:8px}
+.cc-presets{display:grid;grid-template-columns:repeat(3,1fr);gap:4px}
+.cp{background:var(--s1);border-radius:2px;padding:7px}
+.cp-n{font-family:var(--mono);font-size:7px;color:var(--dim);margin-bottom:3px}
+.cp-v{font-size:10px;color:var(--mid);line-height:1.5}
+
+/* ERROR */
+.err{display:none;background:#100300;border:1px solid #350C00;border-radius:4px;padding:10px 14px;font-family:var(--mono);font-size:9px;color:#B04020}
+.err.show{display:block}
+
+#fin,#ref-fin{display:none}
+canvas{display:none}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <div><h1>Grid Composer Pro</h1><p>Extração de cor real · Planejamento 3/6/9 posts</p></div>
+  <div class="badge">@henriq.eu · beta</div>
+</div>
+
+<!-- PLAN SIZE TABS -->
+<div class="tabs" style="margin-bottom:16px;">
+  <button class="tab active" onclick="setPlanSize(3,this)">Próximos 3</button>
+  <button class="tab" onclick="setPlanSize(6,this)">Próximos 6</button>
+  <button class="tab" onclick="setPlanSize(9,this)">Próximos 9</button>
+</div>
+
+<div class="layout">
+
+<!-- ═══ LEFT ═══ -->
+<div style="display:flex;flex-direction:column;gap:10px;">
+
+  <!-- HARMONY -->
+  <div class="panel">
+    <div class="ph"><span class="ph-title">Harmonia</span></div>
+    <div class="pb"><div class="hm-list" id="hm-list"></div></div>
+  </div>
+
+  <!-- KELVIN -->
+  <div class="panel">
+    <div class="ph"><span class="ph-title">Faixa Kelvin</span></div>
+    <div class="pb">
+      <div style="width:100%;height:10px;border-radius:2px;background:linear-gradient(90deg,#FF5500,#FFB830,#FFEEBB,#C8DCFF,#80AAFF);margin-bottom:10px;"></div>
+      <div class="kslider">
+        <div class="krow">
+          <span class="klbl w">Q</span>
+          <input type="range" id="kw" min="1800" max="5500" step="100" value="3200" oninput="kUpdate()">
+          <span class="kval" id="kwv">3200K</span>
+        </div>
+        <div class="krow">
+          <span class="klbl c">F</span>
+          <input type="range" id="kc" min="5500" max="12000" step="100" value="7500" oninput="kUpdate()">
+          <span class="kval" id="kcv">7500K</span>
+        </div>
+      </div>
+      <div class="kdiff">Δ <span id="kdiff" style="color:var(--mid)">4300K</span> contraste</div>
+    </div>
+  </div>
+
+  <!-- PATTERN -->
+  <div class="panel">
+    <div class="ph"><span class="ph-title">Padrão</span></div>
+    <div class="pb"><div class="pat-list" id="pat-list"></div></div>
+  </div>
+
+  <!-- INSTAGRAM -->
+  <div class="panel">
+    <div class="ph"><span class="ph-title">Grid atual</span><span style="font-family:var(--mono);font-size:7px;color:var(--dim)">opcional</span></div>
+    <div class="pb">
+      <div class="ig-block">
+        <div class="ig-toggle">
+          <div class="ig-opt on" id="ig-skip" onclick="setIG('skip')">Ignorar</div>
+          <div class="ig-opt" id="ig-upload" onclick="setIG('upload')">Upload</div>
+        </div>
+
+        <div id="ig-upload-area" style="display:none;flex-direction:column;gap:6px;">
+          <div class="ig-note">Faça upload das últimas 3 fotos do seu grid (da mais recente para a mais antiga)</div>
+          <div class="ig-mini-grid" id="ig-grid">
+            <div class="ig-mini-cell"><span style="font-size:18px;opacity:.2;display:flex;align-items:center;justify-content:center;height:100%">+</span></div>
+            <div class="ig-mini-cell"><span style="font-size:18px;opacity:.2;display:flex;align-items:center;justify-content:center;height:100%">+</span></div>
+            <div class="ig-mini-cell"><span style="font-size:18px;opacity:.2;display:flex;align-items:center;justify-content:center;height:100%">+</span></div>
+          </div>
+          <button class="btn" style="padding:6px;" onclick="document.getElementById('ig-fin').click()">Upload últimas 3 fotos</button>
+          <input type="file" id="ig-fin" accept="image/*" multiple onchange="handleIG(this.files)" style="display:none">
+        </div>
+
+        <div id="ig-note-area">
+          <div class="ig-note" style="margin-top:4px;">Instagram bloqueia acesso direto. Faça upload manual das últimas fotos para contexto de continuidade.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ═══ RIGHT ═══ -->
+<div class="main">
+
+  <div class="upload-box">
+    <div class="upload-hdr">
+      <span>Fotos para planejar</span>
+      <span class="upload-cnt" id="pcnt">0 fotos</span>
+    </div>
+
+    <!-- Color method badge -->
+    <div style="background:#080E0A;border:1px solid #142010;border-radius:3px;padding:8px 10px;margin-bottom:10px;display:flex;align-items:center;gap:8px;">
+      <span style="font-size:14px;">🔬</span>
+      <div>
+        <div style="font-family:var(--mono);font-size:8px;color:var(--grn);letter-spacing:.1em;text-transform:uppercase;">K-means LAB · Método Adobe Color</div>
+        <div style="font-family:var(--mono);font-size:7.5px;color:var(--dim);margin-top:2px;">Cores extraídas do pixel real — não estimadas pela IA</div>
+      </div>
+    </div>
+
+    <div class="dz" id="dz">
+      <div class="dz-i">⬡</div>
+      <div class="dz-t">Arraste ou clique para adicionar fotos<br><span style="font-size:8px;opacity:.5;">JPG · PNG · WEBP · até 12 fotos</span></div>
+    </div>
+    <input type="file" id="fin" accept="image/*" multiple style="display:none" onchange="handleFiles(this.files)">
+    <canvas id="cv"></canvas>
+
+    <div class="extract-status" id="exts"></div>
+    <div class="thumbs" id="thumbs"></div>
+
+    <div class="actions">
+      <button class="btn" onclick="clearAll()">Limpar</button>
+      <button class="btn primary" id="go" onclick="compose()" disabled>◈ &nbsp;Compor grid</button>
+    </div>
+  </div>
+
+  <div class="err" id="err"></div>
+  <div class="loading" id="loading">
+    <div class="ld-t" id="ldtxt">Analisando...</div>
+    <div class="ld-bar"><div class="ld-fill"></div></div>
+    <div class="ld-steps">
+      <div class="ld-s now" id="s1"><div class="ld-dot"></div>Extrair cores</div>
+      <div class="ld-s" id="s2"><div class="ld-dot"></div>Analisar conteúdo</div>
+      <div class="ld-s" id="s3"><div class="ld-dot"></div>Testar combinações</div>
+      <div class="ld-s" id="s4"><div class="ld-dot"></div>Montar plano</div>
+    </div>
+  </div>
+
+  <div class="results" id="results"></div>
+
+</div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════
+//  COLOR EXTRACTION — K-MEANS IN LAB SPACE
+//  Same method as Adobe Color
+// ══════════════════════════════════════════════
+
+function rgbToLab(r, g, b) {
+  // sRGB → linear
+  let R = r / 255, G = g / 255, B = b / 255;
+  R = R > 0.04045 ? Math.pow((R + 0.055) / 1.055, 2.4) : R / 12.92;
+  G = G > 0.04045 ? Math.pow((G + 0.055) / 1.055, 2.4) : G / 12.92;
+  B = B > 0.04045 ? Math.pow((B + 0.055) / 1.055, 2.4) : B / 12.92;
+  // linear → XYZ (D65)
+  let X = R * 0.4124564 + G * 0.3575761 + B * 0.1804375;
+  let Y = R * 0.2126729 + G * 0.7151522 + B * 0.0721750;
+  let Z = R * 0.0193339 + G * 0.1191920 + B * 0.9503041;
+  X /= 0.95047; Y /= 1.00000; Z /= 1.08883;
+  const f = v => v > 0.008856 ? Math.cbrt(v) : (7.787 * v) + 16/116;
+  return [116 * f(Y) - 16, 500 * (f(X) - f(Y)), 200 * (f(Y) - f(Z))];
+}
+
+function labToRgb(L, a, b) {
+  let Y = (L + 16) / 116, X = a / 500 + Y, Z = Y - b / 200;
+  X = (Math.pow(X, 3) > 0.008856 ? Math.pow(X, 3) : (X - 16/116) / 7.787) * 0.95047;
+  Y = (Math.pow(Y, 3) > 0.008856 ? Math.pow(Y, 3) : (Y - 16/116) / 7.787) * 1.00000;
+  Z = (Math.pow(Z, 3) > 0.008856 ? Math.pow(Z, 3) : (Z - 16/116) / 7.787) * 1.08883;
+  let R = X *  3.2404542 + Y * -1.5371385 + Z * -0.4985314;
+  let G = X * -0.9692660 + Y *  1.8760108 + Z *  0.0415560;
+  let B = X *  0.0556434 + Y * -0.2040259 + Z *  1.0572252;
+  R = R > 0.0031308 ? 1.055 * Math.pow(R, 1/2.4) - 0.055 : 12.92 * R;
+  G = G > 0.0031308 ? 1.055 * Math.pow(G, 1/2.4) - 0.055 : 12.92 * G;
+  B = B > 0.0031308 ? 1.055 * Math.pow(B, 1/2.4) - 0.055 : 12.92 * B;
+  return [Math.round(Math.max(0,Math.min(255,R*255))), Math.round(Math.max(0,Math.min(255,G*255))), Math.round(Math.max(0,Math.min(255,B*255)))];
+}
+
+function labDist(a, b) {
+  return Math.sqrt((a[0]-b[0])**2 + (a[1]-b[1])**2 + (a[2]-b[2])**2);
+}
+
+function rgbToHex(r, g, b) {
+  return '#' + [r,g,b].map(v => v.toString(16).padStart(2,'0')).join('');
+}
+
+function extractColors(img, k = 5) {
+  const cv = document.getElementById('cv');
+  const MAX = 120;
+  let w = img.width, h = img.height;
+  if (w > MAX || h > MAX) {
+    const ratio = Math.min(MAX/w, MAX/h);
+    w = Math.round(w * ratio); h = Math.round(h * ratio);
+  }
+  cv.width = w; cv.height = h;
+  const ctx = cv.getContext('2d');
+  ctx.drawImage(img, 0, 0, w, h);
+  const data = ctx.getImageData(0, 0, w, h).data;
+
+  // sample pixels → LAB
+  const pixels = [];
+  const step = 4; // sample every 4th pixel for speed
+  for (let i = 0; i < data.length; i += 4 * step) {
+    const r = data[i], g = data[i+1], b = data[i+2], a = data[i+3];
+    if (a < 128) continue; // skip transparent
+    pixels.push(rgbToLab(r, g, b));
+  }
+
+  // k-means init: spread initial centroids
+  const centroids = [];
+  centroids.push(pixels[Math.floor(Math.random() * pixels.length)]);
+  for (let ci = 1; ci < k; ci++) {
+    // k-means++ init: pick next centroid weighted by distance
+    const dists = pixels.map(p => Math.min(...centroids.map(c => labDist(p, c))));
+    const total = dists.reduce((a,b) => a+b, 0);
+    let r = Math.random() * total;
+    for (let pi = 0; pi < pixels.length; pi++) {
+      r -= dists[pi];
+      if (r <= 0) { centroids.push([...pixels[pi]]); break; }
+    }
+    if (centroids.length <= ci) centroids.push([...pixels[Math.floor(Math.random()*pixels.length)]]);
+  }
+
+  // iterate k-means
+  const ITERS = 12;
+  let assignments = new Array(pixels.length).fill(0);
+  for (let iter = 0; iter < ITERS; iter++) {
+    // assign
+    for (let pi = 0; pi < pixels.length; pi++) {
+      let best = 0, bestD = Infinity;
+      for (let ci = 0; ci < k; ci++) {
+        const d = labDist(pixels[pi], centroids[ci]);
+        if (d < bestD) { bestD = d; best = ci; }
+      }
+      assignments[pi] = best;
+    }
+    // update centroids
+    for (let ci = 0; ci < k; ci++) {
+      const clusterPixels = pixels.filter((_,pi) => assignments[pi] === ci);
+      if (clusterPixels.length === 0) continue;
+      centroids[ci] = [
+        clusterPixels.reduce((s,p) => s+p[0], 0) / clusterPixels.length,
+        clusterPixels.reduce((s,p) => s+p[1], 0) / clusterPixels.length,
+        clusterPixels.reduce((s,p) => s+p[2], 0) / clusterPixels.length,
+      ];
+    }
+  }
+
+  // count cluster sizes, sort by size
+  const counts = new Array(k).fill(0);
+  assignments.forEach(ci => counts[ci]++);
+  const results = centroids.map((c, ci) => {
+    const [r,g,b] = labToRgb(c[0], c[1], c[2]);
+    return { hex: rgbToHex(r,g,b), pct: Math.round(counts[ci]/pixels.length*100), lab: c };
+  });
+  results.sort((a,b) => b.pct - a.pct);
+  return results.slice(0, 5);
+}
+
+// Estimate Kelvin from dominant color (heuristic)
+function estimateKelvin(colors) {
+  if (!colors.length) return 6500;
+  const top = colors[0];
+  const hex = top.hex;
+  const r = parseInt(hex.slice(1,3),16);
+  const g = parseInt(hex.slice(3,5),16);
+  const b = parseInt(hex.slice(5,7),16);
+  // ratio based heuristic
+  const rb = r / (b + 1);
+  if (rb > 3.5) return 1800 + Math.round(Math.random()*400);
+  if (rb > 2.5) return 2500 + Math.round(Math.random()*500);
+  if (rb > 1.8) return 3200 + Math.round(Math.random()*600);
+  if (rb > 1.3) return 4200 + Math.round(Math.random()*600);
+  if (rb > 1.0) return 5500 + Math.round(Math.random()*800);
+  if (rb > 0.7) return 6800 + Math.round(Math.random()*800);
+  if (rb > 0.5) return 8000 + Math.round(Math.random()*1000);
+  return 9500 + Math.round(Math.random()*500);
+}
+
+// ══════════════════════════════════════════════
+//  STATE
+// ══════════════════════════════════════════════
+const HARMONIES = [
+  {id:'complementary',name:'Complementar',sub:'180° · máximo',dot:'linear-gradient(135deg,#C4853A,#3A5870)'},
+  {id:'analogous',name:'Análogo',sub:'0–60° · suave',dot:'linear-gradient(135deg,#4A8A9A,#5A8A6A,#8A9A4A)'},
+  {id:'split',name:'Split Complementar',sub:'±30° split',dot:'linear-gradient(135deg,#C4853A,#3A7870,#3A4A88)'},
+  {id:'triad',name:'Tríade',sub:'120° · vibrante',dot:'linear-gradient(135deg,#C4853A,#3A7A9A,#8A3A9A)'},
+  {id:'monochrome',name:'Monocromático',sub:'1 matiz',dot:'linear-gradient(135deg,#0A2A3A,#1A5A7A,#4A9AB8)'},
+  {id:'square',name:'Quadrado',sub:'4×90° · complexo',dot:'linear-gradient(135deg,#C4853A,#3A8A4A,#3A5870,#8A3A7A)'},
+  {id:'shades',name:'Sombras',sub:'dark · moody',dot:'linear-gradient(135deg,#0A0E12,#142028,#1C3040)'},
+  {id:'custom',name:'IA decide',sub:'melhor harmonia',dot:'linear-gradient(135deg,#3A3A3A,#5A5A5A,#7A7A7A)'},
+];
+
+const PATTERNS = [
+  {id:'checkerboard',name:'Xadrez',cells:[false,true,false,true,false,true]},
+  {id:'columns',name:'Colunas',cells:[false,false,true,false,false,true]},
+  {id:'rows',name:'Linhas',cells:[true,true,true,false,false,false]},
+  {id:'diagonal',name:'Diagonal',cells:[false,false,true,false,true,false]},
+  {id:'free',name:'Livre (IA)',cells:[null,null,null,null,null,null]},
+];
+
+let selH = 'complementary', selP = 'checkerboard';
+let photos = []; // {file, dataUrl, colors, kelvin, idx}
+let igPhotos = []; // last 3 IG photos
+let planSize = 3;
+let igMode = 'skip';
+
+// ══════════════════════════════════════════════
+//  INIT
+// ══════════════════════════════════════════════
+function init() {
+  renderHarmonies(); renderPatterns();
+  setupDrop();
+  kUpdate();
+}
+
+function renderHarmonies() {
+  document.getElementById('hm-list').innerHTML = HARMONIES.map(h => `
+    <div class="hm ${h.id===selH?'on':''}" onclick="selHarmony('${h.id}')">
+      <div class="hm-dot" style="background:${h.dot}"></div>
+      <div><div class="hm-n">${h.name}</div><div class="hm-s">${h.sub}</div></div>
+      <div class="hm-ck"></div>
+    </div>`).join('');
+}
+
+function renderPatterns() {
+  document.getElementById('pat-list').innerHTML = PATTERNS.map(p => {
+    const cells = p.cells.map(v=>`<div class="pg ${v===true?'pg-w':v===false?'pg-c':'pg-n'}"></div>`).join('');
+    return `<div class="pat ${p.id===selP?'on':''}" onclick="selPattern('${p.id}')">
+      <div class="pat-g">${cells}</div>
+      <span class="pat-n">${p.name}</span>
+    </div>`;
+  }).join('');
+}
+
+function selHarmony(id){selH=id;renderHarmonies()}
+function selPattern(id){selP=id;renderPatterns()}
+function kUpdate(){
+  const w=document.getElementById('kw').value,c=document.getElementById('kc').value;
+  document.getElementById('kwv').textContent=w+'K';
+  document.getElementById('kcv').textContent=c+'K';
+  document.getElementById('kdiff').textContent=(c-w)+'K';
+}
+function setPlanSize(n,btn){
+  planSize=n;
+  document.querySelectorAll('.tabs .tab').forEach(t=>t.classList.remove('active'));
+  btn.classList.add('active');
+}
+function setIG(mode){
+  igMode=mode;
+  document.getElementById('ig-skip').className='ig-opt'+(mode==='skip'?' on':'');
+  document.getElementById('ig-upload').className='ig-opt'+(mode==='upload'?' on':'');
+  document.getElementById('ig-upload-area').style.display=mode==='upload'?'flex':'none';
+  document.getElementById('ig-note-area').style.display=mode==='skip'?'block':'none';
+}
+
+// ══════════════════════════════════════════════
+//  UPLOAD + COLOR EXTRACTION
+// ══════════════════════════════════════════════
+function setupDrop(){
+  const dz=document.getElementById('dz');
+  dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('drag')});
+  dz.addEventListener('dragleave',()=>dz.classList.remove('drag'));
+  dz.addEventListener('drop',e=>{e.preventDefault();dz.classList.remove('drag');handleFiles(e.dataTransfer.files)});
+  dz.addEventListener('click',()=>document.getElementById('fin').click());
+}
+
+async function handleFiles(files) {
+  const remaining = 12 - photos.length;
+  const toAdd = Array.from(files).slice(0,remaining).filter(f=>f.type.startsWith('image/'));
+  document.getElementById('exts').textContent = `Extraindo cores de ${toAdd.length} foto(s)...`;
+
+  for (const file of toAdd) {
+    const dataUrl = await readFile(file);
+    const img = await loadImage(dataUrl);
+    const colors = extractColors(img, 5);
+    const kelvin = estimateKelvin(colors);
+    photos.push({file, dataUrl, colors, kelvin, idx: photos.length});
+    renderThumbs();
+    updateCount();
+  }
+  document.getElementById('exts').textContent = `✓ Cores extraídas via k-means LAB — ${photos.length} foto(s) prontas`;
+  document.getElementById('go').disabled = photos.length < planSize;
+}
+
+function readFile(file){
+  return new Promise(res=>{const r=new FileReader();r.onload=e=>res(e.target.result);r.readAsDataURL(file)});
+}
+function loadImage(src){
+  return new Promise(res=>{const i=new Image();i.onload=()=>res(i);i.src=src});
+}
+
+async function handleIG(files){
+  const list = Array.from(files).slice(0,3);
+  igPhotos = [];
+  const grid = document.getElementById('ig-grid');
+  grid.innerHTML = '';
+  for (const f of list) {
+    const dataUrl = await readFile(f);
+    const img = await loadImage(dataUrl);
+    const colors = extractColors(img,5);
+    const kelvin = estimateKelvin(colors);
+    igPhotos.push({dataUrl,colors,kelvin});
+    const cell = document.createElement('div');
+    cell.className='ig-mini-cell';
+    cell.innerHTML=`<img src="${dataUrl}"><div class="ig-mini-lbl">IG</div>`;
+    grid.appendChild(cell);
+  }
+  // pad
+  while(grid.children.length < 3){
+    const cell=document.createElement('div');cell.className='ig-mini-cell';
+    cell.innerHTML='<span style="font-size:16px;opacity:.2;display:flex;align-items:center;justify-content:center;height:100%">+</span>';
+    grid.appendChild(cell);
+  }
+}
+
+function renderThumbs(){
+  document.getElementById('thumbs').innerHTML = photos.map((p,i)=>{
+    const pal = (p.colors||[]).slice(0,5).map(c=>`<div class="tp" style="background:${c.hex}"></div>`).join('');
+    return `<div class="thumb" draggable="true"
+      ondragstart="dragStart(${i})" ondragover="dragOver(event)" ondrop="drop(event,${i})">
+      <img src="${p.dataUrl}">
+      <div class="thumb-del" onclick="removePhoto(${i})">×</div>
+      <div class="thumb-n">${i+1}</div>
+      <div class="thumb-pal">${pal}</div>
+    </div>`;
+  }).join('');
+}
+
+function updateCount(){
+  document.getElementById('pcnt').textContent=`${photos.length} foto${photos.length!==1?'s':''}`;
+}
+
+function removePhoto(i){photos.splice(i,1);photos.forEach((p,j)=>p.idx=j);renderThumbs();updateCount();document.getElementById('go').disabled=photos.length<planSize}
+function clearAll(){photos=[];igPhotos=[];renderThumbs();updateCount();document.getElementById('fin').value='';document.getElementById('go').disabled=true;document.getElementById('results').classList.remove('show');document.getElementById('results').innerHTML='';document.getElementById('err').classList.remove('show');document.getElementById('exts').textContent=''}
+
+let dragI=null;
+function dragStart(i){dragI=i}
+function dragOver(e){e.preventDefault()}
+function drop(e,i){e.preventDefault();if(dragI===null||dragI===i)return;const m=photos.splice(dragI,1)[0];photos.splice(i,0,m);dragI=null;renderThumbs()}
+
+// ══════════════════════════════════════════════
+//  COMPOSE
+// ══════════════════════════════════════════════
+async function compose(){
+  if(photos.length<planSize)return;
+  document.getElementById('err').classList.remove('show');
+  document.getElementById('results').classList.remove('show');
+  document.getElementById('results').innerHTML='';
+  document.getElementById('loading').classList.add('show');
+  document.getElementById('go').disabled=true;
+  step(1);
+
+  try {
+    const harmony = HARMONIES.find(h=>h.id===selH);
+    const pattern = PATTERNS.find(p=>p.id===selP);
+    const kw = document.getElementById('kw').value;
+    const kc = document.getElementById('kc').value;
+
+    // Build color context string from extracted colors
+    const colorContext = photos.map((p,i)=>{
+      const cols = (p.colors||[]).map(c=>`${c.hex}(${c.pct}%)`).join(' ');
+      const temp = p.kelvin < 5000 ? 'QUENTE' : 'FRIO';
+      return `FOTO ${i+1}: kelvin~${p.kelvin}K temp=${temp} cores=[${cols}]`;
+    }).join('\n');
+
+    const igContext = igPhotos.length > 0
+      ? '\nÚLTIMAS 3 FOTOS DO GRID ATUAL (contexto de continuidade):\n' +
+        igPhotos.map((p,i)=>`IG${i+1}: kelvin~${p.kelvin}K cores=[${(p.colors||[]).map(c=>c.hex+'('+c.pct+'%)').join(' ')}]`).join('\n')
+      : '';
+
+    step(2);
+
+    // Build content: only send images + text prompt (no image for IG, just color data)
+    const content = [];
+    photos.forEach((p,i)=>{
+      content.push({type:'image',source:{type:'base64',media_type:p.file.type||'image/jpeg',data:p.dataUrl.split(',')[1]}});
+      content.push({type:'text',text:`[FOTO ${i+1}]`});
+    });
+
+    step(3);
+
+    const prompt = buildPrompt(harmony, pattern, kw, kc, colorContext, igContext, planSize);
+    content.push({type:'text',text:prompt});
+
+    const res = await fetch('/api/analyze',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:4000,messages:[{role:'user',content}]})
+    });
+
+    if(!res.ok){const e=await res.json();throw new Error(e.error?.message||`HTTP ${res.status}`)}
+    const data = await res.json();
+    const raw = data.content.filter(b=>b.type==='text').map(b=>b.text).join('');
+
+    step(4);
+
+    const cleaned = raw.replace(/```json\s*/gi,'').replace(/```\s*/g,'').trim();
+    let parsed;
+    try { parsed = JSON.parse(cleaned); }
+    catch {
+      try {
+        const m = cleaned.match(/\{[\s\S]*\}/);
+        if(!m) throw new Error('no json');
+        parsed = JSON.parse(m[0].replace(/,\s*([}\]])/g,'$1'));
+      } catch {
+        const arrM = cleaned.match(/"plan"\s*:\s*(\[[\s\S]*?\])\s*[,}]/);
+        if(arrM) parsed = {plan: JSON.parse(arrM[1])};
+        else throw new Error('JSON inválido. Tente novamente.');
+      }
+    }
+
+    renderResults(parsed);
+
+  } catch(e) {
+    document.getElementById('err').textContent='⚠ '+e.message;
+    document.getElementById('err').classList.add('show');
+  } finally {
+    document.getElementById('loading').classList.remove('show');
+    document.getElementById('go').disabled=false;
+  }
+}
+
+function step(n){
+  ['s1','s2','s3','s4'].forEach((id,i)=>{
+    const el=document.getElementById(id);
+    el.className='ld-s'+(i+1<n?' done':i+1===n?' now':'');
+  });
+  const msgs=['','Extraindo e validando cores reais...','Analisando composição e conteúdo...','Testando combinações e harmonia...','Montando plano de '+planSize+' posts...'];
+  document.getElementById('ldtxt').textContent=msgs[n];
+}
+
+function buildPrompt(harmony, pattern, kw, kc, colorCtx, igCtx, size){
+  return `Especialista em color grading e grid Instagram outdoor/adventure.
+
+DADOS DE COR EXTRAÍDOS VIA K-MEANS LAB (valores reais do pixel — use estes, não tente reestimar):
+${colorCtx}
+${igCtx}
+
+CONFIGURAÇÃO:
+- Harmonia: ${harmony.name}
+- Padrão: ${pattern.name}  
+- Kelvin quente: até ${kw}K · frio: acima ${kc}K
+- Posts a planejar: ${size} (${Math.ceil(size/3)} linha${size>3?'s':''} de 3)
+
+TAREFA: Monte o melhor plano de ${size} posts com as fotos disponíveis (pode repetir fotos em sequências maiores). Para cada slot indique: qual foto, por que funciona cromaticamente, tipo composicional, preset rápido.
+
+Retorne APENAS este JSON (sem texto fora, sem markdown, sem backticks):
+{"plan":[{"slot":1,"photo":N,"col":"col1","temp":"cool","kelvin":"${kw>4000?'7500K':'3500K'}","type":"TIPO","harmony_role":"papel na harmonia","reason":"razao max 70 chars","preset":"ajustes PS/LR max 60 chars"}],"overview":"visao geral do plano em 1 frase","harmony_note":"como a harmonia ${harmony.name} se manifesta"}
+
+Slots: ${Array.from({length:size},(_,i)=>i+1).join(', ')}
+Fotos disponíveis: 1 a ${photos.length}
+Xadrez correto: slot ímpar=frio slot par=quente (se padrão xadrez)
+Kelvin: menor=quente/laranja, maior=frio/azul`;
+}
+
+// ══════════════════════════════════════════════
+//  RENDER
+// ══════════════════════════════════════════════
+function renderResults(data){
+  const plan = data.plan || [];
+  const results = document.getElementById('results');
+
+  // build rows of 3
+  const rows = [];
+  for(let i=0;i<plan.length;i+=3){rows.push(plan.slice(i,i+3))}
+
+  const rowsHtml = rows.map((row,ri) => {
+    const cells = row.map((slot,ci) => {
+      const photo = photos[slot.photo - 1];
+      const isWarm = slot.temp === 'warm';
+      if(!photo) return `<div class="plan-cell empty"><span>+${slot.slot}</span></div>`;
+      return `<div class="plan-cell">
+        <img src="${photo.dataUrl}">
+        <div class="pc-overlay"></div>
+        <div class="pc-num">+${slot.slot}</div>
+        <div class="pc-k">${slot.kelvin}</div>
+        <div class="pc-tw" style="background:${isWarm?'var(--acc)':'var(--acc2)'}"></div>
+        <div class="pc-type">${slot.type}</div>
+      </div>`;
+    }).join('');
+    // row analysis
+    const rowTemps = row.map(s=>s.temp==='warm'?'Q':'F').join(' · ');
+    const rowHarmony = row[0]?.harmony_role||'';
+    return `
+      <div class="plan-row">${cells}</div>
+      <div class="row-analysis">
+        <div class="ra-item"><div class="ra-k">Temperatura</div><div class="ra-v">${rowTemps}</div></div>
+        <div class="ra-item"><div class="ra-k">Linha ${ri+1}</div><div class="ra-v good">${rowHarmony}</div></div>
+        <div class="ra-item"><div class="ra-k">Padrão</div><div class="ra-v">${selP}</div></div>
+      </div>`;
+  }).join('');
+
+  // detail cards
+  const detailCards = plan.map((slot,i) => {
+    const photo = photos[slot.photo-1];
+    if(!photo) return '';
+    const pal = (photo.colors||[]).slice(0,5).map(c=>`<div class="cc-pal-s" style="background:${c.hex}"></div>`).join('');
+    const rankClass = i===0?'r1':i===1?'r2':'r3';
+    return `<div class="cc">
+      <div class="cc-top">
+        <span class="cc-rank ${rankClass}">+${slot.slot}</span>
+        <span class="cc-harm">${slot.type}</span>
+        <span class="cc-score">${slot.harmony_role}</span>
+      </div>
+      <div class="cc-pal">${pal}</div>
+      <div class="cc-reason">${slot.reason}</div>
+      <div class="cc-presets">
+        <div class="cp"><div class="cp-n">Foto ${slot.photo}</div><div class="cp-v">${slot.preset}</div></div>
+        <div class="cp"><div class="cp-n">Kelvin</div><div class="cp-v">${slot.kelvin}</div></div>
+        <div class="cp"><div class="cp-n">Temp</div><div class="cp-v">${slot.temp==='warm'?'🟠 QUENTE':'🔵 FRIO'}</div></div>
+      </div>
+    </div>`;
+  }).join('');
+
+  results.innerHTML = `
+    <div class="plan-view">
+      <div class="plan-hdr">
+        <div>
+          <div class="plan-title">Plano — próximos ${planSize} posts</div>
+          <div class="plan-sub">${data.harmony_note||''}</div>
+        </div>
+        <div style="font-family:var(--mono);font-size:8px;color:var(--dim);text-align:right;max-width:200px;">${data.overview||''}</div>
+      </div>
+      <div class="plan-body">
+        <div class="plan-rows">${rowsHtml}</div>
+      </div>
+    </div>
+    <div class="combo-section">
+      <div class="cs-title">Detalhe por post</div>
+      <div class="combo-cards">${detailCards}</div>
+    </div>
+  `;
+  results.classList.add('show');
+  results.scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+init();
+</script>
+</body>
+</html>

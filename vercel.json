@@ -1,0 +1,13 @@
+{\rtf1\ansi\ansicpg1252\cocoartf2868
+\cocoatextscaling0\cocoaplatform0{\fonttbl\f0\fmodern\fcharset0 Courier;}
+{\colortbl;\red255\green255\blue255;\red104\green154\blue169;\red5\green7\blue9;\red73\green125\blue151;
+\red60\green121\blue87;\red120\green154\blue169;}
+{\*\expandedcolortbl;;\cssrgb\c47843\c66667\c72157;\cssrgb\c1569\c2353\c3137;\cssrgb\c35294\c56471\c65882;
+\cssrgb\c29020\c54118\c41569;\cssrgb\c54118\c66667\c72157;}
+\paperw11900\paperh16840\margl1440\margr1440\vieww11520\viewh8400\viewkind0
+\deftab720
+\pard\pardeftab720\partightenfactor0
+
+\f0\fs22 \cf2 \cb3 \expnd0\expndtw0\kerning0
+\outl0\strokewidth0 \strokec2 \{\'a0\cf4 \strokec4 "version"\cf2 \strokec2 :\'a0\cf5 \strokec5 2\cf2 \strokec2 ,\'a0\cf4 \strokec4 "rewrites"\cf2 \strokec2 : [ \{\'a0\cf4 \strokec4 "source"\cf2 \strokec2 :\'a0\cf6 \strokec6 "/(.*)"\cf2 \strokec2 ,\'a0\cf4 \strokec4 "destination"\cf2 \strokec2 :\'a0\cf6 \strokec6 "/index.html"\cf2 \strokec2 \'a0\} ] \}\
+}
