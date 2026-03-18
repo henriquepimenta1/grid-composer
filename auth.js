@@ -1,4 +1,4 @@
-// auth.js — GridAI Auth & User Management
+// auth.js — Grid Composer Auth & User Management
 // Keys injected by server at runtime
 const SUPABASE_URL      = '__SUPABASE_URL__'
 const SUPABASE_ANON_KEY = '__SUPABASE_ANON_KEY__'
@@ -74,6 +74,22 @@ function updateCreditsUI(credits, plan) {
   if (badge) {
     badge.textContent = label
     badge.style.color = (!isUnlimited && credits < 3) ? '#dc2626' : '#374151'
+  }
+
+  // Update compose button credit indicator
+  const costEl = document.getElementById('credit-cost')
+  const goBtn  = document.getElementById('go')
+  if (costEl) {
+    if (isUnlimited) {
+      costEl.textContent = ''
+    } else {
+      costEl.textContent = `· ${credits} crédito${credits !== 1 ? 's' : ''} restante${credits !== 1 ? 's' : ''}`
+    }
+  }
+  if (goBtn && !isUnlimited && credits < 3) {
+    goBtn.classList.add('warn-credits')
+  } else if (goBtn) {
+    goBtn.classList.remove('warn-credits')
   }
 
   const ddPlan  = document.getElementById('dd-plan')

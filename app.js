@@ -398,6 +398,9 @@ ${axis?.prompt || ''}
 
 Monte o melhor plano considerando as POSIÇÕES REAIS no grid do Instagram.
 O padrão xadrez deve alternar na posição visual, não na ordem de slot.
+
+REGRA ANTI-REPETIÇÃO: Evite colocar fotos com sujeito dominante similar em slots visualmente adjacentes (horizontais ou verticais). Se duas fotos têm o mesmo sujeito principal (pessoa com chapéu, cachoeira, duna), separe-as com pelo menos 1 slot de distância visual no grid.
+
 RETORNE APENAS JSON SEM MARKDOWN:
 {"plan":[{"slot":1,"photo":N,"grid_position":"top-right","temp":"cool","kelvin":"7500K","contrast_role":"frio","type":"TIPO","harmony_role":"papel na harmonia","reason":"max 70 chars","preset":"ajustes PS/LR max 60 chars"}],"overview":"1 frase","harmony_note":"1 frase com eixo usado"}
 
@@ -504,7 +507,9 @@ function renderGrid() {
       ondragstart="gridDragStart(event,${slotNum})"
       ondragover="gridDragOver(event)"
       ondrop="gridDrop(event,${slotNum})"
-      ondragend="gridDragEnd(event)">
+      ondragend="gridDragEnd(event)"
+      onclick="openPhotoModal(${slotNum})"
+      style="cursor:pointer">
       <img src="${p.dataUrl}">
       <div class="ppc-badge">+${slotNum}</div>
       <div class="ppc-k">${s.kelvin}</div>
@@ -602,3 +607,46 @@ function gridDrop(e, targetSlot) {
   renderGrid()
   renderDetails()
 }
+
+// ── Photo detail modal ────────────────────────────────
+function openPhotoModal(slotNum) {
+  // Don't open if we just finished a drag
+  if (gridDragSlot !== null) return
+  const s = currentPlan.find(x => x.slot === slotNum)
+  if (!s) return
+  const p = photos[s.photo - 1]
+  if (!p) return
+
+  const iW      = s.temp === 'warm'
+  const gridPos = getGridPosition(slotNum, currentPlan.length)
+
+  document.getElementById('pm-img').src             = p.dataUrl
+  document.getElementById('pm-slot').textContent    = `+${slotNum}`
+  document.getElementById('pm-type').textContent    = s.type || ''
+  document.getElementById('pm-pos').textContent     = `📍 ${gridPos}`
+  document.getElementById('pm-reason').textContent  = s.reason || ''
+  document.getElementById('pm-harmony').textContent = s.harmony_role || ''
+  document.getElementById('pm-preset').textContent  = s.preset || ''
+
+  const tempEl = document.getElementById('pm-temp')
+  tempEl.textContent = iW ? '🟠 Quente' : '🔵 Frio'
+  tempEl.className   = `pm-temp ${iW ? 'pr-tw' : 'pr-tc'}`
+
+  // Palette — click to copy hex
+  document.getElementById('pm-palette').innerHTML = (p.colors || []).slice(0,5).map(c =>
+    `<div class="pm-pc" style="background:${c.hex}" title="${c.hex} · ${c.pct}%"
+      onclick="navigator.clipboard?.writeText('${c.hex}').then(()=>this.style.outline='2px solid #27ae60').catch(()=>{})">
+    </div>`
+  ).join('')
+
+  document.getElementById('photo-modal').classList.add('open')
+}
+
+function closePhotoModal() {
+  document.getElementById('photo-modal')?.classList.remove('open')
+}
+
+// Close photo modal on Escape
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closePhotoModal()
+})

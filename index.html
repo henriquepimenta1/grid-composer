@@ -229,12 +229,67 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
 .ppc.result-cell{cursor:grab}
 .ppc.result-cell:active{cursor:grabbing}
 .pp-grid-wrap{position:relative}
-.pp-grid-hint{
-  text-align:center;font-size:11px;color:var(--text3);
-  padding:6px 16px;background:var(--bg);
-  border-top:1px solid var(--border-light);
-  display:flex;align-items:center;justify-content:center;gap:6px;
+.pp-grid-hint{text-align:center;font-size:11px;color:var(--text3);padding:6px 16px;background:var(--bg);border-top:1px solid var(--border-light);display:flex;align-items:center;justify-content:center;gap:6px}
+
+/* ── TOOLTIPS ── */
+.help-btn{
+  display:inline-flex;align-items:center;justify-content:center;
+  width:15px;height:15px;border-radius:50%;
+  background:var(--border-light);color:var(--text3);
+  font-size:9px;font-weight:700;cursor:pointer;
+  border:none;font-family:var(--font);flex-shrink:0;
+  transition:all .15s;vertical-align:middle;margin-left:4px;
 }
+.help-btn:hover{background:var(--text);color:white}
+.tooltip-wrap{position:relative;display:inline-block}
+.tooltip-box{
+  display:none;position:absolute;left:0;top:calc(100% + 6px);
+  background:var(--text);color:white;border-radius:var(--r-sm);
+  padding:10px 12px;font-size:11px;line-height:1.6;
+  width:220px;z-index:300;box-shadow:var(--shadow-md);
+  pointer-events:none;
+}
+.tooltip-box::before{
+  content:'';position:absolute;top:-4px;left:10px;
+  border:4px solid transparent;border-bottom-color:var(--text);border-top:none;
+}
+.tooltip-wrap:hover .tooltip-box{display:block}
+
+/* ── PHOTO DETAIL MODAL ── */
+.photo-modal{
+  display:none;position:fixed;inset:0;
+  background:rgba(0,0,0,.7);backdrop-filter:blur(6px);
+  z-index:800;align-items:center;justify-content:center;padding:20px;
+}
+.photo-modal.open{display:flex;animation:fadeIn .2s ease}
+.pm-box{
+  background:var(--white);border-radius:var(--r);
+  width:100%;max-width:520px;max-height:90vh;overflow-y:auto;
+  box-shadow:0 20px 60px rgba(0,0,0,.3);
+  display:flex;flex-direction:column;
+}
+.pm-img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:var(--r) var(--r) 0 0}
+.pm-body{padding:20px}
+.pm-top{display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap}
+.pm-slot{font-size:13px;font-weight:700;padding:3px 10px;border-radius:100px;background:var(--text);color:white}
+.pm-type{font-size:13px;font-weight:700;color:var(--text)}
+.pm-pos{font-size:11px;color:var(--text3);background:var(--bg);padding:3px 8px;border-radius:100px}
+.pm-temp{font-size:12px;font-weight:600;padding:3px 10px;border-radius:100px;margin-left:auto}
+.pm-section{margin-bottom:14px}
+.pm-label{font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px}
+.pm-value{font-size:13px;color:var(--text2);line-height:1.5}
+.pm-preset{font-size:12px;background:var(--bg);padding:8px 10px;border-radius:var(--r-sm);line-height:1.5;color:var(--text2);font-family:monospace}
+.pm-palette{display:flex;gap:4px;margin-top:4px}
+.pm-pc{width:28px;height:28px;border-radius:5px;cursor:pointer;transition:transform .15s}
+.pm-pc:hover{transform:scale(1.15)}
+.pm-harmony{font-size:12px;color:var(--text2);background:#f0f9ff;border:1px solid #bae6fd;border-radius:var(--r-sm);padding:8px 10px;line-height:1.5}
+.pm-close{width:100%;padding:11px;margin-top:4px;border-radius:var(--r-sm);border:1.5px solid var(--border);background:transparent;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font);color:var(--text2)}
+.pm-close:hover{background:var(--bg)}
+
+/* ── CREDIT BUTTON STATES ── */
+.compose-btn.warn-credits{background:linear-gradient(45deg,#f59e0b,#ef4444)}
+.compose-btn .credit-cost{font-size:11px;opacity:.8;margin-left:4px}
+
 .detail-panel{background:var(--white);border:1px solid var(--border-light);border-radius:var(--r);box-shadow:var(--shadow);overflow:hidden}
 .detail-hdr{padding:14px 16px;border-bottom:1px solid var(--border-light);font-size:14px;font-weight:700}
 .post-row{display:flex;gap:12px;padding:12px 16px;border-bottom:1px solid var(--border-light);align-items:flex-start}
@@ -316,7 +371,20 @@ canvas{display:none}
   <!-- SIDEBAR -->
   <aside class="sidebar">
     <div class="sb-section">
-      <div class="sb-title" data-i18n="harmony">Harmonia</div>
+      <div class="sb-title">
+        <span data-i18n="harmony">Harmonia</span>
+        <span class="tooltip-wrap">
+          <button class="help-btn">?</button>
+          <div class="tooltip-box">
+            <strong>Harmonia cromática</strong> define a relação de cores entre as fotos.<br><br>
+            <strong>Complementar</strong> — máximo contraste (laranja + teal)<br>
+            <strong>Análogo</strong> — cores vizinhas, feed suave<br>
+            <strong>Monocromático</strong> — 1 matiz, minimalista<br>
+            <strong>Sombras</strong> — dark, moody, dramático<br>
+            <strong>IA decide</strong> — escolhe a melhor para o seu conjunto
+          </div>
+        </span>
+      </div>
       <div class="h-chips" id="hm-list"></div>
     </div>
     <div class="sb-section">
@@ -324,11 +392,36 @@ canvas{display:none}
       <div class="p-chips" id="pat-list"></div>
     </div>
     <div class="sb-section">
-      <div class="sb-title" data-i18n="contrast_axis">Eixo de contraste</div>
+      <div class="sb-title">
+        <span data-i18n="contrast_axis">Eixo de contraste</span>
+        <span class="tooltip-wrap">
+          <button class="help-btn">?</button>
+          <div class="tooltip-box">
+            <strong>Eixo de contraste</strong> define como as fotos alternam no grid — independente das cores.<br><br>
+            <strong>Temperatura</strong> — quente vs frio (Kelvin)<br>
+            <strong>Luminância</strong> — claro vs escuro · ideal para feeds todos quentes<br>
+            <strong>Plano</strong> — close vs paisagem vs detalhe<br>
+            <strong>Saturação</strong> — vívido vs dessaturado<br><br>
+            Harmonia e eixo são dimensões diferentes: harmonia cuida das <em>cores</em>, o eixo cuida do <em>ritmo visual</em>.
+          </div>
+        </span>
+      </div>
       <div class="c-chips" id="contrast-list"></div>
     </div>
     <div class="sb-section kelvin-section" id="kelvin-section">
-      <div class="sb-title" data-i18n="kelvin_temp">Temperatura (Kelvin)</div>
+      <div class="sb-title">
+        <span data-i18n="kelvin_temp">Temperatura (Kelvin)</span>
+        <span class="tooltip-wrap">
+          <button class="help-btn">?</button>
+          <div class="tooltip-box">
+            Define o limiar entre foto "quente" e foto "fria".<br><br>
+            <strong>Q (quente)</strong> — fotos abaixo desse valor: laranjas, dourados, pôr do sol<br>
+            <strong>F (frio)</strong> — fotos acima: teals, azuis, névoa<br><br>
+            Quanto maior a diferença entre Q e F, mais contrastante o xadrez.<br><br>
+            <em>Só usado quando eixo = Temperatura.</em>
+          </div>
+        </span>
+      </div>
       <div class="ktrack"></div>
       <div class="krow">
         <span class="klbl kw">Q</span>
@@ -384,7 +477,10 @@ canvas{display:none}
         <canvas id="cv"></canvas>
         <div class="thumbs" id="thumbs"></div>
         <div class="up-status" id="exts"></div>
-        <button class="compose-btn" id="go" onclick="compose()" disabled data-i18n="compose_btn">✦&nbsp; Compor grid</button>
+        <button class="compose-btn" id="go" onclick="compose()" disabled>
+          <span>✦&nbsp; Compor grid</span>
+          <span class="credit-cost" id="credit-cost">· 1 crédito</span>
+        </button>
       </div>
     </div>
 
@@ -409,6 +505,38 @@ canvas{display:none}
 
     <div class="results" id="results"></div>
   </main>
+</div>
+
+<!-- PHOTO DETAIL MODAL -->
+<div id="photo-modal" class="photo-modal" onclick="if(event.target===this)closePhotoModal()">
+  <div class="pm-box">
+    <img id="pm-img" class="pm-img" src="" alt="">
+    <div class="pm-body">
+      <div class="pm-top">
+        <span class="pm-slot" id="pm-slot"></span>
+        <span class="pm-type" id="pm-type"></span>
+        <span class="pm-pos" id="pm-pos"></span>
+        <span class="pm-temp" id="pm-temp"></span>
+      </div>
+      <div class="pm-section">
+        <div class="pm-label">Análise cromática</div>
+        <div class="pm-palette" id="pm-palette"></div>
+      </div>
+      <div class="pm-section">
+        <div class="pm-label">Por que este slot</div>
+        <div class="pm-value" id="pm-reason"></div>
+      </div>
+      <div class="pm-section">
+        <div class="pm-label">Harmonia no grid</div>
+        <div class="pm-harmony" id="pm-harmony"></div>
+      </div>
+      <div class="pm-section">
+        <div class="pm-label">Preset sugerido (PS/LR)</div>
+        <div class="pm-preset" id="pm-preset"></div>
+      </div>
+      <button class="pm-close" onclick="closePhotoModal()">Fechar</button>
+    </div>
+  </div>
 </div>
 
 <!-- SETTINGS MODAL -->
