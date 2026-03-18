@@ -349,6 +349,84 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
 .compose-btn.warn-credits{background:linear-gradient(45deg,#f59e0b,#ef4444)}
 .compose-btn .credit-cost{font-size:11px;opacity:.8;margin-left:4px}
 
+/* ── MODE PANEL ── */
+.mode-panel{background:var(--white);border:1px solid var(--border-light);border-radius:var(--r);padding:16px;box-shadow:var(--shadow)}
+.mode-hint{font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px}
+.mode-btns{display:flex;gap:8px}
+.mode-btn{
+  flex:1;padding:14px;border-radius:var(--r-sm);
+  border:1.5px solid var(--border);background:transparent;
+  cursor:pointer;font-family:var(--font);
+  display:flex;align-items:center;gap:12px;
+  transition:all .15s;text-align:left;
+}
+.mode-btn:disabled{opacity:.35;cursor:not-allowed}
+.mode-btn:not(:disabled):hover{border-color:var(--text);background:var(--bg)}
+.mode-btn-ai:not(:disabled):hover{border-color:#cc2366;background:#fff5f7}
+.mode-btn-ai:not(:disabled){border-color:#dbdbdb}
+.mode-btn-icon{font-size:22px;flex-shrink:0;line-height:1}
+.mode-btn-title{font-size:13px;font-weight:700;color:var(--text);margin-bottom:2px}
+.mode-btn-sub{font-size:11px;color:var(--text3);line-height:1.4}
+.mode-btn-ai:not(:disabled) .mode-btn-title{
+  background:var(--ig);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+}
+
+/* ── CROP MODAL ── */
+.crop-modal{
+  display:none;position:fixed;inset:0;
+  background:rgba(0,0,0,.85);backdrop-filter:blur(8px);
+  z-index:900;align-items:center;justify-content:center;flex-direction:column;gap:16px;
+}
+.crop-modal.open{display:flex}
+.crop-frame{
+  width:280px;height:350px; /* 4:5 */
+  overflow:hidden;border-radius:8px;position:relative;
+  cursor:move;user-select:none;box-shadow:0 0 0 2px white;
+}
+.crop-frame img{
+  position:absolute;transform-origin:center;
+  max-width:none;
+}
+.crop-controls{display:flex;align-items:center;gap:12px}
+.crop-slider{width:160px;-webkit-appearance:none;height:3px;border-radius:2px;background:rgba(255,255,255,.3);outline:none;cursor:pointer}
+.crop-slider::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:white;cursor:pointer}
+.crop-actions{display:flex;gap:8px}
+.crop-btn{
+  padding:9px 18px;border-radius:8px;border:none;
+  font-size:13px;font-weight:600;font-family:var(--font);cursor:pointer;
+}
+.crop-btn-save{background:white;color:#1a1a1a}
+.crop-btn-cancel{background:rgba(255,255,255,.15);color:white}
+.crop-hint{font-size:12px;color:rgba(255,255,255,.5);text-align:center}
+
+/* ── PALETTE MODAL (large hex) ── */
+.palette-modal{
+  display:none;position:fixed;inset:0;
+  background:rgba(0,0,0,.6);backdrop-filter:blur(6px);
+  z-index:850;align-items:center;justify-content:center;
+}
+.palette-modal.open{display:flex}
+.palette-box{
+  background:var(--white);border-radius:var(--r);
+  padding:20px;box-shadow:0 20px 60px rgba(0,0,0,.3);
+  width:280px;
+}
+.palette-title{font-size:13px;font-weight:700;margin-bottom:14px;color:var(--text)}
+.palette-swatches{display:flex;flex-direction:column;gap:8px}
+.palette-swatch{
+  display:flex;align-items:center;gap:10px;
+  border-radius:8px;overflow:hidden;cursor:pointer;
+  border:1px solid var(--border-light);transition:all .15s;
+}
+.palette-swatch:hover{transform:scale(1.02);box-shadow:var(--shadow)}
+.swatch-color{width:56px;height:48px;flex-shrink:0}
+.swatch-info{flex:1}
+.swatch-hex{font-size:14px;font-weight:700;font-family:monospace;color:var(--text)}
+.swatch-pct{font-size:11px;color:var(--text3);margin-top:2px}
+.swatch-copy{font-size:10px;color:var(--text3);margin-top:2px}
+.palette-swatch.copied .swatch-copy{color:var(--green)}
+.palette-close{width:100%;margin-top:14px;padding:9px;border-radius:var(--r-sm);border:1.5px solid var(--border);background:transparent;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font);color:var(--text2)}
+
 .detail-panel{background:var(--white);border:1px solid var(--border-light);border-radius:var(--r);box-shadow:var(--shadow);overflow:hidden}
 .detail-hdr{padding:14px 16px;border-bottom:1px solid var(--border-light);font-size:14px;font-weight:700}
 .post-row{display:flex;gap:12px;padding:12px 16px;border-bottom:1px solid var(--border-light);align-items:flex-start}
@@ -505,40 +583,56 @@ canvas{display:none}
   <!-- MAIN -->
   <main class="main">
 
-    <!-- GRID PLANNER — primary upload UI -->
+    <!-- STEP 1: UPLOAD -->
     <div class="upload-panel">
       <div class="up-hdr">
-        <span class="up-title">Planejar grid</span>
+        <span class="up-title">Suas fotos</span>
         <div class="up-meta">
           <span class="up-cnt" id="pcnt">0 fotos</span>
           <button class="up-clear" onclick="clearAll()" data-i18n="clear">Limpar</button>
         </div>
       </div>
       <div class="up-body">
-
-        <!-- Empty grid preview — shows slots, click to add photo -->
+        <!-- Slot grid — click to add, double-click to crop -->
         <div class="upload-grid" id="upload-grid"></div>
 
-        <!-- Drag-and-drop zone (secondary, for bulk add) -->
+        <!-- Bulk drop zone -->
         <div class="dz dz-small" id="dz">
-          <div class="dz-icon" style="font-size:20px">+</div>
-          <div class="dz-t" style="font-size:13px">Adicionar mais fotos</div>
-          <div class="dz-s">arraste ou clique · até 12 no total</div>
+          <span style="font-size:18px">+</span>
+          <span style="font-size:13px;font-weight:600">Adicionar fotos</span>
+          <span style="font-size:11px;color:var(--text3)">arraste ou clique · preenche slots vazios</span>
         </div>
 
         <input type="file" id="fin" accept="image/*" multiple onchange="handleFiles(this.files)">
-        <!-- Per-slot file input -->
         <input type="file" id="slot-fin" accept="image/*" style="display:none" onchange="handleSlotFile(this.files)">
+        <input type="file" id="slot-replace-fin" accept="image/*" style="display:none" onchange="handleSlotReplace(this.files)">
         <canvas id="cv"></canvas>
-
         <div class="up-status" id="exts"></div>
-        <button class="compose-btn" id="go" onclick="compose()" disabled>
-          <span>✦&nbsp; Compor grid</span>
-          <span class="credit-cost" id="credit-cost">· 1 crédito</span>
+      </div>
+    </div>
+
+    <!-- STEP 2: MODE TOGGLE -->
+    <div class="mode-panel" id="mode-panel">
+      <div class="mode-hint">O que deseja fazer?</div>
+      <div class="mode-btns">
+        <button class="mode-btn mode-btn-ai" id="go" onclick="compose()" disabled>
+          <span class="mode-btn-icon">✦</span>
+          <div>
+            <div class="mode-btn-title">Compor com IA</div>
+            <div class="mode-btn-sub" id="credit-cost">analisa cores e sugere ordem ideal · 1 crédito</div>
+          </div>
+        </button>
+        <button class="mode-btn mode-btn-manual" id="manual-btn" onclick="activateManual()" disabled>
+          <span class="mode-btn-icon">☰</span>
+          <div>
+            <div class="mode-btn-title">Organizar manualmente</div>
+            <div class="mode-btn-sub">arraste para reordenar · sem créditos</div>
+          </div>
         </button>
       </div>
     </div>
 
+    <!-- ERROR -->
     <div class="err-panel" id="err">
       <div class="err-icon">⚠️</div>
       <div class="err-body">
@@ -547,6 +641,7 @@ canvas{display:none}
       </div>
     </div>
 
+    <!-- LOADING -->
     <div class="loading" id="loading">
       <div class="ld-t" id="ldtxt">Analisando...</div>
       <div class="ld-bar"><div class="ld-fill"></div></div>
@@ -558,8 +653,35 @@ canvas{display:none}
       </div>
     </div>
 
+    <!-- RESULT (IA or Manual) -->
     <div class="results" id="results"></div>
   </main>
+</div>
+
+<!-- CROP MODAL -->
+<div id="crop-modal" class="crop-modal">
+  <div class="crop-frame" id="crop-frame">
+    <img id="crop-img" src="" alt="">
+  </div>
+  <div class="crop-hint">Arraste para reposicionar · scroll para zoom</div>
+  <div class="crop-controls">
+    <span style="font-size:11px;color:rgba(255,255,255,.5)">🔍</span>
+    <input type="range" class="crop-slider" id="crop-zoom" min="100" max="300" value="100" oninput="cropZoom(this.value)">
+    <span style="font-size:11px;color:rgba(255,255,255,.5)">+</span>
+  </div>
+  <div class="crop-actions">
+    <button class="crop-btn crop-btn-cancel" onclick="closeCrop()">Cancelar</button>
+    <button class="crop-btn crop-btn-save" onclick="saveCrop()">✓ Salvar recorte</button>
+  </div>
+</div>
+
+<!-- PALETTE MODAL -->
+<div id="palette-modal" class="palette-modal" onclick="if(event.target===this)closePaletteModal()">
+  <div class="palette-box">
+    <div class="palette-title" id="palette-title">Paleta de cores</div>
+    <div class="palette-swatches" id="palette-swatches"></div>
+    <button class="palette-close" onclick="closePaletteModal()">Fechar</button>
+  </div>
 </div>
 
 <!-- PHOTO DETAIL MODAL -->
