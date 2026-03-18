@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>GridAI — Entrar</title>
+<title>Grid Composer — Entrar</title>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="/i18n.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -81,7 +81,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:1
   <button class="lang-btn" id="lang-toggle" onclick="toggleLang()">🇧🇷 PT</button>
 
   <div class="card-logo">
-    <div class="logo">GridAI</div>
+    <div class="logo">Grid Composer</div>
     <div class="logo-sub" data-i18n="app_tagline">Planejamento inteligente de grid</div>
   </div>
 
@@ -237,8 +237,8 @@ async function doSignup() {
     const map = { 'User already registered': t('err_already_registered') }
     showMsg(msg, map[error.message] || error.message, 'error')
   } else {
-    showMsg(msg, t('signup_success'), 'success')
-    document.getElementById('signup-btn').disabled = true
+    showMsg(msg, t('login_success'), 'success')
+    setTimeout(() => window.location.replace('/app'), 1000)
   }
 }
 
