@@ -1195,10 +1195,14 @@ document.addEventListener('DOMContentLoaded', async () => {
 .pg-chip:hover{background:var(--bg);color:var(--text)}
 .pg-chip.on{border-color:var(--text);background:var(--text);color:white}
 .pg-chip.on .hchip-help{background:rgba(255,255,255,.2);color:white}
-.pg-swatch{width:26px;height:26px;border-radius:50%;cursor:pointer;border:2px solid transparent;transition:all .12s;flex-shrink:0;position:relative}
-.pg-swatch:hover::after{content:'✕';position:absolute;inset:0;border-radius:50%;background:rgba(0,0,0,.55);color:white;font-size:9px;display:flex;align-items:center;justify-content:center}
-.pg-add{width:26px;height:26px;border-radius:50%;border:1.5px dashed var(--border);background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--text3);font-size:16px;transition:all .12s;position:relative;flex-shrink:0}
+.pg-swatch{width:28px;height:28px;border-radius:50%;border:2px solid transparent;transition:all .12s;flex-shrink:0;position:relative;cursor:pointer}
+.pg-swatch:hover{transform:scale(1.1);border-color:var(--text)}
+.pg-swatch input[type=color]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;border-radius:50%;border:none;padding:0}
+.pg-swatch .pg-del{position:absolute;top:-4px;right:-4px;width:13px;height:13px;border-radius:50%;background:var(--text);color:white;font-size:8px;display:none;align-items:center;justify-content:center;z-index:2;cursor:pointer;line-height:1}
+.pg-swatch:hover .pg-del{display:flex}
+.pg-add{width:28px;height:28px;border-radius:50%;border:1.5px dashed var(--border);background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--text3);font-size:16px;transition:all .12s;position:relative;flex-shrink:0}
 .pg-add:hover{border-color:var(--text2);color:var(--text2)}
+.pg-add input[type=color]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;border-radius:50%;border:none;padding:0}
 .pg-ptab{padding:4px 10px;border-radius:100px;border:1.5px solid var(--border);background:transparent;font-size:11px;font-weight:600;color:var(--text2);cursor:pointer;font-family:var(--font);transition:all .12s}
 .pg-ptab.on{background:var(--text);border-color:var(--text);color:white}
 .pg-cell{aspect-ratio:4/5;border-radius:2px;transition:background .25s}
@@ -1327,12 +1331,18 @@ function renderPlayground() {
   document.getElementById('pg-grid-label').textContent=
     `${HARMONIES.find(h=>h.id===PG.selH)?.name} · ${PATTERNS.find(p=>p.id===PG.selP)?.name} · ${CONTRAST_AXES.find(a=>a.id===PG.selA)?.name}`
 
-  // Swatches
+  // Swatches — click circle opens color picker to EDIT, X badge removes
   document.getElementById('pg-swatches').innerHTML=
     PG.palette.map((c,i)=>
-      `<div class="pg-swatch" style="background:${c}" onclick="pgRemoveSwatch(${i})" title="${c}"></div>`
+      `<div class="pg-swatch" style="background:${c}" title="Clique para editar · X para remover">
+        <input type="color" value="${c}" onchange="pgEditColor(${i},this.value)">
+        <div class="pg-del" onclick="event.stopPropagation();pgRemoveSwatch(${i})">✕</div>
+      </div>`
     ).join('')+
-    `<div class="pg-add" title="Adicionar cor">+<input type="color" style="position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;border-radius:50%" value="#C4853A" oninput="pgAddColor(this.value)"></div>`
+    `<div class="pg-add" title="Adicionar cor">
+      <span style="pointer-events:none;font-size:16px">+</span>
+      <input type="color" value="#C4853A" onchange="pgAddColor(this.value)">
+    </div>`
 
   // Analysis
   const warm=PG.palette.filter(pgWarm).length
@@ -1351,6 +1361,7 @@ function renderPlayground() {
 function pgSel(type,id){if(type==='H')PG.selH=id;else if(type==='P')PG.selP=id;else PG.selA=id;renderPlayground()}
 function pgSetSize(n){PG.size=n;renderPlayground()}
 function pgRemoveSwatch(i){if(PG.palette.length>2){PG.palette.splice(i,1);renderPlayground()}}
+function pgEditColor(i,v){PG.palette[i]=v;renderPlayground()}
 function pgAddColor(v){if(PG.palette.length<12){PG.palette.push(v);renderPlayground()}}
 
 function openPlayground(){
