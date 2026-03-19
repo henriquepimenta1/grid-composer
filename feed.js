@@ -24,8 +24,9 @@ async function handleFiles(files) {
     const img = await loadImg(raw)
     const colors = extractColors(img, 5)
     const kelvin = estimateKelvin(colors)
+    const hasAccent = detectAccent(colors)
     const compressed = await compressImage(raw, 800, 0.75)
-    repository.push({ file, dataUrl: raw, compressed, colors, kelvin })
+    repository.push({ file, dataUrl: raw, compressed, colors, kelvin, hasAccent })
     renderRepo()
   }
   setStatus(`✓ ${repository.length} foto(s) no repositório`, 'ok')
@@ -140,10 +141,11 @@ async function handleSlotFile(files) {
   if (!file.type.startsWith('image/')) return
   const raw=await readFile(file), img=await loadImg(raw)
   const colors=extractColors(img,5), kelvin=estimateKelvin(colors)
+  const hasAccent=detectAccent(colors)
   const compressed=await compressImage(raw,800,0.75)
   const max = maxRepoSize()
   if (repository.length < max) {
-    repository.push({ file, dataUrl:raw, compressed, colors, kelvin })
+    repository.push({ file, dataUrl:raw, compressed, colors, kelvin, hasAccent })
     feedSlots[slotTargetIdx]=repository.length-1
     renderRepo()
   }

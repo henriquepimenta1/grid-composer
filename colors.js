@@ -58,6 +58,31 @@ function extractColors(img, k=5) {
   }).sort((a,b) => b.pct - a.pct).slice(0, 5)
 }
 
+function detectAccent(colors) {
+  // Detect if photo has a vivid warm accent even if overall temp is cold
+  // An "accent" is a color with high saturation AND warm hue (red/orange/yellow)
+  // that appears even in small percentage
+  for (const c of colors) {
+    const r = parseInt(c.hex.slice(1,3), 16)
+    const g = parseInt(c.hex.slice(3,5), 16)
+    const b = parseInt(c.hex.slice(5,7), 16)
+    const max = Math.max(r,g,b), min = Math.min(r,g,b), d = max - min
+    if (max === 0) continue
+    const sat = d / max  // 0–1
+    let hue = 0
+    if (d > 0) {
+      if (max===r)      hue = ((g-b)/d + (g<b?6:0)) * 60
+      else if (max===g) hue = ((b-r)/d + 2) * 60
+      else              hue = ((r-g)/d + 4) * 60
+    }
+    // Warm hue range: 0–45° (red/orange) or 330–360° (red)
+    const isWarmHue = hue <= 45 || hue >= 330
+    // High saturation threshold: >45%
+    if (sat > 0.45 && isWarmHue) return true
+  }
+  return false
+}
+
 function estimateKelvin(colors) {
   if (!colors.length) return 6500
   let totalPct = 0, weightedB = 0

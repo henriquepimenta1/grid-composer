@@ -18,7 +18,7 @@ async function compose(mode = 'basic') {
     const kw = document.getElementById('kw').value
     const kc = document.getElementById('kc').value
     const colorCtx = repoPhotos.map((p,i) =>
-      `FOTO ${i+1}: kelvin~${p.kelvin}K temp=${p.kelvin<5000?'QUENTE':'FRIO'} cores=[${(p.colors||[]).map(c=>c.hex+'('+c.pct+'%)').join(' ')}]`
+      `FOTO ${i+1}: kelvin~${p.kelvin}K temp=${p.kelvin<5000?'QUENTE':'FRIO'} acento_quente=${p.hasAccent?'SIM':'NAO'} cores=[${(p.colors||[]).map(c=>c.hex+'('+c.pct+'%)').join(' ')}]`
     ).join('\n')
     const igCtx = igPhotos.length > 0
       ? '\nULTIMAS 3 FOTOS DO GRID:\n' + igPhotos.map((p,i) => `IG${i+1}: kelvin~${p.kelvin}K cores=[${(p.colors||[]).map(c=>c.hex+'('+c.pct+'%)').join(' ')}]`).join('\n')
@@ -125,6 +125,12 @@ ${colorCtx}${igCtx}
 CONFIG: Harmonia=${H.name} Padrao=${P.name} ${kelvinLine} Posts=${size}
 ${axis?.prompt || ''}
 
+REGRA DE ACENTO CROMÁTICO (CRÍTICA):
+Fotos com acento_quente=SIM têm um elemento focal saturado/quente (gorro laranja, trailer laranja, pôr do sol) mesmo que o fundo seja frio.
+NUNCA coloque dois slots com acento_quente=SIM adjacentes (horizontal ou vertical).
+Alterne sempre: sem_acento · com_acento · sem_acento · com_acento.
+Trate acento_quente como o critério primário de agrupamento, antes da temperatura geral.
+
 REGRA DE DIVERSIDADE VISUAL:
 1. Nunca coloque dois slots com pessoa como sujeito dominante lado a lado.
 2. Prefira intercalar: PAISAGEM · PESSOA · PAISAGEM.
@@ -193,7 +199,12 @@ function reorderByAxis(axisId) {
     const repoIdx = s.photo-1
     let score, group
     switch (axisId) {
-      case 'temperature': score=p.kelvin; group=p.kelvin<5000?'A':'B'; break
+      case 'temperature':
+        // Group by accent presence first — photos with warm accent (orange hat, trailer)
+        // should alternate with cold/neutral even if overall Kelvin is similar
+        score = p.hasAccent ? 1000 + (10000 - p.kelvin) : p.kelvin
+        group = (p.hasAccent || p.kelvin < 5000) ? 'A' : 'B'
+        break
       case 'luminance': { const L=p.colors?.length?hexToL(p.colors[0].hex):50; score=L; group=L>55?'A':'B'; break }
       case 'subject': { const t=(s.type||'').toUpperCase(); score=t.includes('RETRATO')||t.includes('PESSOA')?2:t.includes('DETALHE')?1:0; group=(t.includes('RETRATO')||t.includes('PESSOA')||t.includes('GRUPO'))?'B':'A'; break }
       case 'saturation': { const sat=estimateSaturation(p.colors); score=sat; group=sat>0.35?'A':'B'; break }
@@ -225,7 +236,14 @@ function reorderByHarmony(harmonyId) {
   }).filter(Boolean)
   let scored
   switch (harmonyId) {
-    case 'complementary': scored=photos.map(p=>({...p,score:p.warm?100-p.kelvin/100:p.kelvin/100,group:p.warm?'A':'B'})); break
+    case 'complementary':
+      // Accent presence is the primary contrast — orange hat vs cold landscape
+      scored = photos.map(p => {
+        const ph = repository[p.repoIdx]
+        const hasAccent = ph?.hasAccent || p.warm
+        return { ...p, score: hasAccent ? 100 - p.kelvin/100 : p.kelvin/100, group: hasAccent ? 'A' : 'B' }
+      })
+      break
     case 'analogous':     scored=photos.map(p=>({...p,score:p.hue,group:p.hue<180?'A':'B'})); break
     case 'split': case 'triad': case 'square': scored=photos.map(p=>({...p,score:p.hue,group:Math.floor(p.hue/120)%2===0?'A':'B'})); break
     case 'monochrome': scored=photos.map(p=>({...p,score:p.L,group:p.L>55?'A':'B'})); break
