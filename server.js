@@ -32,7 +32,12 @@ app.get('/app',     (req, res) => res.send(injectKeys(fs.readFileSync('./index.h
 app.get('/comprar', (req, res) => res.send(injectKeys(fs.readFileSync('./pricing.html', 'utf8'))));
 app.get('/pricing', (req, res) => res.send(injectKeys(fs.readFileSync('./pricing.html', 'utf8'))));
 
-// ── JS files (auth.js gets key injection too) ─────────
+// ── Static JS files ───────────────────────────────────
+app.get('/colors.js',  (req, res) => res.sendFile('colors.js',  { root: '.' }));
+app.get('/state.js',   (req, res) => res.sendFile('state.js',   { root: '.' }));
+app.get('/feed.js',    (req, res) => res.sendFile('feed.js',    { root: '.' }));
+app.get('/compose.js', (req, res) => res.sendFile('compose.js', { root: '.' }));
+app.get('/ui.js',      (req, res) => res.sendFile('ui.js',      { root: '.' }));
 app.get('/i18n.js',  (req, res) => res.sendFile('i18n.js',  { root: '.' }));
 app.get('/app.js',   (req, res) => res.sendFile('app.js',   { root: '.' }));
 app.get('/howto.js', (req, res) => res.sendFile('howto.js', { root: '.' }));
@@ -228,6 +233,21 @@ app.post('/api/webhook/stripe', async (req, res) => {
         console.log(`✓ Cancelled: ${customerId} → free`);
       }
     }
+    if (event.type === 'checkout.session.completed') {
+      const session = event.data.object;
+      // One-time credit pack purchase
+      if (session.mode === 'payment' && session.metadata?.credits) {
+        const userId  = session.metadata.user_id;
+        const credits = parseInt(session.metadata.credits);
+        if (userId && credits > 0) {
+          const { data: u } = await sb.from('users').select('credits').eq('id', userId).single();
+          if (u) {
+            await sb.from('users').update({ credits: (u.credits || 0) + credits }).eq('id', userId);
+            console.log(`✓ Credits purchased: ${userId} +${credits}`);
+          }
+        }
+      }
+    }
     if (event.type === 'invoice.payment_succeeded') {
       // Monthly renewal — deposit credits
       const customerId = event.data.object.customer;
@@ -298,7 +318,38 @@ function constructStripeEvent(payload, sig, secret) {
   return JSON.parse(payload.toString());
 }
 
-// ── POST /api/history — save analysis ────────────────
+// ── POST /api/buy-credits (one-time credit packs) ──────
+app.post('/api/buy-credits', requireAuth, async (req, res) => {
+  try {
+    const { pack } = req.body;
+    const CREDIT_PACKS = {
+      pack10:  { price: process.env.STRIPE_PRICE_CREDITS_10,  credits: 10 },
+      pack30:  { price: process.env.STRIPE_PRICE_CREDITS_30,  credits: 30 },
+      pack100: { price: process.env.STRIPE_PRICE_CREDITS_100, credits: 100 },
+    };
+    const selected = CREDIT_PACKS[pack];
+    if (!selected?.price) return res.status(400).json({ error: 'Pack inválido' });
+
+    const { data: userData } = await sb.from('users').select('stripe_customer_id').eq('id', req.user.id).single();
+
+    const params = new URLSearchParams({
+      'line_items[0][price]':    selected.price,
+      'line_items[0][quantity]': '1',
+      'mode':                    'payment',
+      'success_url':             `${process.env.APP_URL || 'https://grid-composer.onrender.com'}/app?credits_added=${selected.credits}`,
+      'cancel_url':              `${process.env.APP_URL || 'https://grid-composer.onrender.com'}/app`,
+      'metadata[user_id]':       req.user.id,
+      'metadata[credits]':       String(selected.credits),
+    });
+    if (userData?.stripe_customer_id) params.append('customer', userData.stripe_customer_id);
+
+    const session = await stripeRequest('/v1/checkout/sessions', params.toString());
+    if (session.error) return res.status(500).json({ error: session.error.message });
+    res.json({ url: session.url });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 app.post('/api/history', requireAuth, async (req, res) => {
   try {
     const { data: userData } = await sb

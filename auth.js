@@ -77,6 +77,9 @@ function updateCreditsUI(credits, plan) {
       badge.style.color = credits < 3 ? '#dc2626' : '#374151'
       badge.style.background = credits < 3 ? '#fff5f5' : '#f3f4f6'
       badge.style.borderColor = credits < 3 ? '#fca5a5' : '#e5e7eb'
+      badge.onclick = () => openBuyCredits()
+      badge.title   = credits < 3 ? '✦ Comprar créditos' : 'Comprar mais créditos'
+      badge.style.cursor = 'pointer'
     } else {
       // Pro/Studio: show plan name + credit balance
       const planColor = plan === 'studio' ? '#7c3aed' : '#0095f6'
