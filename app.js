@@ -1312,6 +1312,9 @@ function renderResults(data, H) {
   renderDetails()
   results.classList.add('show')
   document.querySelector('.main').scrollTo({ top: 0, behavior: 'smooth' })
+
+  // Auto-save to history (async, non-blocking)
+  saveAnalysisToHistory(data, H)
 }
 
 // ── Manual mode ───────────────────────────────────────
@@ -1630,6 +1633,183 @@ function copySwatch(hex, ri, ci) {
 
 function closePaletteModal() {
   document.getElementById('palette-modal')?.classList.remove('open')
+}
+
+// ══ HISTORY ══════════════════════════════════════════
+
+// Generate a 32×32 JPEG thumbnail from a dataUrl
+async function makeThumb(dataUrl) {
+  return new Promise(resolve => {
+    const img = new Image()
+    img.onload = () => {
+      const cv = document.createElement('canvas')
+      cv.width = 32; cv.height = 40  // 4:5 ratio
+      cv.getContext('2d').drawImage(img, 0, 0, 32, 40)
+      resolve(cv.toDataURL('image/jpeg', 0.6))
+    }
+    img.onerror = () => resolve(null)
+    img.src = dataUrl
+  })
+}
+
+async function saveAnalysisToHistory(data, H) {
+  if (!authToken) return
+  try {
+    // Build slots with 32px thumbnails
+    const slots = await Promise.all((data.plan || []).map(async s => {
+      const p = repository[s.photo - 1]
+      if (!p) return null
+      const thumb = await makeThumb(p.cropUrl || p.dataUrl)
+      return {
+        slot:    s.slot,
+        thumb,
+        kelvin:  p.kelvin,
+        type:    s.type || '',
+        reason:  s.reason || '',
+      }
+    }))
+
+    // Palette from all colors
+    const palette = []
+    ;(data.plan || []).forEach(s => {
+      const p = repository[s.photo - 1]
+      if (p) (p.colors || []).slice(0,2).forEach(c => {
+        if (!palette.includes(c.hex)) palette.push(c.hex)
+      })
+    })
+
+    await fetch('/api/history', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + authToken },
+      body: JSON.stringify({
+        plan_size:    currentPlan.length,
+        harmony:      H?.id || selH,
+        axis:         selC,
+        pattern:      selP,
+        overview:     data.overview || '',
+        harmony_note: data.harmony_note || '',
+        palette:      palette.slice(0, 8),
+        slots:        slots.filter(Boolean),
+      })
+    })
+  } catch (e) {
+    console.warn('History save failed:', e.message)
+  }
+}
+
+// ── History modal ─────────────────────────────────────
+let historyCache = null
+
+async function openHistory() {
+  document.getElementById('history-modal').classList.add('open')
+  if (!historyCache) await loadHistory()
+}
+
+function closeHistory() {
+  document.getElementById('history-modal')?.classList.remove('open')
+}
+
+async function loadHistory() {
+  const list = document.getElementById('history-list')
+  list.innerHTML = '<div style="padding:24px;text-align:center;color:var(--text3)">Carregando...</div>'
+
+  try {
+    const res  = await fetch('/api/history', {
+      headers: { 'Authorization': 'Bearer ' + authToken }
+    })
+    const data = await res.json()
+    historyCache = data.analyses || []
+    renderHistoryList()
+  } catch {
+    list.innerHTML = '<div style="padding:24px;text-align:center;color:var(--red)">Erro ao carregar histórico.</div>'
+  }
+}
+
+function renderHistoryList() {
+  const list = document.getElementById('history-list')
+  const HARMONIES_MAP = {
+    complementary:'Complementar', analogous:'Análogo', split:'Dividido',
+    triad:'Tríade', monochrome:'Monocromático', square:'Quadrado',
+    shades:'Sombras', custom:'IA decide'
+  }
+  const AXIS_MAP = {
+    temperature:'Temperatura', luminance:'Luminância', subject:'Sujeito',
+    saturation:'Saturação', combined:'Combinado'
+  }
+
+  if (!historyCache?.length) {
+    list.innerHTML = `
+      <div style="padding:40px 24px;text-align:center">
+        <div style="font-size:32px;margin-bottom:12px">📭</div>
+        <div style="font-size:14px;font-weight:600;color:var(--text2)">Nenhuma análise ainda</div>
+        <div style="font-size:12px;color:var(--text3);margin-top:4px">As análises aparecerão aqui automaticamente.</div>
+      </div>`
+    return
+  }
+
+  list.innerHTML = ''
+  historyCache.forEach(a => {
+    const date = new Date(a.created_at)
+    const dateStr = date.toLocaleDateString('pt-BR', { day:'2-digit', month:'short' })
+    const timeStr = date.toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' })
+
+    // Thumbnails grid
+    const thumbsHtml = (a.slots || []).slice(0, 9).map(s =>
+      s.thumb
+        ? `<img src="${s.thumb}" style="width:32px;height:40px;object-fit:cover;border-radius:3px;flex-shrink:0">`
+        : `<div style="width:32px;height:40px;background:var(--border-light);border-radius:3px;flex-shrink:0"></div>`
+    ).join('')
+
+    // Palette swatches
+    const palHtml = (a.palette || []).slice(0, 8).map(hex =>
+      `<div style="width:16px;height:16px;border-radius:3px;background:${hex};flex-shrink:0"></div>`
+    ).join('')
+
+    const card = document.createElement('div')
+    card.className = 'history-card'
+    card.innerHTML = `
+      <div class="hc-header">
+        <div>
+          <div class="hc-date">${dateStr} · ${timeStr}</div>
+          <div class="hc-tags">
+            <span class="hc-tag">${HARMONIES_MAP[a.harmony] || a.harmony}</span>
+            <span class="hc-tag">${AXIS_MAP[a.axis] || a.axis}</span>
+            <span class="hc-tag">${a.plan_size} fotos</span>
+          </div>
+        </div>
+        <button class="hc-del" onclick="deleteAnalysis('${a.id}')" title="Excluir">🗑</button>
+      </div>
+      <div class="hc-thumbs">${thumbsHtml}</div>
+      <div class="hc-palette">${palHtml}</div>
+      ${a.overview ? `<div class="hc-overview">${a.overview}</div>` : ''}
+      <button class="hc-restore" onclick="restoreAnalysisSettings('${a.id}')">
+        ↩ Restaurar configurações
+      </button>`
+    list.appendChild(card)
+  })
+}
+
+async function deleteAnalysis(id) {
+  if (!confirm('Excluir esta análise do histórico?')) return
+  await fetch(`/api/history/${id}`, {
+    method: 'DELETE',
+    headers: { 'Authorization': 'Bearer ' + authToken }
+  })
+  historyCache = historyCache.filter(a => a.id !== id)
+  renderHistoryList()
+}
+
+function restoreAnalysisSettings(id) {
+  const a = historyCache?.find(x => x.id === id)
+  if (!a) return
+  selH = a.harmony || selH
+  selP = a.pattern || selP
+  selC = a.axis    || selC
+  renderHarmonies()
+  renderPatterns()
+  renderContrast()
+  closeHistory()
+  setStatus('✓ Configurações restauradas — adicione fotos e componha novamente', 'ok')
 }
 
 // ── Photo detail modal ────────────────────────────────

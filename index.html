@@ -405,6 +405,29 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
 }
 .ig-handle-input::placeholder{color:var(--text3)}
 @media(max-width:600px){.ig-handle-wrap{display:none}}
+/* ── HISTORY MODAL ── */
+.history-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);backdrop-filter:blur(6px);z-index:900;align-items:flex-start;justify-content:center;padding:24px 16px;overflow-y:auto}
+.history-modal.open{display:flex}
+.history-box{background:var(--white);border-radius:var(--r);box-shadow:0 20px 60px rgba(0,0,0,.25);width:100%;max-width:520px;overflow:hidden;margin:auto}
+.history-hdr{padding:16px 20px;border-bottom:1px solid var(--border-light);display:flex;align-items:center;justify-content:space-between}
+.history-hdr-title{font-size:15px;font-weight:700}
+.history-hdr-close{width:28px;height:28px;border-radius:50%;border:none;background:var(--bg);cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center}
+#history-list{max-height:70vh;overflow-y:auto}
+.history-card{padding:16px 20px;border-bottom:1px solid var(--border-light);transition:background .1s}
+.history-card:last-child{border-bottom:none}
+.history-card:hover{background:var(--bg)}
+.hc-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px}
+.hc-date{font-size:12px;font-weight:700;color:var(--text);margin-bottom:4px}
+.hc-tags{display:flex;gap:4px;flex-wrap:wrap}
+.hc-tag{font-size:10px;font-weight:600;padding:2px 7px;border-radius:100px;background:var(--bg);border:1px solid var(--border);color:var(--text2)}
+.hc-del{background:none;border:none;cursor:pointer;font-size:14px;opacity:.4;transition:opacity .15s;padding:2px}
+.hc-del:hover{opacity:1}
+.hc-thumbs{display:flex;gap:3px;flex-wrap:wrap;margin-bottom:8px}
+.hc-palette{display:flex;gap:3px;margin-bottom:8px}
+.hc-overview{font-size:12px;color:var(--text2);line-height:1.5;margin-bottom:10px}
+.hc-restore{font-size:12px;font-weight:600;padding:6px 14px;border-radius:100px;border:1.5px solid var(--border);background:transparent;cursor:pointer;font-family:var(--font);color:var(--text2);transition:all .15s}
+.hc-restore:hover{border-color:var(--text);color:var(--text)}
+
 .howto-btn{
   display:flex;align-items:center;gap:5px;
   padding:5px 12px;border-radius:100px;
@@ -649,6 +672,9 @@ canvas{display:none}
     </div>
     <button onclick="openHowTo()" class="howto-btn">
       <span>?</span> <span class="howto-btn-label">Como usar</span>
+    </button>
+    <button onclick="openHistory()" class="howto-btn" title="Histórico de análises">
+      <span>🕐</span> <span class="howto-btn-label">Histórico</span>
     </button>
     <button id="lang-toggle" onclick="toggleLang()" style="font-size:11px;font-weight:600;padding:4px 10px;border-radius:100px;border:1.5px solid var(--border);background:transparent;cursor:pointer;font-family:var(--font);color:var(--text2)">🇧🇷 PT</button>
     <span id="credits-badge" style="font-size:12px;font-weight:600;background:#f3f4f6;border:1px solid #e5e7eb;padding:2px 10px;border-radius:100px;color:#374151;cursor:pointer" onclick="window.location.href='/comprar'">—</span>
@@ -1018,5 +1044,16 @@ document.addEventListener('DOMContentLoaded', async () => {
   init()             // app init only runs if user is logged in
 })
 </script>
+<!-- HISTORY MODAL -->
+<div id="history-modal" class="history-modal" onclick="if(event.target===this)closeHistory()">
+  <div class="history-box">
+    <div class="history-hdr">
+      <div class="history-hdr-title">🕐 Histórico de análises</div>
+      <button class="history-hdr-close" onclick="closeHistory()">✕</button>
+    </div>
+    <div id="history-list"></div>
+  </div>
+</div>
+
 </body>
 </html>

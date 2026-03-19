@@ -61,23 +61,38 @@ app.get('/api/credits', requireAuth, async (req, res) => {
 
 // ── POST /api/analyze ─────────────────────────────────
 app.post('/api/analyze', requireAuth, async (req, res) => {
+  try {
   const apiKey = process.env.ANTHROPIC_KEY;
   if (!apiKey) return res.status(500).json({ error: 'API key não configurada' });
 
   const { data: userData } = await sb
     .from('users').select('credits, plan').eq('id', req.user.id).single();
 
-  if (!userData || userData.credits < 1) {
-    return res.status(402).json({ error: 'Sem créditos.', code: 'NO_CREDITS' });
+  const plan        = userData?.plan || 'free'
+  const isPro       = plan === 'pro'
+  const isStudio    = plan === 'studio'
+  const isPaid      = isPro || isStudio
+  const isBasic     = req.body._creditCost === 1
+  const isAdvanced  = req.body._creditCost === 5
+
+  let creditCost = 0
+  if (isBasic && isPaid) {
+    creditCost = 0
+  } else if (isAdvanced && isStudio) {
+    creditCost = 3
+  } else {
+    creditCost = req.body._creditCost || 1
   }
 
-  // Advanced mode costs 2 credits
-  const creditCost = req.body._creditCost === 2 ? 2 : 1;
-  if (userData.credits < creditCost) {
-    return res.status(402).json({ error: `Créditos insuficientes. Esta análise requer ${creditCost} créditos.`, code: 'NO_CREDITS' });
+  if (!userData) return res.status(402).json({ error: 'Usuário não encontrado.', code: 'NO_CREDITS' });
+  if (creditCost > 0 && userData.credits < creditCost) {
+    const names = { 1: '1 crédito', 3: '3 créditos', 5: '5 créditos' }
+    return res.status(402).json({
+      error: `Créditos insuficientes. Esta análise requer ${names[creditCost] || creditCost}.`,
+      code: 'NO_CREDITS'
+    });
   }
 
-  // Remove internal fields before forwarding to Anthropic
   const { _creditCost, _creditOverride, ...anthropicBody } = req.body;
   const body      = JSON.stringify(anthropicBody);
   const bodyBytes = Buffer.byteLength(body);
@@ -110,14 +125,18 @@ app.post('/api/analyze', requireAuth, async (req, res) => {
     r.end();
   });
 
-  // Deduct 1 credit on success — skip for paid plans (unlimited)
-  if (statusCode === 200 && userData.plan === 'free') {
+  if (statusCode === 200 && creditCost > 0) {
     await sb.from('users')
       .update({ credits: userData.credits - creditCost })
       .eq('id', req.user.id);
   }
 
   res.status(statusCode).json(responseData);
+
+  } catch (err) {
+    console.error('/api/analyze error:', err);
+    res.status(500).json({ error: err.message || 'Erro interno do servidor' });
+  }
 });
 
 // ── POST /api/checkout (Stripe) ───────────────────────
@@ -209,6 +228,22 @@ app.post('/api/webhook/stripe', async (req, res) => {
         console.log(`✓ Cancelled: ${customerId} → free`);
       }
     }
+    if (event.type === 'invoice.payment_succeeded') {
+      // Monthly renewal — deposit credits
+      const customerId = event.data.object.customer;
+      const { data: users } = await sb
+        .from('users').select('id, plan, credits').eq('stripe_customer_id', customerId);
+      if (users?.length) {
+        const u = users[0];
+        const monthlyCredits = u.plan === 'studio' ? 150 : u.plan === 'pro' ? 50 : 0;
+        if (monthlyCredits > 0) {
+          const rolloverMax = u.plan === 'studio' ? 300 : 100;
+          const newCredits  = Math.min(rolloverMax, (u.credits || 0) + monthlyCredits);
+          await sb.from('users').update({ credits: newCredits }).eq('id', u.id);
+          console.log(`✓ Credits renewed: ${u.id} → +${monthlyCredits} (total: ${newCredits})`);
+        }
+      }
+    }
     if (event.type === 'invoice.payment_failed') {
       console.log(`⚠ Payment failed: ${event.data.object.customer}`);
     }
@@ -262,6 +297,82 @@ function constructStripeEvent(payload, sig, secret) {
   if (!valid) throw new Error('Invalid Stripe signature');
   return JSON.parse(payload.toString());
 }
+
+// ── POST /api/history — save analysis ────────────────
+app.post('/api/history', requireAuth, async (req, res) => {
+  try {
+    const { data: userData } = await sb
+      .from('users').select('plan').eq('id', req.user.id).single();
+    const plan = userData?.plan || 'free';
+
+    // Enforce history limits per plan
+    const limits = { free: 5, pro: 50, studio: null };
+    const limit  = limits[plan];
+    if (limit !== null) {
+      const { count } = await sb
+        .from('analyses')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', req.user.id);
+      if (count >= limit) {
+        // Delete oldest to stay within limit
+        const { data: oldest } = await sb
+          .from('analyses')
+          .select('id')
+          .eq('user_id', req.user.id)
+          .order('created_at', { ascending: true })
+          .limit(1);
+        if (oldest?.length) {
+          await sb.from('analyses').delete().eq('id', oldest[0].id);
+        }
+      }
+    }
+
+    const { plan_size, harmony, axis, pattern, overview,
+            harmony_note, palette, slots } = req.body;
+
+    const { data, error } = await sb.from('analyses').insert({
+      user_id:      req.user.id,
+      plan_size, harmony, axis, pattern,
+      overview, harmony_note,
+      palette:  palette  || [],
+      slots:    slots    || [],
+    }).select().single();
+
+    if (error) return res.status(500).json({ error: error.message });
+    res.json({ id: data.id });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── GET /api/history — list analyses ─────────────────
+app.get('/api/history', requireAuth, async (req, res) => {
+  try {
+    const { data, error } = await sb
+      .from('analyses')
+      .select('id, created_at, plan_size, harmony, axis, pattern, overview, palette, slots')
+      .eq('user_id', req.user.id)
+      .order('created_at', { ascending: false })
+      .limit(50);
+    if (error) return res.status(500).json({ error: error.message });
+    res.json({ analyses: data || [] });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── DELETE /api/history/:id ───────────────────────────
+app.delete('/api/history/:id', requireAuth, async (req, res) => {
+  try {
+    await sb.from('analyses')
+      .delete()
+      .eq('id', req.params.id)
+      .eq('user_id', req.user.id);  // RLS redundancy
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Grid Composer rodando na porta ${PORT}`));
