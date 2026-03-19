@@ -80,9 +80,7 @@ function updatePlanUI(plan) {
   }
   // Show extra feed tabs for Studio (12, 15, 18)
   const extraTabs   = document.getElementById('feed-tabs-extra')
-  const topbarExtra = document.getElementById('topbar-tabs-extra')
   if (extraTabs)   extraTabs.style.display   = isStudio ? 'flex' : 'none'
-  if (topbarExtra) topbarExtra.style.display = isStudio ? 'flex' : 'none'
 }
 
 function updateCreditsUI(credits, plan) {

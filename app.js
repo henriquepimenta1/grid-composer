@@ -60,7 +60,7 @@ function kUpdate() {
 
 function setPlan(n, btn) {
   planSize=n
-  document.querySelectorAll('.feed-tab,.topbar-center .plan-tab').forEach(t=>t.classList.remove('active'))
+  document.querySelectorAll('.feed-tab').forEach(t=>t.classList.remove('active'))
   btn.classList.add('active')
   while (feedSlots.length<n) feedSlots.push(null)
   feedSlots.length=n
