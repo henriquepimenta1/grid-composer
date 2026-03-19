@@ -115,44 +115,29 @@ function renderHowTo() {
   const steps = HOWTO_STEPS[lang]
   const step  = steps[howtoStep]
   const total = steps.length
-
-  // Progress dots
-  const dots = steps.map((_, i) =>
-    `<div class="ht-dot ${i === howtoStep ? 'active' : i < howtoStep ? 'done' : ''}"
+  const dots  = steps.map((_, i) =>
+    `<div class="ht-dot ${i===howtoStep?'active':i<howtoStep?'done':''}"
       onclick="howtoStep=${i};renderHowTo()"></div>`
   ).join('')
-
-  // Step counter
-  const counter = lang === 'en'
-    ? `Step ${howtoStep + 1} of ${total}`
-    : `Passo ${howtoStep + 1} de ${total}`
-
-  const prevLabel = lang === 'en' ? '← Prev' : '← Anterior'
-  const nextLabel = lang === 'en' ? 'Next →' : 'Próximo →'
-  const doneLabel = lang === 'en' ? '✓ Got it!' : '✓ Entendi!'
-
   const isLast  = howtoStep === total - 1
   const isFirst = howtoStep === 0
-
   document.getElementById('howto-content').innerHTML = `
     <div class="ht-step-icon">${step.icon}</div>
-    <div class="ht-step-num">${counter}</div>
+    <div class="ht-step-num">Passo ${howtoStep+1} de ${total}</div>
     <div class="ht-step-title">${step.title}</div>
-    <div class="ht-step-desc">${step.desc.replace(/\n\n/g, '<br><br>')}</div>
+    <div class="ht-step-desc">${step.desc.replace(/\n\n/g,'<br><br>')}</div>
     ${step.tip ? `<div class="ht-step-tip">💡 ${step.tip}</div>` : ''}
   `
   document.getElementById('howto-dots').innerHTML = dots
   document.getElementById('howto-prev').style.visibility = isFirst ? 'hidden' : 'visible'
-  document.getElementById('howto-prev').textContent = prevLabel
-  document.getElementById('howto-next').textContent = isLast ? doneLabel : nextLabel
+  document.getElementById('howto-next').textContent = isLast ? '✓ Entendi!' : 'Próximo →'
   document.getElementById('howto-next').onclick = isLast ? closeHowTo : () => howtoNav(1)
 }
 
-// Keyboard navigation
 document.addEventListener('keydown', e => {
   const modal = document.getElementById('howto-modal')
   if (!modal?.classList.contains('open')) return
-  if (e.key === 'ArrowRight' || e.key === 'ArrowDown') howtoNav(1)
-  if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')   howtoNav(-1)
-  if (e.key === 'Escape') closeHowTo()
+  if (e.key==='ArrowRight'||e.key==='ArrowDown') howtoNav(1)
+  if (e.key==='ArrowLeft' ||e.key==='ArrowUp')   howtoNav(-1)
+  if (e.key==='Escape') closeHowTo()
 })
