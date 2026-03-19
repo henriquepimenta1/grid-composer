@@ -410,7 +410,11 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
   padding:4px 10px 4px 2px;width:90px;background:transparent;
 }
 .ig-handle-input::placeholder{color:var(--text3)}
-@media(max-width:600px){.ig-handle-wrap{display:none}}
+@media(max-width:600px){
+  .ig-handle-wrap{display:none}
+  #lang-toggle{display:none!important}
+  .howto-btn-label{display:none}
+}
 /* ── HISTORY MODAL ── */
 .history-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);backdrop-filter:blur(6px);z-index:900;align-items:flex-start;justify-content:center;padding:24px 16px;overflow-y:auto}
 .history-modal.open{display:flex}
@@ -1133,113 +1137,164 @@ document.addEventListener('DOMContentLoaded', async () => {
 </div>
 
 <!-- PLAYGROUND MODAL -->
-<div id="playground-modal" class="history-modal" onclick="if(event.target===this)closePlayground()" style="align-items:center">
-  <div style="background:var(--white);border-radius:var(--r);box-shadow:0 20px 60px rgba(0,0,0,.25);width:100%;max-width:820px;overflow:hidden;margin:auto;max-height:92vh;display:flex;flex-direction:column">
+<div id="playground-modal" class="history-modal" onclick="if(event.target===this)closePlayground()" style="align-items:flex-end;padding:0">
+  <div class="pgm-box">
 
     <!-- Header -->
-    <div style="padding:14px 18px;border-bottom:1px solid var(--border-light);display:flex;align-items:center;justify-content:space-between;flex-shrink:0">
-      <div style="display:flex;align-items:center;gap:10px">
-        <span style="font-size:15px;font-weight:700">⬡ Playground Test</span>
-        <span style="font-size:11px;color:var(--text3)">simule harmonias e padrões com cores — sem créditos</span>
-      </div>
+    <div class="pgm-hdr">
       <div style="display:flex;align-items:center;gap:8px">
-        <!-- Post size tabs -->
+        <span style="font-size:14px;font-weight:700">⬡ Playground</span>
+        <span class="pgm-desc">sem créditos</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px">
         <div style="display:flex;gap:3px" id="pg-post-tabs"></div>
-        <button onclick="closePlayground()" style="width:26px;height:26px;border-radius:50%;border:none;background:var(--bg);cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center">✕</button>
+        <button onclick="closePlayground()" class="pgm-close">✕</button>
       </div>
     </div>
 
-    <!-- Body -->
-    <div style="display:flex;flex:1;overflow:hidden;min-height:0">
+    <!-- Tab bar (always visible) -->
+    <div class="pgm-tabs">
+      <button class="pgm-tab on" id="pgt-config" onclick="pgTab('config')">Configurar</button>
+      <button class="pgm-tab" id="pgt-grid" onclick="pgTab('grid')">Grid</button>
+      <button class="pgm-tab" id="pgt-cores" onclick="pgTab('cores')">Cores</button>
+    </div>
 
-      <!-- Left: selectors -->
-      <div style="width:148px;flex-shrink:0;border-right:1px solid var(--border-light);overflow-y:auto;padding:10px 6px;display:flex;flex-direction:column;gap:10px">
-        <div>
-          <div class="sb-title" style="margin-bottom:6px">Harmonia</div>
-          <div id="pg-harm-list"></div>
-        </div>
-        <div>
-          <div class="sb-title" style="margin-bottom:6px">Padrão</div>
-          <div id="pg-pat-list"></div>
-        </div>
-        <div>
-          <div class="sb-title" style="margin-bottom:6px">Contraste</div>
-          <div id="pg-axis-list"></div>
+    <!-- Panels -->
+    <div class="pgm-body">
+
+      <!-- CONFIG panel -->
+      <div class="pgm-panel" id="pgp-config">
+        <div class="pgm-scroll">
+          <div class="pgm-sec-title">Harmonia</div>
+          <div id="pg-harm-list" class="pgm-chips"></div>
+          <div class="pgm-sec-title" style="margin-top:12px">Padrão de grid</div>
+          <div id="pg-pat-list" class="pgm-chips"></div>
+          <div class="pgm-sec-title" style="margin-top:12px">Eixo de contraste</div>
+          <div id="pg-axis-list" class="pgm-chips"></div>
         </div>
       </div>
 
-      <!-- Center: grid preview -->
-      <div style="flex:1;display:flex;flex-direction:column;align-items:center;padding:16px;overflow-y:auto;gap:12px">
-        <div id="pg-grid-label" style="font-size:10px;color:var(--text3);align-self:flex-start"></div>
-        <div id="pg-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:2px;width:100%;max-width:270px"></div>
-        <div id="pg-note" style="font-size:11px;color:var(--text3);text-align:center;max-width:230px;line-height:1.6"></div>
-        <button onclick="applyPlaygroundSettings()" style="margin-top:4px;padding:8px 20px;border-radius:var(--r-sm);background:var(--text);border:none;color:white;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font)">
-          ✓ Aplicar estas configurações
-        </button>
+      <!-- GRID panel -->
+      <div class="pgm-panel" id="pgp-grid" style="display:none">
+        <div class="pgm-scroll" style="align-items:center;gap:10px">
+          <div id="pg-grid-label" style="font-size:11px;color:var(--text3);align-self:flex-start;padding:0 2px"></div>
+          <div id="pg-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:3px;width:100%;max-width:280px"></div>
+          <button onclick="applyPlaygroundSettings()" class="pgm-apply">✓ Aplicar estas configurações</button>
+        </div>
       </div>
 
-      <!-- Right: palette + analysis -->
-      <div style="width:148px;flex-shrink:0;border-left:1px solid var(--border-light);padding:10px 10px;overflow-y:auto;display:flex;flex-direction:column;gap:10px">
-        <div>
-          <div class="sb-title" style="margin-bottom:6px">Paleta de teste</div>
-          <div id="pg-swatches" style="display:flex;flex-wrap:wrap;gap:5px"></div>
+      <!-- CORES panel -->
+      <div class="pgm-panel" id="pgp-cores" style="display:none">
+        <div class="pgm-scroll" style="gap:12px">
+
+          <!-- Palette swatches -->
+          <div>
+            <div class="pgm-sec-title">Paleta de teste</div>
+            <div id="pg-swatches" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px"></div>
+          </div>
+
+          <!-- Color add mini panel -->
+          <div id="pg-add-panel" style="background:var(--bg);border-radius:var(--r-sm);padding:12px;display:flex;flex-direction:column;gap:8px">
+            <div style="font-size:11px;font-weight:600;color:var(--text2)">Nova cor</div>
+            <div style="display:flex;align-items:center;gap:8px">
+              <div id="pg-preview-dot" style="width:36px;height:36px;border-radius:50%;background:#C4853A;flex-shrink:0;border:2px solid var(--border)"></div>
+              <input type="color" id="pg-color-input" value="#C4853A"
+                oninput="document.getElementById('pg-preview-dot').style.background=this.value;document.getElementById('pg-hex-input').value=this.value"
+                style="width:44px;height:36px;border:1.5px solid var(--border);border-radius:var(--r-sm);cursor:pointer;padding:2px">
+              <input type="text" id="pg-hex-input" value="#C4853A" maxlength="7"
+                oninput="pgHexInput(this.value)"
+                style="flex:1;padding:8px 10px;border:1.5px solid var(--border);border-radius:var(--r-sm);font-size:13px;font-family:monospace;color:var(--text);background:var(--white)">
+              <button onclick="pgAddFromPanel()" style="padding:8px 14px;background:var(--text);color:white;border:none;border-radius:var(--r-sm);font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font);white-space:nowrap">+ OK</button>
+            </div>
+          </div>
+
+          <!-- Analysis -->
+          <div id="pg-analysis" style="background:var(--bg);border-radius:var(--r-sm);padding:12px"></div>
         </div>
-        <div id="pg-analysis" style="font-size:11px;color:var(--text2);background:var(--bg);border-radius:var(--r-sm);padding:8px;line-height:1.7"></div>
       </div>
     </div>
   </div>
 </div>
 
 <style>
-.pg-chip{display:flex;align-items:center;gap:6px;padding:5px 8px;border-radius:6px;cursor:pointer;font-size:11px;font-weight:500;color:var(--text2);transition:all .1s;line-height:1.3;border:1.5px solid transparent}
-.pg-chip:hover{background:var(--bg);color:var(--text)}
-.pg-chip.on{border-color:var(--text);background:var(--text);color:white}
-.pg-chip.on .hchip-help{background:rgba(255,255,255,.2);color:white}
-.pg-swatch{width:28px;height:28px;border-radius:50%;border:2px solid transparent;transition:all .12s;flex-shrink:0;position:relative;cursor:pointer}
-.pg-swatch:hover{transform:scale(1.1);border-color:var(--text)}
-.pg-swatch input[type=color]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;border-radius:50%;border:none;padding:0}
-.pg-swatch .pg-del{position:absolute;top:-4px;right:-4px;width:13px;height:13px;border-radius:50%;background:var(--text);color:white;font-size:8px;display:none;align-items:center;justify-content:center;z-index:2;cursor:pointer;line-height:1}
-.pg-swatch:hover .pg-del{display:flex}
-.pg-add{width:28px;height:28px;border-radius:50%;border:1.5px dashed var(--border);background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--text3);font-size:16px;transition:all .12s;position:relative;flex-shrink:0}
-.pg-add:hover{border-color:var(--text2);color:var(--text2)}
-.pg-add input[type=color]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;border-radius:50%;border:none;padding:0}
+/* ── Playground modal ─────────────────────── */
+.pgm-box{background:var(--white);border-radius:var(--r) var(--r) 0 0;box-shadow:0 -8px 40px rgba(0,0,0,.18);width:100%;max-width:540px;margin:0 auto;max-height:88vh;display:flex;flex-direction:column;animation:slideUp .2s ease}
+@keyframes slideUp{from{transform:translateY(40px);opacity:0}to{transform:translateY(0);opacity:1}}
+/* Desktop: center aligned box */
+@media(min-width:601px){
+  #playground-modal{align-items:center!important;padding:20px!important}
+  .pgm-box{border-radius:var(--r);max-height:90vh;max-width:700px}
+}
+.pgm-hdr{padding:12px 16px;border-bottom:1px solid var(--border-light);display:flex;align-items:center;justify-content:space-between;gap:8px;flex-shrink:0}
+.pgm-desc{font-size:11px;color:var(--text3)}
+.pgm-close{width:26px;height:26px;border-radius:50%;border:none;background:var(--bg);cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center;font-family:var(--font);color:var(--text2)}
+.pgm-tabs{display:flex;border-bottom:1px solid var(--border-light);flex-shrink:0}
+.pgm-tab{flex:1;padding:10px;font-size:13px;font-weight:600;color:var(--text2);background:none;border:none;border-bottom:2px solid transparent;cursor:pointer;font-family:var(--font);transition:all .15s}
+.pgm-tab.on{color:var(--text);border-bottom-color:var(--text)}
+.pgm-body{flex:1;overflow:hidden;min-height:0;position:relative}
+.pgm-panel{height:100%;display:flex;flex-direction:column;overflow:hidden}
+.pgm-scroll{flex:1;overflow-y:auto;padding:14px 16px;display:flex;flex-direction:column}
+/* Post tabs */
 .pg-ptab{padding:4px 10px;border-radius:100px;border:1.5px solid var(--border);background:transparent;font-size:11px;font-weight:600;color:var(--text2);cursor:pointer;font-family:var(--font);transition:all .12s}
 .pg-ptab.on{background:var(--text);border-color:var(--text);color:white}
-.pg-cell{aspect-ratio:4/5;border-radius:2px;transition:background .25s}
-.pg-badge{display:inline-block;padding:1px 6px;border-radius:10px;font-size:10px;font-weight:600;margin:1px 1px 2px}
+/* Section titles */
+.pgm-sec-title{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px}
+/* Chips grid */
+.pgm-chips{display:grid;grid-template-columns:1fr 1fr;gap:4px}
+@media(min-width:601px){.pgm-chips{grid-template-columns:1fr 1fr 1fr}}
+.pg-chip{display:flex;align-items:center;gap:6px;padding:7px 10px;border-radius:var(--r-sm);cursor:pointer;font-size:12px;font-weight:500;color:var(--text2);transition:all .1s;border:1.5px solid var(--border-light);background:var(--white)}
+.pg-chip:hover{border-color:var(--text);color:var(--text)}
+.pg-chip.on{border-color:var(--text);background:var(--text);color:white}
+/* Grid cells */
+.pg-cell{aspect-ratio:4/5;border-radius:3px;transition:background .25s}
+/* Apply button */
+.pgm-apply{width:100%;max-width:280px;padding:11px;border-radius:var(--r-sm);background:var(--text);border:none;color:white;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font)}
+/* Swatches */
+.pg-sw{width:40px;height:40px;border-radius:50%;border:2px solid transparent;transition:all .12s;flex-shrink:0;position:relative;cursor:pointer}
+.pg-sw:hover{border-color:var(--text);transform:scale(1.08)}
+.pg-sw .pg-del{position:absolute;top:-3px;right:-3px;width:15px;height:15px;border-radius:50%;background:var(--text);color:white;font-size:8px;display:none;align-items:center;justify-content:center;z-index:2;cursor:pointer;font-family:var(--font);line-height:1}
+.pg-sw:hover .pg-del{display:flex}
+/* Analysis grid */
+.pg-anal-row{display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:1px solid var(--border-light)}
+.pg-anal-row:last-child{border-bottom:none}
+.pg-anal-dot{width:22px;height:22px;border-radius:50%;flex-shrink:0}
+.pg-anal-label{font-size:12px;font-weight:600;flex:1;color:var(--text)}
+.pg-anal-badges{display:flex;gap:4px;flex-wrap:wrap}
+.pg-abadge{padding:2px 8px;border-radius:100px;font-size:10px;font-weight:700}
 </style>
 
 <script>
-// ── Playground state ──────────────────────────────────
+// ── Playground ────────────────────────────────────────
 const PG = {
-  selH: 'complementary',
-  selP: 'checkerboard',
-  selA: 'temperature',
-  size:  9,
-  palette: ['#C4853A','#3A5870','#8A9A4A','#2A4A60','#D05020','#6A8A9A','#1A3850','#B07030'],
+  selH:'complementary', selP:'checkerboard', selA:'temperature',
+  size:9, tab:'config',
+  palette:['#C4853A','#3A5870','#8A9A4A','#2A4A60','#D05020','#6A8A9A','#1A3850','#B07030'],
 }
 
-// Color math helpers
-function pgHue(hex){const[r,g,b]=pgRgb(hex).map(v=>v/255);const max=Math.max(r,g,b),min=Math.min(r,g,b),d=max-min;if(!d)return 0;let h;if(max===r)h=((g-b)/d+(g<b?6:0))*60;else if(max===g)h=((b-r)/d+2)*60;else h=((r-g)/d+4)*60;return h}
+// Exclude IA options from playground
+const PG_HARMONIES = HARMONIES.filter(h=>h.id!=='custom')
+const PG_PATTERNS  = PATTERNS.filter(p=>p.id!=='free')
+const PG_AXES      = CONTRAST_AXES.filter(a=>a.id!=='combined')
+
+// Color math
 function pgRgb(h){h=h.replace('#','');const n=parseInt(h,16);return[n>>16&255,n>>8&255,n&255]}
-function pgLum(hex){const[r,g,b]=pgRgb(hex).map(v=>v/255);const tl=v=>v>.04045?Math.pow((v+.055)/1.055,2.4):v/12.92;return .2126*tl(r)+.7152*tl(g)+.0722*tl(b)}
-function pgSat(hex){const[r,g,b]=pgRgb(hex).map(v=>v/255);const max=Math.max(r,g,b),min=Math.min(r,g,b);return max===0?0:(max-min)/max}
+function pgHue(hex){const[r,g,b]=pgRgb(hex).map(v=>v/255);const mx=Math.max(r,g,b),mn=Math.min(r,g,b),d=mx-mn;if(!d)return 0;let h;if(mx===r)h=((g-b)/d+(g<b?6:0))*60;else if(mx===g)h=((b-r)/d+2)*60;else h=((r-g)/d+4)*60;return h}
+function pgLum(hex){const[r,g,b]=pgRgb(hex).map(v=>v/255);const t=v=>v>.04045?Math.pow((v+.055)/1.055,2.4):v/12.92;return .2126*t(r)+.7152*t(g)+.0722*t(b)}
+function pgSat(hex){const[r,g,b]=pgRgb(hex).map(v=>v/255);const mx=Math.max(r,g,b),mn=Math.min(r,g,b);return mx===0?0:(mx-mn)/mx}
 function pgWarm(hex){const h=pgHue(hex);return h<60||h>300}
 function pgAccent(hex){const h=pgHue(hex),s=pgSat(hex);return s>0.45&&(h<=45||h>=330)}
 function pgKelvin(hex){const[r,,b]=pgRgb(hex);const bs=r*.5-b*.5;if(bs>40)return 2200;if(bs>20)return 3500;if(bs>5)return 4500;if(bs>-5)return 5500;if(bs>-20)return 7000;if(bs>-40)return 8500;return 10000}
 function pgTempWord(hex){const k=pgKelvin(hex);return k<=4500?'quente':k<=6000?'neutro':'frio'}
 
-function pgScore(hex, axisId) {
+function pgScore(hex,axisId){
   if(axisId==='temperature'){const a=pgAccent(hex),k=pgKelvin(hex);return{score:a?1000+(10000-k):k,group:(a||k<5000)?'A':'B'}}
   if(axisId==='luminance'){const L=pgLum(hex)*100;return{score:L,group:L>50?'A':'B'}}
   if(axisId==='saturation'){const s=pgSat(hex);return{score:s,group:s>0.35?'A':'B'}}
-  // combined
   const ks=PG.palette.map(pgKelvin),kV=Math.max(...ks)-Math.min(...ks)
   const ls=PG.palette.map(h=>pgLum(h)*100),lV=Math.max(...ls)-Math.min(...ls)
-  return pgScore(hex, kV>2000?'temperature':lV>20?'luminance':'saturation')
+  return pgScore(hex,kV>2000?'temperature':lV>20?'luminance':'saturation')
 }
-
-function pgHarmonyScore(hex, harmId) {
+function pgHarmScore(hex,harmId){
   const h=pgHue(hex),L=pgLum(hex)*100,a=pgAccent(hex),w=pgWarm(hex),k=pgKelvin(hex)
   switch(harmId){
     case'complementary':return{score:a?100-k/100:k/100,group:(a||w)?'A':'B'}
@@ -1247,14 +1302,13 @@ function pgHarmonyScore(hex, harmId) {
     case'split':case'triad':return{score:h,group:Math.floor(h/120)%2===0?'A':'B'}
     case'monochrome':return{score:L,group:L>55?'A':'B'}
     case'shades':return{score:L,group:L<35?'A':'B'}
-    default:return pgScore(hex, PG.selA)
+    default:return pgScore(hex,PG.selA)
   }
 }
-
-function pgBuildMap(rows, nA, total, pat) {
-  const map=[], ratio=nA/total
+function pgBuildMap(rows,nA,total,pat){
+  const map=[],ratio=nA/total
   if(pat==='checkerboard'){
-    let rem=nA, rp=[]
+    let rem=nA,rp=[]
     for(let r=0;r<rows;r++){if(rem>=2&&r%2===0){rp.push(2);rem-=2}else if(rem===1){rp.push(1);rem--}else rp.push(0)}
     for(let r=0;r<rows&&rem>0;r++)if(rp[r]===0){if(rem>=2){rp[r]=2;rem-=2}else{rp[r]=1;rem--}}
     for(let r=0;r<rows;r++)for(let c=0;c<3;c++){if(rp[r]===2)map.push(c===1?'B':'A');else if(rp[r]===1)map.push(c===1?'A':'B');else map.push('B')}
@@ -1271,113 +1325,167 @@ function pgBuildMap(rows, nA, total, pat) {
   }
   return map
 }
-
-function pgComputeGrid() {
+function pgComputeGrid(){
   const cols=[]
-  for(let i=0;i<PG.size;i++) cols.push(PG.palette[i%PG.palette.length])
-  const scored=cols.map(c=>({c,...pgHarmonyScore(c, PG.selH)}))
+  for(let i=0;i<PG.size;i++)cols.push(PG.palette[i%PG.palette.length])
+  const scored=cols.map(c=>({c,...pgHarmScore(c,PG.selH)}))
   const gA=scored.filter(x=>x.group==='A').sort((a,b)=>b.score-a.score)
   const gB=scored.filter(x=>x.group==='B').sort((a,b)=>b.score-a.score)
-  const rows=Math.ceil(PG.size/3)
-  const result=new Array(PG.size).fill('#cccccc')
-  if(PG.selP==='free'){
-    const sorted=[...scored].sort((a,b)=>b.score-a.score)
-    sorted.forEach((p,i)=>{if(i<PG.size)result[i]=p.c})
-  } else {
+  const rows=Math.ceil(PG.size/3),result=new Array(PG.size).fill('#ccc')
+  if(PG.selP==='free'){scored.sort((a,b)=>b.score-a.score).forEach((p,i)=>{if(i<PG.size)result[i]=p.c})}
+  else{
     const map=pgBuildMap(rows,gA.length,PG.size,PG.selP)
     let aiA=0,aiB=0
     for(let vi=0;vi<PG.size;vi++){
-      const row=Math.floor(vi/3),col=vi%3
-      const slotNum=row*3+(2-col)
+      const row=Math.floor(vi/3),col=vi%3,slotNum=row*3+(2-col)
       const want=map[vi]||'B'
-      let photo
-      if(want==='A'&&gA[aiA])photo=gA[aiA++]
-      else if(want==='B'&&gB[aiB])photo=gB[aiB++]
-      else if(gA[aiA])photo=gA[aiA++]
-      else if(gB[aiB])photo=gB[aiB++]
-      if(photo&&slotNum<PG.size)result[slotNum]=photo.c
+      let ph
+      if(want==='A'&&gA[aiA])ph=gA[aiA++]
+      else if(want==='B'&&gB[aiB])ph=gB[aiB++]
+      else if(gA[aiA])ph=gA[aiA++]
+      else if(gB[aiB])ph=gB[aiB++]
+      if(ph&&slotNum<PG.size)result[slotNum]=ph.c
     }
   }
   return result
 }
 
-function renderPlayground() {
+function pgTab(tab){
+  PG.tab=tab
+  ;['config','grid','cores'].forEach(t=>{
+    document.getElementById('pgp-'+t).style.display=t===tab?'flex':'none'
+    document.getElementById('pgt-'+t).className='pgm-tab'+(t===tab?' on':'')
+  })
+  if(tab==='grid')renderPgGrid()
+  if(tab==='cores')renderPgCores()
+}
+
+function renderPlayground(){
   // Post tabs
   document.getElementById('pg-post-tabs').innerHTML=[3,6,9].map(n=>
     `<button class="pg-ptab ${n===PG.size?'on':''}" onclick="pgSetSize(${n})">${n}</button>`).join('')
 
-  // Harmony chips
-  document.getElementById('pg-harm-list').innerHTML=HARMONIES.map(h=>
+  // Config panel
+  document.getElementById('pg-harm-list').innerHTML=PG_HARMONIES.map(h=>
     `<div class="pg-chip ${h.id===PG.selH?'on':''}" onclick="pgSel('H','${h.id}')">
-      <div style="width:10px;height:10px;border-radius:50%;background:${h.dot};flex-shrink:0"></div>${h.name}
+      <div style="width:9px;height:9px;border-radius:50%;background:${h.dot};flex-shrink:0"></div>${h.name}
     </div>`).join('')
-
-  // Pattern chips
-  document.getElementById('pg-pat-list').innerHTML=PATTERNS.map(p=>
+  document.getElementById('pg-pat-list').innerHTML=PG_PATTERNS.map(p=>
     `<div class="pg-chip ${p.id===PG.selP?'on':''}" onclick="pgSel('P','${p.id}')">${p.name}</div>`).join('')
-
-  // Axis chips
-  document.getElementById('pg-axis-list').innerHTML=CONTRAST_AXES.map(a=>
+  document.getElementById('pg-axis-list').innerHTML=PG_AXES.map(a=>
     `<div class="pg-chip ${a.id===PG.selA?'on':''}" onclick="pgSel('A','${a.id}')">
-      <span style="font-size:11px">${a.icon}</span>${a.name}
+      <span style="font-size:12px">${a.icon}</span>${a.name}
     </div>`).join('')
 
-  // Grid
+  if(PG.tab==='grid')renderPgGrid()
+  if(PG.tab==='cores')renderPgCores()
+}
+
+function renderPgGrid(){
   const gridCols=pgComputeGrid()
   const rows=Math.ceil(PG.size/3)
   const grid=document.getElementById('pg-grid')
   grid.style.gridTemplateRows=`repeat(${rows},1fr)`
   grid.innerHTML=gridCols.map((c,i)=>`<div class="pg-cell" style="background:${c}" title="slot ${i+1}"></div>`).join('')
   document.getElementById('pg-grid-label').textContent=
-    `${HARMONIES.find(h=>h.id===PG.selH)?.name} · ${PATTERNS.find(p=>p.id===PG.selP)?.name} · ${CONTRAST_AXES.find(a=>a.id===PG.selA)?.name}`
-
-  // Swatches — click circle opens color picker to EDIT, X badge removes
-  document.getElementById('pg-swatches').innerHTML=
-    PG.palette.map((c,i)=>
-      `<div class="pg-swatch" style="background:${c}" title="Clique para editar · X para remover">
-        <input type="color" value="${c}" onchange="pgEditColor(${i},this.value)">
-        <div class="pg-del" onclick="event.stopPropagation();pgRemoveSwatch(${i})">✕</div>
-      </div>`
-    ).join('')+
-    `<div class="pg-add" title="Adicionar cor">
-      <span style="pointer-events:none;font-size:16px">+</span>
-      <input type="color" value="#C4853A" onchange="pgAddColor(this.value)">
-    </div>`
-
-  // Analysis
-  const warm=PG.palette.filter(pgWarm).length
-  const cool=PG.palette.filter(c=>!pgWarm(c)).length
-  const accents=PG.palette.filter(pgAccent).length
-  const gA=gridCols.filter((_,i)=>{const row=Math.floor(i/3),col=i%3;return(row+col)%2===0}).length
-  document.getElementById('pg-analysis').innerHTML=`
-    <strong style="color:var(--text);font-size:11px">Análise</strong><br>
-    ${PG.palette.map(c=>`<span class="pg-badge" style="background:${pgAccent(c)?'#fff3e0':pgWarm(c)?'#fef9ec':'#e3f2fd'};color:${pgAccent(c)?'#e65100':pgWarm(c)?'#b06000':'#1565c0'}">${pgTempWord(c)}</span>`).join('')}
-    <br>
-    <span style="color:var(--text3)">Acentos:</span> <strong>${accents}</strong><br>
-    <span style="color:var(--text3)">Quentes:</span> <strong>${warm}</strong> · <span style="color:var(--text3)">Frios:</span> <strong>${cool}</strong>
-  `
+    `${PG_HARMONIES.find(h=>h.id===PG.selH)?.name} · ${PG_PATTERNS.find(p=>p.id===PG.selP)?.name} · ${PG_AXES.find(a=>a.id===PG.selA)?.name} · ${PG.size} posts`
 }
 
-function pgSel(type,id){if(type==='H')PG.selH=id;else if(type==='P')PG.selP=id;else PG.selA=id;renderPlayground()}
+function renderPgCores(){
+  // Swatches
+  document.getElementById('pg-swatches').innerHTML=
+    PG.palette.map((c,i)=>
+      `<div class="pg-sw" style="background:${c}" title="${c}" onclick="pgEditSwatch(${i})">
+        <div class="pg-del" onclick="event.stopPropagation();pgRemoveSwatch(${i})">✕</div>
+      </div>`).join('')
+
+  // Analysis — clean row per color
+  const accents=PG.palette.filter(pgAccent).length
+  const warm=PG.palette.filter(pgWarm).length
+  const cool=PG.palette.filter(c=>!pgWarm(c)).length
+  document.getElementById('pg-analysis').innerHTML=`
+    <div style="font-size:11px;font-weight:700;color:var(--text);margin-bottom:8px">Análise da paleta</div>
+    ${PG.palette.map((c,i)=>{
+      const acc=pgAccent(c),tw=pgWarm(c),tw2=pgTempWord(c)
+      const badge=acc?`<span class="pg-abadge" style="background:#fff3e0;color:#e65100">acento</span>`
+        :tw?`<span class="pg-abadge" style="background:#fff8ec;color:#b06000">quente</span>`
+        :`<span class="pg-abadge" style="background:#e8f4fd;color:#1565c0">frio</span>`
+      return `<div class="pg-anal-row">
+        <div class="pg-anal-dot" style="background:${c}" onclick="pgEditSwatch(${i})"></div>
+        <span class="pg-anal-label" style="font-size:11px;font-family:monospace">${c.toUpperCase()}</span>
+        ${badge}
+        <div class="pg-del" style="display:flex;cursor:pointer" onclick="pgRemoveSwatch(${i})">✕</div>
+      </div>`
+    }).join('')}
+    <div style="font-size:11px;color:var(--text2);margin-top:8px;padding-top:8px;border-top:1px solid var(--border-light)">
+      Acentos <strong>${accents}</strong> · Quentes <strong>${warm}</strong> · Frios <strong>${cool}</strong>
+    </div>`
+}
+
+// Edit swatch: pre-fill the add panel with existing color
+function pgEditSwatch(i){
+  const c=PG.palette[i]
+  const inp=document.getElementById('pg-color-input')
+  const hex=document.getElementById('pg-hex-input')
+  const dot=document.getElementById('pg-preview-dot')
+  if(inp)inp.value=c
+  if(hex)hex.value=c
+  if(dot)dot.style.background=c
+  // Store edit index
+  PG._editIdx=i
+  pgTab('cores')
+  // Scroll add panel into view
+  setTimeout(()=>document.getElementById('pg-add-panel')?.scrollIntoView({behavior:'smooth',block:'nearest'}),50)
+}
+
+function pgHexInput(val){
+  if(/^#[0-9a-fA-F]{6}$/.test(val)){
+    document.getElementById('pg-preview-dot').style.background=val
+    document.getElementById('pg-color-input').value=val
+  }
+}
+
+function pgAddFromPanel(){
+  const v=document.getElementById('pg-hex-input').value
+  if(!/^#[0-9a-fA-F]{6}$/.test(v))return
+  if(PG._editIdx!=null){
+    PG.palette[PG._editIdx]=v
+    PG._editIdx=null
+  } else {
+    if(PG.palette.length<12)PG.palette.push(v)
+  }
+  renderPlayground()
+}
+
+function pgSel(type,id){
+  if(type==='H')PG.selH=id
+  else if(type==='P')PG.selP=id
+  else PG.selA=id
+  renderPlayground()
+  pgTab('grid')  // auto-show result after each selection
+}
 function pgSetSize(n){PG.size=n;renderPlayground()}
-function pgRemoveSwatch(i){if(PG.palette.length>2){PG.palette.splice(i,1);renderPlayground()}}
-function pgEditColor(i,v){PG.palette[i]=v;renderPlayground()}
-function pgAddColor(v){if(PG.palette.length<12){PG.palette.push(v);renderPlayground()}}
+function pgRemoveSwatch(i){if(PG.palette.length>2){PG.palette.splice(i,1);PG._editIdx=null;renderPlayground()}}
 
 function openPlayground(){
-  // Sync with current app settings
-  PG.selH=selH; PG.selP=selP; PG.selA=selC; PG.size=planSize
-  renderPlayground()
+  PG.selH=selH; PG.selP=selP; PG.selA=selC; PG.size=planSize; PG.tab='config'; PG._editIdx=null
   document.getElementById('playground-modal').classList.add('open')
+  renderPlayground()
+  // Show config tab
+  ;['config','grid','cores'].forEach(t=>{
+    document.getElementById('pgp-'+t).style.display=t==='config'?'flex':'none'
+    document.getElementById('pgt-'+t).className='pgm-tab'+(t==='config'?' on':'')
+  })
 }
 function closePlayground(){document.getElementById('playground-modal')?.classList.remove('open')}
 
 function applyPlaygroundSettings(){
-  // Apply playground selections back to main app
   selH=PG.selH; selP=PG.selP; selC=PG.selA
   renderHarmonies(); renderPatterns(); renderContrast()
-  if(currentPlan.length>0) reorderByHarmony(selH)
+  if(currentPlan.length>0)reorderByHarmony(selH)
   closePlayground()
   setStatus('✓ Configurações do playground aplicadas','ok')
 }
 </script>
+</body>
+</html>
