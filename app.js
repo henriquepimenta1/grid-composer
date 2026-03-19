@@ -76,32 +76,39 @@ function extractColors(img, k=5) {
 function estimateKelvin(colors) {
   if (!colors.length) return 6500
 
-  function hexToRB(hex) {
-    const r = parseInt(hex.slice(1,3), 16)
-    const b = parseInt(hex.slice(5,7), 16)
-    return r / (b + 1)
-  }
+  // Use LAB b* axis — perceptually correct warm/cool measure
+  // b* > 0 = yellowish/warm, b* < 0 = bluish/cool
+  // Weighted average by pixel percentage
+  let totalPct = 0, weightedB = 0
 
-  function rbToKelvin(rb) {
-    if (rb > 3.5) return 1900
-    if (rb > 2.5) return 2800
-    if (rb > 1.8) return 3500
-    if (rb > 1.3) return 4500
-    if (rb > 1.0) return 5800
-    if (rb > 0.7) return 7200
-    if (rb > 0.5) return 8500
-    return 9800
-  }
-
-  // Simple weighted average by pixel percentage — reflects overall image mood
-  // Accent colors (2% orange hat) naturally have low weight vs dominant tones (40% dark rock)
-  let total = 0, weighted = 0
   for (const c of colors) {
-    weighted += rbToKelvin(hexToRB(c.hex)) * c.pct
-    total    += c.pct
+    const r = parseInt(c.hex.slice(1,3), 16)
+    const g = parseInt(c.hex.slice(3,5), 16)
+    const b = parseInt(c.hex.slice(5,7), 16)
+    const lab = rgbToLab(r, g, b)
+    const bStar = lab[2]  // b* axis: positive=warm, negative=cool
+    weightedB += bStar * c.pct
+    totalPct  += c.pct
   }
 
-  return total > 0 ? Math.round(weighted / total) : 6500
+  if (totalPct === 0) return 6500
+  const avgB = weightedB / totalPct
+
+  // Map b* to approximate Kelvin
+  // b* > +18  → very warm (sunset/golden hour)  ~2200K
+  // b* +10–18 → warm                            ~3500K
+  // b* +3–10  → slightly warm                   ~4500K
+  // b* -3–+3  → neutral                         ~5500K
+  // b* -10–-3 → slightly cool                   ~7000K
+  // b* -20–-10→ cool (overcast, shade)           ~8500K
+  // b* < -20  → very cold (blue hour, deep shade)~10000K
+  if (avgB > 18)  return 2200
+  if (avgB > 10)  return 3500
+  if (avgB > 3)   return 4500
+  if (avgB > -3)  return 5500
+  if (avgB > -10) return 7000
+  if (avgB > -20) return 8500
+  return 10000
 }
 
 async function compressImage(dataUrl, maxDim=800, quality=0.75) {
@@ -1753,17 +1760,15 @@ function renderHistoryList() {
     const dateStr = date.toLocaleDateString('pt-BR', { day:'2-digit', month:'short' })
     const timeStr = date.toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' })
 
-    // Thumbnails grid
-    const thumbsHtml = (a.slots || []).slice(0, 9).map(s =>
-      s.thumb
-        ? `<img src="${s.thumb}" style="width:32px;height:40px;object-fit:cover;border-radius:3px;flex-shrink:0">`
-        : `<div style="width:32px;height:40px;background:var(--border-light);border-radius:3px;flex-shrink:0"></div>`
-    ).join('')
-
-    // Palette swatches
-    const palHtml = (a.palette || []).slice(0, 8).map(hex =>
-      `<div style="width:16px;height:16px;border-radius:3px;background:${hex};flex-shrink:0"></div>`
-    ).join('')
+    // Feed grid — 3 columns, 4:5 slots, same visual as the app
+    const slots = (a.slots || []).slice(0, 9)
+    const gridSize = slots.length <= 3 ? 3 : slots.length <= 6 ? 6 : 9
+    const thumbsHtml = Array.from({ length: gridSize }, (_, i) => {
+      const s = slots[i]
+      return s?.thumb
+        ? `<img src="${s.thumb}" style="aspect-ratio:4/5;width:100%;object-fit:cover;border-radius:2px;display:block">`
+        : `<div style="aspect-ratio:4/5;background:var(--border-light);border-radius:2px"></div>`
+    }).join('')
 
     const card = document.createElement('div')
     card.className = 'history-card'
@@ -1779,8 +1784,9 @@ function renderHistoryList() {
         </div>
         <button class="hc-del" onclick="deleteAnalysis('${a.id}')" title="Excluir">🗑</button>
       </div>
-      <div class="hc-thumbs">${thumbsHtml}</div>
-      <div class="hc-palette">${palHtml}</div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:2px;margin-bottom:10px">
+        ${thumbsHtml}
+      </div>
       ${a.overview ? `<div class="hc-overview">${a.overview}</div>` : ''}
       <button class="hc-restore" onclick="restoreAnalysisSettings('${a.id}')">
         ↩ Restaurar configurações
