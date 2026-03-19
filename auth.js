@@ -31,6 +31,7 @@ async function initAuth() {
 
   updateUserUI()
   await loadCredits()
+  loadIgHandle()
 
   document.getElementById('app-body').style.visibility = 'visible'
 }
@@ -79,15 +80,24 @@ function updateCreditsUI(credits, plan) {
   // Update compose button credit indicator
   const costEl = document.getElementById('credit-cost')
   const goBtn  = document.getElementById('go')
+  const goAdv  = document.getElementById('go-advanced')
   if (costEl) {
     if (isUnlimited) {
-      costEl.textContent = 'analisa o repositório e distribui nos slots · ilimitado'
+      costEl.textContent = 'temperatura · paleta · harmonia · ilimitado'
     } else {
       const c = credits
-      costEl.textContent = `analisa o repositório e distribui nos slots · ${c} crédito${c!==1?'s':''} restante${c!==1?'s':''}`
+      costEl.textContent = `temperatura · paleta · harmonia · 1 crédito (${c} restante${c!==1?'s':''})`
     }
   }
-  if (goBtn && !isUnlimited && credits < 3) {
+  // Advanced button sub-text
+  const advSub = goAdv?.querySelector('.mode-btn-sub')
+  if (advSub) {
+    const advCost = plan === 'studio' ? 3 : 5
+    advSub.textContent = isUnlimited
+      ? `leitura visual completa · ${advCost} créditos`
+      : `leitura visual completa · ${advCost} créditos (${credits} disponíveis)`
+  }
+  if (goBtn && !isUnlimited && credits < 1) {
     goBtn.classList.add('warn-credits')
   } else if (goBtn) {
     goBtn.classList.remove('warn-credits')
@@ -121,7 +131,44 @@ function closeOnOutside(e) {
   if (!dd?.contains(e.target) && !btn?.contains(e.target)) closeDropdown()
 }
 
-// ── Settings modal ────────────────────────────────────
+// ── Instagram handle sync ─────────────────────────────
+function syncIgHandle(val) {
+  // Remove @ if typed, strip spaces
+  const clean = val.replace(/^@/, '').replace(/\s/g, '')
+  // Sync both inputs
+  const topbar   = document.getElementById('ig-handle-topbar')
+  const settings = document.getElementById('settings-ig')
+  if (topbar   && topbar   !== document.activeElement) topbar.value   = clean
+  if (settings && settings !== document.activeElement) settings.value = clean
+  // Update feed preview username
+  updateFeedHandle(clean)
+}
+
+function saveIgHandle(val) {
+  const clean = val.replace(/^@/, '').replace(/\s/g, '')
+  localStorage.setItem('gc_ig_handle', clean)
+  // Sync the other field
+  const topbar   = document.getElementById('ig-handle-topbar')
+  const settings = document.getElementById('settings-ig')
+  if (topbar)   topbar.value   = clean
+  if (settings) settings.value = clean
+  updateFeedHandle(clean)
+}
+
+function updateFeedHandle(handle) {
+  // Update any visible feed preview username
+  const nameEls = document.querySelectorAll('.pp-name, #manual-name')
+  nameEls.forEach(el => { if (handle) el.textContent = handle })
+}
+
+function loadIgHandle() {
+  const saved = localStorage.getItem('gc_ig_handle') || ''
+  const topbar   = document.getElementById('ig-handle-topbar')
+  const settings = document.getElementById('settings-ig')
+  if (topbar)   topbar.value   = saved
+  if (settings) settings.value = saved
+  if (saved) updateFeedHandle(saved)
+}
 function openSettings(tab) {
   closeDropdown()
   document.getElementById('settings-modal')?.classList.add('open')
@@ -132,6 +179,8 @@ function openSettings(tab) {
   const emailEl = document.getElementById('settings-email')
   if (nameEl)  nameEl.value  = meta.name || meta.full_name || ''
   if (emailEl) emailEl.value = currentUser?.email || ''
+  const igEl = document.getElementById('settings-ig')
+  if (igEl) igEl.value = localStorage.getItem('gc_ig_handle') || ''
 }
 
 function closeSettings() {

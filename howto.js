@@ -21,6 +21,12 @@ const HOWTO_STEPS = {
       tip: 'Não sabe qual escolher? Use <em>IA decide</em> na harmonia e <em>Combinado (IA)</em> no eixo — a IA analisa e escolhe o melhor.',
     },
     {
+      icon: '🔵🟠',
+      title: 'Harmonia ≠ Contraste — entenda a diferença',
+      desc: '<strong>Harmonia</strong> define quais cores combinam no feed inteiro — como a paleta geral do seu perfil visto de longe.<br><br><strong>Eixo de contraste</strong> define o ritmo entre posts adjacentes — o que alterna de foto em foto.<br><br><strong>Padrão de grid</strong> define em quais posições da grade cada tipo de foto fica.',
+      tip: 'Exemplo: Harmonia=Complementar (laranja+teal) · Eixo=Temperatura (quente↔frio) · Padrão=Xadrez → resultado: laranja e teal alternando em xadrez pelo feed.',
+    },
+    {
       icon: '✦',
       title: 'Compor com IA ou organizar manualmente',
       desc: '<strong>Compor com IA</strong> analisa as cores reais das fotos e sugere a sequência ideal para o seu grid, incluindo quais fotos ficam em quais slots e os ajustes de edição.\n\n<strong>Organizar manualmente</strong> exibe o grid para você arrastar e reposicionar as fotos como preferir — sem consumir créditos.',
@@ -57,6 +63,12 @@ const HOWTO_STEPS = {
       title: 'Set harmony and contrast axis',
       desc: 'In the sidebar, choose a <strong>Color harmony</strong> (color relationship between photos) and a <strong>Contrast axis</strong> (how photos alternate in the grid).',
       tip: 'Not sure? Use <em>AI picks best</em> for harmony and <em>Combined (AI)</em> for axis — AI analyzes and picks the best.',
+    },
+    {
+      icon: '🔵🟠',
+      title: 'Harmony ≠ Contrast — know the difference',
+      desc: '<strong>Harmony</strong> defines which colors work together in your feed — the overall palette your profile shows from a distance.<br><br><strong>Contrast axis</strong> defines the rhythm between adjacent posts — what alternates photo by photo.<br><br><strong>Grid pattern</strong> defines which positions in the grid each type of photo occupies.',
+      tip: 'Example: Harmony=Complementary (orange+teal) · Axis=Temperature (warm↔cool) · Pattern=Checkerboard → result: orange and teal alternating in a checkerboard across your feed.',
     },
     {
       icon: '✦',
