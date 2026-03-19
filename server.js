@@ -32,6 +32,8 @@ app.get('/app',     (req, res) => res.send(injectKeys(fs.readFileSync('./index.h
 app.get('/comprar', (req, res) => res.send(injectKeys(fs.readFileSync('./pricing.html', 'utf8'))));
 app.get('/pricing', (req, res) => res.send(injectKeys(fs.readFileSync('./pricing.html', 'utf8'))));
 
+app.get('/playground', (req, res) => res.sendFile('playground.html', { root: '.' }));
+app.get('/playground.html', (req, res) => res.sendFile('playground.html', { root: '.' }));
 // ── Static JS files ───────────────────────────────────
 app.get('/colors.js',  (req, res) => res.sendFile('colors.js',  { root: '.' }));
 app.get('/state.js',   (req, res) => res.sendFile('state.js',   { root: '.' }));

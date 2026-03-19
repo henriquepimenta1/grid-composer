@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Playground — Grid Composer</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#fafafa;--white:#fff;--border:#dbdbdb;--border-light:#efefef;
+  --text:#262626;--text2:#737373;--text3:#a8a8a8;
+  --ig:linear-gradient(45deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888);
+  --r:10px;--r-sm:7px;--font:'Plus Jakarta Sans',sans-serif;
+}
+html,body{height:100%;background:var(--bg);font-family:var(--font);color:var(--text);-webkit-font-smoothing:antialiased}
+body{display:flex;flex-direction:column;overflow:hidden}
+
+/* ── HEADER ── */
+.hdr{height:48px;background:var(--white);border-bottom:1px solid var(--border-light);display:flex;align-items:center;justify-content:space-between;padding:0 16px;flex-shrink:0}
+.hdr-title{font-size:14px;font-weight:700}
+.hdr-right{display:flex;align-items:center;gap:8px}
+.ptab{padding:4px 11px;border-radius:100px;border:1.5px solid var(--border);background:transparent;font-size:11px;font-weight:600;color:var(--text2);cursor:pointer;font-family:var(--font);transition:all .12s}
+.ptab.on{background:var(--text);border-color:var(--text);color:white}
+.close-btn{width:26px;height:26px;border-radius:50%;border:none;background:var(--bg);cursor:pointer;font-size:12px;font-family:var(--font);color:var(--text2);display:flex;align-items:center;justify-content:center}
+.close-btn:hover{background:var(--border-light)}
+
+/* ── TAB BAR ── */
+.tabbar{display:flex;border-bottom:1px solid var(--border-light);flex-shrink:0;background:var(--white)}
+.tab{flex:1;padding:10px;font-size:13px;font-weight:600;color:var(--text2);background:none;border:none;border-bottom:2px solid transparent;cursor:pointer;font-family:var(--font);transition:all .15s}
+.tab.on{color:var(--text);border-bottom-color:var(--text)}
+
+/* ── BODY ── */
+.body{flex:1;overflow:hidden;min-height:0;position:relative}
+.panel{height:100%;display:flex;flex-direction:column;overflow:hidden;display:none}
+.panel.active{display:flex}
+.scroll{flex:1;overflow-y:auto;padding:14px 16px;display:flex;flex-direction:column;gap:0}
+
+/* ── SECTION TITLE ── */
+.sec-title{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:7px}
+
+/* ── CHIPS GRID ── */
+.chips{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-bottom:14px}
+@media(min-width:500px){.chips{grid-template-columns:1fr 1fr 1fr}}
+.chip{display:flex;align-items:center;gap:6px;padding:7px 10px;border-radius:var(--r-sm);cursor:pointer;font-size:12px;font-weight:500;color:var(--text2);border:1.5px solid var(--border-light);background:var(--white);transition:all .1s}
+.chip:hover{border-color:var(--text2);color:var(--text)}
+.chip.on{border-color:var(--text);background:var(--text);color:white}
+.chip-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+
+/* ── GRID PANEL ── */
+.grid-wrap{display:flex;flex-direction:column;align-items:center;gap:10px;padding:16px}
+.ig-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;width:100%;max-width:270px}
+.ig-cell{aspect-ratio:4/5;border-radius:3px;transition:background .2s}
+.grid-label{font-size:11px;color:var(--text3);text-align:center;line-height:1.5}
+.apply-btn{width:100%;max-width:270px;padding:11px;border-radius:var(--r-sm);background:var(--text);border:none;color:white;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font)}
+.apply-btn:hover{opacity:.85}
+
+/* ── CORES PANEL ── */
+.swatches{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+.sw{width:42px;height:42px;border-radius:50%;border:2px solid transparent;cursor:pointer;position:relative;transition:all .12s;flex-shrink:0}
+.sw:hover{border-color:var(--text);transform:scale(1.08)}
+.sw input[type=color]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;border-radius:50%;border:none;padding:0}
+.sw .del{position:absolute;top:-3px;right:-3px;width:15px;height:15px;border-radius:50%;background:var(--text);color:white;font-size:8px;display:none;align-items:center;justify-content:center;z-index:2;cursor:pointer;font-family:var(--font);line-height:1}
+.sw:hover .del{display:flex}
+.add-btn{width:42px;height:42px;border-radius:50%;border:1.5px dashed var(--border);background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--text3);font-size:20px;flex-shrink:0;transition:all .12s}
+.add-btn:hover{border-color:var(--text2);color:var(--text2)}
+
+/* ── COLOR ADD PANEL ── */
+.add-panel{background:var(--bg);border-radius:var(--r-sm);padding:12px;margin-bottom:14px;display:flex;flex-direction:column;gap:10px}
+.add-row{display:flex;align-items:center;gap:8px}
+.preview-dot{width:38px;height:38px;border-radius:50%;border:2px solid var(--border);flex-shrink:0}
+input[type=color].color-pick{width:44px;height:38px;border:1.5px solid var(--border);border-radius:var(--r-sm);cursor:pointer;padding:2px;flex-shrink:0}
+.hex-input{flex:1;padding:8px 10px;border:1.5px solid var(--border);border-radius:var(--r-sm);font-size:13px;font-family:monospace;color:var(--text);background:var(--white);outline:none}
+.hex-input:focus{border-color:var(--text)}
+.ok-btn{padding:8px 16px;background:var(--text);color:white;border:none;border-radius:var(--r-sm);font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font);white-space:nowrap}
+.cancel-btn{padding:8px 12px;background:transparent;border:1.5px solid var(--border);color:var(--text2);border-radius:var(--r-sm);font-size:13px;cursor:pointer;font-family:var(--font)}
+
+/* ── ANALYSIS ── */
+.analysis{background:var(--bg);border-radius:var(--r-sm);padding:12px}
+.anal-row{display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--border-light)}
+.anal-row:last-child{border-bottom:none}
+.anal-dot{width:24px;height:24px;border-radius:50%;flex-shrink:0;cursor:pointer}
+.anal-hex{font-size:11px;font-family:monospace;flex:1;color:var(--text)}
+.anal-badge{padding:2px 8px;border-radius:100px;font-size:10px;font-weight:700}
+.anal-del{font-size:10px;color:var(--text3);cursor:pointer;padding:2px 4px}
+.anal-del:hover{color:var(--text)}
+.anal-summary{font-size:11px;color:var(--text2);margin-top:10px;padding-top:10px;border-top:1px solid var(--border-light)}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="hdr">
+  <div class="hdr-title">⬡ Playground Test</div>
+  <div class="hdr-right">
+    <span style="font-size:10px;color:var(--text3)">posts</span>
+    <div style="display:flex;gap:3px" id="post-tabs"></div>
+    <button class="close-btn" onclick="window.close()">✕</button>
+  </div>
+</div>
+
+<!-- TAB BAR -->
+<div class="tabbar">
+  <button class="tab on" id="tab-config" onclick="switchTab('config')">⚙ Configurar</button>
+  <button class="tab" id="tab-grid"   onclick="switchTab('grid')">◫ Grid</button>
+  <button class="tab" id="tab-cores"  onclick="switchTab('cores')">● Cores</button>
+</div>
+
+<!-- PANELS -->
+<div class="body">
+
+  <!-- CONFIG -->
+  <div class="panel active" id="panel-config">
+    <div class="scroll">
+      <div class="sec-title">Harmonia</div>
+      <div class="chips" id="harm-list"></div>
+
+      <div class="sec-title">Padrão de grid</div>
+      <div class="chips" id="pat-list"></div>
+
+      <div class="sec-title">Eixo de contraste</div>
+      <div class="chips" id="axis-list"></div>
+    </div>
+  </div>
+
+  <!-- GRID -->
+  <div class="panel" id="panel-grid">
+    <div class="grid-wrap">
+      <div class="ig-grid" id="ig-grid"></div>
+      <div class="grid-label" id="grid-label"></div>
+      <button class="apply-btn" onclick="applyAndClose()">✓ Aplicar estas configurações</button>
+    </div>
+  </div>
+
+  <!-- CORES -->
+  <div class="panel" id="panel-cores">
+    <div class="scroll">
+      <div class="sec-title">Paleta de teste</div>
+      <div class="swatches" id="swatches"></div>
+
+      <div class="add-panel" id="add-panel">
+        <div style="font-size:11px;font-weight:600;color:var(--text2)" id="add-panel-title">Nova cor</div>
+        <div class="add-row">
+          <div class="preview-dot" id="preview-dot"></div>
+          <input type="color" class="color-pick" id="color-pick" value="#C4853A"
+            oninput="onPickColor(this.value)">
+          <input type="text" class="hex-input" id="hex-input" value="#C4853A" maxlength="7"
+            oninput="onHexInput(this.value)" placeholder="#RRGGBB">
+          <button class="ok-btn" onclick="confirmColor()">+ OK</button>
+          <button class="cancel-btn" onclick="cancelEdit()">✕</button>
+        </div>
+      </div>
+
+      <div class="sec-title">Análise</div>
+      <div class="analysis" id="analysis"></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ── State ─────────────────────────────────────────────
+const ST = {
+  selH: 'complementary',
+  selP: 'checkerboard',
+  selA: 'temperature',
+  size: 9,
+  editIdx: null,
+  palette: ['#C4853A','#3A5870','#8A9A4A','#2A4A60','#D05020','#6A8A9A','#1A3850','#B07030'],
+}
+
+const HARMONIES = [
+  {id:'complementary', name:'Complementar', dot:'linear-gradient(135deg,#C4853A,#3A5870)'},
+  {id:'analogous',     name:'Análogo',      dot:'linear-gradient(135deg,#4A8A9A,#5A8A6A)'},
+  {id:'split',         name:'Split',        dot:'linear-gradient(135deg,#C4853A,#3A7870,#3A4A88)'},
+  {id:'triad',         name:'Tríade',       dot:'linear-gradient(135deg,#C4853A,#3A7A9A,#8A3A9A)'},
+  {id:'monochrome',    name:'Monocromático',dot:'linear-gradient(135deg,#0A2A3A,#4A9AB8)'},
+  {id:'shades',        name:'Sombras',      dot:'linear-gradient(135deg,#0A0E12,#1C3040)'},
+]
+const PATTERNS = [
+  {id:'checkerboard', name:'Xadrez'},
+  {id:'columns',      name:'Colunas'},
+  {id:'rows',         name:'Linhas'},
+  {id:'diagonal',     name:'Diagonal'},
+]
+const AXES = [
+  {id:'temperature', name:'Temperatura', icon:'🌡️'},
+  {id:'luminance',   name:'Luminância',  icon:'☀️'},
+  {id:'saturation',  name:'Saturação',   icon:'🎨'},
+  {id:'subject',     name:'Sujeito',     icon:'🔭'},
+]
+
+// ── Color math ────────────────────────────────────────
+function rgb(h){h=h.replace('#','');const n=parseInt(h,16);return[n>>16&255,n>>8&255,n&255]}
+function hue(hex){const[r,g,b]=rgb(hex).map(v=>v/255);const mx=Math.max(r,g,b),mn=Math.min(r,g,b),d=mx-mn;if(!d)return 0;let h;if(mx===r)h=((g-b)/d+(g<b?6:0))*60;else if(mx===g)h=((b-r)/d+2)*60;else h=((r-g)/d+4)*60;return h}
+function lum(hex){const[r,g,b]=rgb(hex).map(v=>v/255);const t=v=>v>.04045?Math.pow((v+.055)/1.055,2.4):v/12.92;return .2126*t(r)+.7152*t(g)+.0722*t(b)}
+function sat(hex){const[r,g,b]=rgb(hex).map(v=>v/255);const mx=Math.max(r,g,b),mn=Math.min(r,g,b);return mx===0?0:(mx-mn)/mx}
+function isWarm(hex){const h=hue(hex);return h<60||h>300}
+function isAccent(hex){const h=hue(hex),s=sat(hex);return s>0.45&&(h<=45||h>=330)}
+function kelvin(hex){const[r,,b]=rgb(hex);const bs=r*.5-b*.5;if(bs>40)return 2200;if(bs>20)return 3500;if(bs>5)return 4500;if(bs>-5)return 5500;if(bs>-20)return 7000;if(bs>-40)return 8500;return 10000}
+function tempWord(hex){const k=kelvin(hex);if(isAccent(hex))return'acento';return k<=4500?'quente':k<=6000?'neutro':'frio'}
+
+function scorePhoto(hex, axisId){
+  if(axisId==='temperature'){const a=isAccent(hex),k=kelvin(hex);return{score:a?1000+(10000-k):k,group:(a||k<5000)?'A':'B'}}
+  if(axisId==='luminance'){const L=lum(hex)*100;return{score:L,group:L>50?'A':'B'}}
+  if(axisId==='saturation'){const s=sat(hex);return{score:s,group:s>0.35?'A':'B'}}
+  const t=(hex)=>'B'; return{score:0,group:'B'} // subject fallback
+}
+function harmonyScore(hex, harmId){
+  const h=hue(hex),L=lum(hex)*100,a=isAccent(hex),w=isWarm(hex),k=kelvin(hex)
+  switch(harmId){
+    case'complementary':return{score:a?100-k/100:k/100,group:(a||w)?'A':'B'}
+    case'analogous':return{score:h,group:h<180?'A':'B'}
+    case'split':case'triad':return{score:h,group:Math.floor(h/120)%2===0?'A':'B'}
+    case'monochrome':return{score:L,group:L>55?'A':'B'}
+    case'shades':return{score:L,group:L<35?'A':'B'}
+    default:return scorePhoto(hex,ST.selA)
+  }
+}
+
+function buildMap(rows, nA, total, pat){
+  const map=[], ratio=nA/total
+  if(pat==='checkerboard'){
+    let rem=nA, rp=[]
+    for(let r=0;r<rows;r++){if(rem>=2&&r%2===0){rp.push(2);rem-=2}else if(rem===1){rp.push(1);rem--}else rp.push(0)}
+    for(let r=0;r<rows&&rem>0;r++)if(rp[r]===0){if(rem>=2){rp[r]=2;rem-=2}else{rp[r]=1;rem--}}
+    for(let r=0;r<rows;r++)for(let c=0;c<3;c++){if(rp[r]===2)map.push(c===1?'B':'A');else if(rp[r]===1)map.push(c===1?'A':'B');else map.push('B')}
+  }else if(pat==='columns'){
+    const ac=ratio<0.4?[1]:ratio<0.7?[0,2]:[0,1,2]
+    for(let r=0;r<rows;r++)for(let c=0;c<3;c++)map.push(ac.includes(c)?'A':'B')
+  }else if(pat==='rows'){
+    const ar=ratio<0.4?1:ratio<0.7?Math.ceil(rows*.5):rows
+    for(let r=0;r<rows;r++)for(let c=0;c<3;c++)map.push(r<ar?'A':'B')
+  }else if(pat==='diagonal'){
+    for(let r=0;r<rows;r++)for(let c=0;c<3;c++)map.push((r+c)%2===0?'A':'B')
+  }
+  return map
+}
+
+function computeGrid(){
+  const cols=[];for(let i=0;i<ST.size;i++)cols.push(ST.palette[i%ST.palette.length])
+  const scored=cols.map(c=>({c,...harmonyScore(c,ST.selH)}))
+  const gA=scored.filter(x=>x.group==='A').sort((a,b)=>b.score-a.score)
+  const gB=scored.filter(x=>x.group==='B').sort((a,b)=>b.score-a.score)
+  const rows=Math.ceil(ST.size/3), result=new Array(ST.size).fill('#ccc')
+  const map=buildMap(rows,gA.length,ST.size,ST.selP)
+  let aiA=0,aiB=0
+  for(let vi=0;vi<ST.size;vi++){
+    const row=Math.floor(vi/3),col=vi%3,slot=row*3+(2-col),want=map[vi]||'B';let ph
+    if(want==='A'&&gA[aiA])ph=gA[aiA++];else if(want==='B'&&gB[aiB])ph=gB[aiB++]
+    else if(gA[aiA])ph=gA[aiA++];else if(gB[aiB])ph=gB[aiB++]
+    if(ph&&slot<ST.size)result[slot]=ph.c
+  }
+  return result
+}
+
+// ── Render ────────────────────────────────────────────
+function renderAll(){
+  // Post tabs
+  document.getElementById('post-tabs').innerHTML=[3,6,9].map(n=>
+    `<button class="ptab ${n===ST.size?'on':''}" onclick="setSize(${n})">${n}</button>`).join('')
+
+  // Config
+  document.getElementById('harm-list').innerHTML=HARMONIES.map(h=>
+    `<div class="chip ${h.id===ST.selH?'on':''}" onclick="sel('H','${h.id}')">
+      <div class="chip-dot" style="background:${h.dot}"></div>${h.name}
+    </div>`).join('')
+  document.getElementById('pat-list').innerHTML=PATTERNS.map(p=>
+    `<div class="chip ${p.id===ST.selP?'on':''}" onclick="sel('P','${p.id}')">${p.name}</div>`).join('')
+  document.getElementById('axis-list').innerHTML=AXES.map(a=>
+    `<div class="chip ${a.id===ST.selA?'on':''}" onclick="sel('A','${a.id}')">
+      <span style="font-size:12px">${a.icon}</span>${a.name}
+    </div>`).join('')
+
+  // Grid
+  const cols=computeGrid()
+  const rows=Math.ceil(ST.size/3)
+  const grid=document.getElementById('ig-grid')
+  grid.style.gridTemplateRows=`repeat(${rows},1fr)`
+  grid.innerHTML=cols.map((c,i)=>`<div class="ig-cell" style="background:${c}" title="slot ${i+1}"></div>`).join('')
+  const hName=HARMONIES.find(h=>h.id===ST.selH)?.name
+  const pName=PATTERNS.find(p=>p.id===ST.selP)?.name
+  const aName=AXES.find(a=>a.id===ST.selA)?.name
+  document.getElementById('grid-label').textContent=`${hName} · ${pName} · ${aName} · ${ST.size} posts`
+
+  // Swatches
+  document.getElementById('swatches').innerHTML=
+    ST.palette.map((c,i)=>`
+      <div class="sw" style="background:${c}" title="Editar cor">
+        <input type="color" value="${c}" onchange="editColorDirect(${i},this.value)">
+        <div class="del" onclick="event.stopPropagation();removeSwatch(${i})">✕</div>
+      </div>`).join('')+
+    `<div class="add-btn" onclick="showAddPanel()" title="Adicionar nova cor">+</div>`
+
+  // Analysis
+  const acc=ST.palette.filter(isAccent).length
+  const warm=ST.palette.filter(c=>isWarm(c)&&!isAccent(c)).length
+  const cool=ST.palette.filter(c=>!isWarm(c)).length
+  const neutral=ST.palette.filter(c=>isWarm(c)&&!isAccent(c)&&kelvin(c)>4500&&kelvin(c)<=6000).length
+  document.getElementById('analysis').innerHTML=
+    ST.palette.map((c,i)=>{
+      const tw=tempWord(c)
+      const bg=tw==='acento'?'#fff3e0':tw==='quente'?'#fff8ec':tw==='neutro'?'#f3f4f6':'#e3f2fd'
+      const fg=tw==='acento'?'#e65100':tw==='quente'?'#b06000':tw==='neutro'?'#4b5563':'#1565c0'
+      return `<div class="anal-row">
+        <div class="anal-dot" style="background:${c}" onclick="editSwatch(${i})" title="Clique para editar"></div>
+        <span class="anal-hex">${c.toUpperCase()}</span>
+        <span class="anal-badge" style="background:${bg};color:${fg}">${tw}</span>
+        <span class="anal-del" onclick="removeSwatch(${i})">✕</span>
+      </div>`
+    }).join('')+
+    `<div class="anal-summary">
+      Acentos <strong>${acc}</strong> · Quentes <strong>${warm}</strong> · Neutros <strong>${neutral}</strong> · Frios <strong>${cool}</strong>
+    </div>`
+}
+
+// ── Tab switching ─────────────────────────────────────
+function switchTab(tab){
+  ;['config','grid','cores'].forEach(t=>{
+    document.getElementById('panel-'+t).classList.toggle('active',t===tab)
+    document.getElementById('tab-'+t).classList.toggle('on',t===tab)
+  })
+}
+
+// ── Color actions ─────────────────────────────────────
+function sel(type,id){
+  if(type==='H')ST.selH=id;else if(type==='P')ST.selP=id;else ST.selA=id
+  renderAll()
+  switchTab('grid')
+}
+function setSize(n){ST.size=n;renderAll()}
+function removeSwatch(i){if(ST.palette.length>2){ST.palette.splice(i,1);renderAll()}}
+function editColorDirect(i,v){ST.palette[i]=v;renderAll()}
+
+function editSwatch(i){
+  ST.editIdx=i
+  const c=ST.palette[i]
+  document.getElementById('preview-dot').style.background=c
+  document.getElementById('color-pick').value=c
+  document.getElementById('hex-input').value=c
+  document.getElementById('add-panel-title').textContent='Editar cor'
+  document.getElementById('add-panel').style.background='#fff8ec'
+}
+function showAddPanel(){
+  ST.editIdx=null
+  document.getElementById('preview-dot').style.background='#C4853A'
+  document.getElementById('color-pick').value='#C4853A'
+  document.getElementById('hex-input').value='#C4853A'
+  document.getElementById('add-panel-title').textContent='Nova cor'
+  document.getElementById('add-panel').style.background='var(--bg)'
+}
+function cancelEdit(){
+  ST.editIdx=null
+  document.getElementById('add-panel-title').textContent='Nova cor'
+  document.getElementById('add-panel').style.background='var(--bg)'
+}
+function onPickColor(v){
+  document.getElementById('preview-dot').style.background=v
+  document.getElementById('hex-input').value=v
+}
+function onHexInput(v){
+  if(/^#[0-9a-fA-F]{6}$/.test(v)){
+    document.getElementById('preview-dot').style.background=v
+    document.getElementById('color-pick').value=v
+  }
+}
+function confirmColor(){
+  const v=document.getElementById('hex-input').value
+  if(!/^#[0-9a-fA-F]{6}$/.test(v))return
+  if(ST.editIdx!=null){ST.palette[ST.editIdx]=v;ST.editIdx=null}
+  else if(ST.palette.length<12){ST.palette.push(v)}
+  cancelEdit(); renderAll()
+}
+
+// ── Apply back to parent window ───────────────────────
+function applyAndClose(){
+  if(window.opener && !window.opener.closed){
+    window.opener.pgApplyFromPlayground(ST.selH, ST.selP, ST.selA)
+  }
+  window.close()
+}
+
+renderAll()
+</script>
+</body>
+</html>
