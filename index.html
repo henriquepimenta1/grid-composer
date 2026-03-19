@@ -822,6 +822,14 @@ canvas{display:none}
             <button class="feed-tab" onclick="setPlan(9,this)">9</button>
           </div>
           <span style="font-size:11px;color:var(--text3)" id="feed-hint">arraste do repositório ou clique no +</span>
+          <button id="export-btn" onclick="exportGrid()" title="Exportar grid como imagem"
+            style="display:none;font-size:11px;font-weight:700;padding:4px 10px;border-radius:100px;
+            border:1.5px solid var(--border);background:transparent;cursor:pointer;
+            font-family:var(--font);color:var(--text2);transition:all .15s"
+            onmouseover="this.style.borderColor='var(--text)';this.style.color='var(--text)'"
+            onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text2)'">
+            ↓ Exportar
+          </button>
         </div>
       </div>
       <div class="up-body" style="padding-bottom:10px">

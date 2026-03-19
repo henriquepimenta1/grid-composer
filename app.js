@@ -1051,6 +1051,8 @@ function clearAll() {
   document.getElementById('results').innerHTML = ''
   currentPlan  = []
   originalPlan = []
+  const expBtn = document.getElementById('export-btn')
+  if (expBtn) expBtn.style.display = 'none'
   hideErr(); setStatus('', '')
 }
 
@@ -1319,6 +1321,10 @@ function renderResults(data, H) {
   renderDetails()
   results.classList.add('show')
   document.querySelector('.main').scrollTo({ top: 0, behavior: 'smooth' })
+
+  // Show export button
+  const expBtn = document.getElementById('export-btn')
+  if (expBtn) expBtn.style.display = 'block'
 
   // Auto-save to history (async, non-blocking)
   saveAnalysisToHistory(data, H)
@@ -1642,7 +1648,203 @@ function closePaletteModal() {
   document.getElementById('palette-modal')?.classList.remove('open')
 }
 
-// ══ HISTORY ══════════════════════════════════════════
+// ══ EXPORT GRID ══════════════════════════════════════
+
+async function exportGrid() {
+  const slots = feedSlots.map((repoIdx, i) => ({
+    repoIdx,
+    photo: repoIdx !== null ? repository[repoIdx] : null,
+    plan:  currentPlan.find(x => x.slot === i + 1) || null
+  })).filter(s => s.photo)
+
+  if (!slots.length) { showErr('Nenhuma foto no feed para exportar.'); return }
+
+  const COLS      = 3
+  const ROWS      = Math.ceil(slots.length / COLS)
+  const CELL_W    = 360           // px per cell
+  const CELL_H    = Math.round(CELL_W * 5 / 4)  // 4:5
+  const INFO_H    = 96            // info area below each photo
+  const PAD       = 12            // gap between cells
+  const MARGIN    = 24            // outer margin
+  const HEADER_H  = 56            // top header bar
+
+  const TOTAL_W = COLS * CELL_W + (COLS - 1) * PAD + MARGIN * 2
+  const TOTAL_H = HEADER_H + ROWS * (CELL_H + INFO_H + PAD) + MARGIN
+
+  const cv  = document.createElement('canvas')
+  cv.width  = TOTAL_W
+  cv.height = TOTAL_H
+  const ctx = cv.getContext('2d')
+
+  // ── Background ─────────────────────────────────────
+  ctx.fillStyle = '#fafafa'
+  ctx.fillRect(0, 0, TOTAL_W, TOTAL_H)
+
+  // ── Header ─────────────────────────────────────────
+  ctx.fillStyle = '#ffffff'
+  ctx.fillRect(0, 0, TOTAL_W, HEADER_H)
+  ctx.fillStyle = '#262626'
+  ctx.font = 'bold 18px system-ui, -apple-system, sans-serif'
+  ctx.textBaseline = 'middle'
+
+  const igHandle = localStorage.getItem('gc_ig_handle')
+  const headerLeft = igHandle ? `@${igHandle}` : 'Grid Composer'
+  ctx.fillText(headerLeft, MARGIN, HEADER_H / 2)
+
+  const H = currentHarmony
+  if (H?.name) {
+    ctx.fillStyle = '#a8a8a8'
+    ctx.font = '13px system-ui, -apple-system, sans-serif'
+    const harmLabel = `${H.name} · ${slots.length} fotos`
+    const tw = ctx.measureText(harmLabel).width
+    ctx.fillText(harmLabel, TOTAL_W - MARGIN - tw, HEADER_H / 2)
+  }
+
+  // Thin separator
+  ctx.fillStyle = '#efefef'
+  ctx.fillRect(0, HEADER_H - 1, TOTAL_W, 1)
+
+  // ── Cells ───────────────────────────────────────────
+  const loadImage = src => new Promise((resolve, reject) => {
+    const img = new Image()
+    img.onload  = () => resolve(img)
+    img.onerror = reject
+    img.src = src
+  })
+
+  for (let i = 0; i < slots.length; i++) {
+    const col = i % COLS
+    const row = Math.floor(i / COLS)
+    const x   = MARGIN + col * (CELL_W + PAD)
+    const y   = HEADER_H + MARGIN / 2 + row * (CELL_H + INFO_H + PAD)
+
+    const { photo, plan } = slots[i]
+
+    // Photo
+    try {
+      const img = await loadImage(photo.cropUrl || photo.dataUrl)
+
+      // Clip to cell rect
+      ctx.save()
+      ctx.beginPath()
+      roundRect(ctx, x, y, CELL_W, CELL_H, 6)
+      ctx.clip()
+
+      // Cover fit
+      const scale = Math.max(CELL_W / img.width, CELL_H / img.height)
+      const dw = img.width  * scale
+      const dh = img.height * scale
+      ctx.drawImage(img, x + (CELL_W - dw) / 2, y + (CELL_H - dh) / 2, dw, dh)
+      ctx.restore()
+    } catch {}
+
+    // Info area background
+    const iy = y + CELL_H
+    ctx.fillStyle = '#ffffff'
+    ctx.fillRect(x, iy, CELL_W, INFO_H)
+
+    // Slot number badge
+    const slotNum = i + 1
+    ctx.fillStyle = '#262626'
+    ctx.beginPath()
+    ctx.roundRect(x + 8, iy + 8, 30, 20, 10)
+    ctx.fill()
+    ctx.fillStyle = '#ffffff'
+    ctx.font = 'bold 11px system-ui, sans-serif'
+    ctx.textBaseline = 'middle'
+    ctx.textAlign    = 'center'
+    ctx.fillText(`+${slotNum}`, x + 23, iy + 18)
+    ctx.textAlign = 'left'
+
+    // Type label (PAISAGEM / PESSOA / DETALHE)
+    if (plan?.type) {
+      ctx.fillStyle = '#262626'
+      ctx.font = 'bold 11px system-ui, sans-serif'
+      ctx.fillText(plan.type, x + 44, iy + 18)
+    }
+
+    // Kelvin badge
+    if (photo.kelvin) {
+      const iW   = photo.kelvin < 5500
+      const kLabel = `${photo.kelvin}K`
+      ctx.font = 'bold 10px system-ui, sans-serif'
+      const kw = ctx.measureText(kLabel).width + 12
+      const kx = x + CELL_W - kw - 8
+      ctx.fillStyle = iW ? '#fff3e0' : '#e3f2fd'
+      ctx.beginPath()
+      ctx.roundRect(kx, iy + 8, kw, 18, 9)
+      ctx.fill()
+      ctx.fillStyle = iW ? '#e65100' : '#1565c0'
+      ctx.textAlign = 'center'
+      ctx.fillText(kLabel, kx + kw / 2, iy + 17)
+      ctx.textAlign = 'left'
+    }
+
+    // Reason (truncated)
+    if (plan?.reason) {
+      ctx.fillStyle = '#737373'
+      ctx.font = '10px system-ui, sans-serif'
+      const maxW  = CELL_W - 16
+      let reason  = plan.reason
+      while (ctx.measureText(reason).width > maxW && reason.length > 0) {
+        reason = reason.slice(0, -1)
+      }
+      if (reason !== plan.reason) reason += '…'
+      ctx.fillText(reason, x + 8, iy + 36)
+    }
+
+    // Color swatches row
+    const colors  = (photo.colors || []).slice(0, 5)
+    const swW     = Math.floor((CELL_W - 16 - (colors.length - 1) * 4) / colors.length)
+    const swY     = iy + INFO_H - 26
+    colors.forEach((c, ci) => {
+      const sx = x + 8 + ci * (swW + 4)
+      ctx.fillStyle = c.hex
+      ctx.beginPath()
+      ctx.roundRect(sx, swY, swW, 14, 3)
+      ctx.fill()
+      // Hex label below swatch
+      ctx.fillStyle = '#a8a8a8'
+      ctx.font = '8px monospace'
+      ctx.textAlign = 'center'
+      ctx.fillText(c.hex.toUpperCase(), sx + swW / 2, swY + 24)
+    })
+    ctx.textAlign = 'left'
+
+    // Bottom border between cells
+    ctx.fillStyle = '#efefef'
+    ctx.fillRect(x, iy + INFO_H - 1, CELL_W, 1)
+  }
+
+  // ── Watermark ───────────────────────────────────────
+  ctx.fillStyle = '#d0d0d0'
+  ctx.font = '11px system-ui, sans-serif'
+  ctx.textAlign = 'center'
+  ctx.fillText('grid-composer.onrender.com', TOTAL_W / 2, TOTAL_H - 8)
+
+  // ── Download ────────────────────────────────────────
+  const handle = localStorage.getItem('gc_ig_handle') || 'grid'
+  const date   = new Date().toISOString().slice(0, 10)
+  const link   = document.createElement('a')
+  link.download = `${handle}-grid-${date}.jpg`
+  link.href      = cv.toDataURL('image/jpeg', 0.92)
+  link.click()
+}
+
+// Helper for rounded rectangles (Safari < 15.4 doesn't support ctx.roundRect natively)
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath()
+  ctx.moveTo(x + r, y)
+  ctx.lineTo(x + w - r, y)
+  ctx.quadraticCurveTo(x + w, y, x + w, y + r)
+  ctx.lineTo(x + w, y + h - r)
+  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h)
+  ctx.lineTo(x + r, y + h)
+  ctx.quadraticCurveTo(x, y + h, x, y + h - r)
+  ctx.lineTo(x, y + r)
+  ctx.quadraticCurveTo(x, y, x + r, y)
+  ctx.closePath()
+}
 
 // Generate a 32×32 JPEG thumbnail from a dataUrl
 async function makeThumb(dataUrl) {
