@@ -1137,19 +1137,32 @@ document.addEventListener('DOMContentLoaded', async () => {
 </div>
 
 
-<script>
-let pgWindow = null
+<!-- PLAYGROUND IFRAME MODAL -->
+<div id="pg-overlay" onclick="if(event.target===this)closePlayground()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);backdrop-filter:blur(4px);z-index:1200;align-items:center;justify-content:center;padding:16px">
+  <div style="background:var(--white);border-radius:var(--r);overflow:hidden;width:100%;max-width:720px;height:90vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.3)">
+    <iframe id="pg-iframe" src="" style="flex:1;border:none;width:100%;height:100%"></iframe>
+  </div>
+</div>
 
+<script>
 function openPlayground(){
-  if(pgWindow && !pgWindow.closed){ pgWindow.focus(); return }
-  pgWindow = window.open('/playground', 'playground',
-    'width=480,height=640,left=100,top=80,resizable=yes,scrollbars=yes')
+  const overlay = document.getElementById('pg-overlay')
+  const iframe  = document.getElementById('pg-iframe')
+  overlay.style.display = 'flex'
+  if(!iframe.src || iframe.src === window.location.href){
+    iframe.src = '/playground'
+  }
 }
+function closePlayground(){
+  document.getElementById('pg-overlay').style.display = 'none'
+}
+document.addEventListener('keydown', e => { if(e.key === 'Escape') closePlayground() })
 
 function pgApplyFromPlayground(harmId, patId, axisId){
   selH = harmId; selP = patId; selC = axisId
   renderHarmonies(); renderPatterns(); renderContrast()
   if(currentPlan.length > 0) reorderByHarmony(selH)
+  closePlayground()
   setStatus('✓ Configurações do playground aplicadas', 'ok')
 }
 </script>

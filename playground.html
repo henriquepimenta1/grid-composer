@@ -107,7 +107,7 @@ input.cpick{width:40px;height:34px;border:1.5px solid var(--border);border-radiu
   <div style="display:flex;align-items:center;gap:6px">
     <span style="font-size:10px;color:var(--text3)">posts</span>
     <div style="display:flex;gap:3px" id="post-tabs"></div>
-    <button class="xbtn" onclick="window.close()">✕</button>
+    <button class="xbtn" onclick="closeMe()">✕</button>
   </div>
 </div>
 
@@ -321,10 +321,17 @@ function confirmColor(){
   cancelColor();render()
 }
 
+function closeMe(){
+  try{ window.parent.closePlayground() }catch(e){ window.close() }
+}
+
 function applyAndClose(){
-  if(window.opener&&!window.opener.closed)
-    window.opener.pgApplyFromPlayground(ST.selH,ST.selP,ST.selA)
-  window.close()
+  try{
+    window.parent.pgApplyFromPlayground(ST.selH, ST.selP, ST.selA)
+  }catch(e){
+    if(window.opener && !window.opener.closed)
+      window.opener.pgApplyFromPlayground(ST.selH, ST.selP, ST.selA)
+  }
 }
 
 render()
