@@ -343,7 +343,7 @@ app.post('/api/buy-credits', requireAuth, async (req, res) => {
     });
     if (userData?.stripe_customer_id) params.append('customer', userData.stripe_customer_id);
 
-    const session = await stripeRequest('/v1/checkout/sessions', params.toString());
+    const session = await stripePost('/v1/checkout/sessions', params.toString());
     if (session.error) return res.status(500).json({ error: session.error.message });
     res.json({ url: session.url });
   } catch (err) {

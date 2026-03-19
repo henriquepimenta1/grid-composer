@@ -529,7 +529,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
 .repo-add:hover{border-color:var(--blue);background:#f0f8ff}
 
 /* ── FEED TABS ── */
-.feed-tabs{display:flex;gap:3px}
+.feed-tabs{display:flex;gap:3px;align-items:center}
 .feed-tab{width:28px;height:24px;border-radius:5px;border:1.5px solid var(--border);background:transparent;font-size:12px;font-weight:700;color:var(--text2);cursor:pointer;transition:all .15s;font-family:var(--font)}
 .feed-tab:hover{border-color:var(--text);color:var(--text)}
 .feed-tab.active{background:var(--text);border-color:var(--text);color:white}
@@ -659,6 +659,11 @@ canvas{display:none}
     <button class="plan-tab active" onclick="setPlan(3,this)">Próximos 3</button>
     <button class="plan-tab" onclick="setPlan(6,this)">Próximos 6</button>
     <button class="plan-tab" onclick="setPlan(9,this)">Próximos 9</button>
+    <div id="topbar-tabs-extra" style="display:none;gap:4px">
+      <button class="plan-tab" onclick="setPlan(12,this)">Próximos 12</button>
+      <button class="plan-tab" onclick="setPlan(15,this)">Próximos 15</button>
+      <button class="plan-tab" onclick="setPlan(18,this)">Próximos 18</button>
+    </div>
   </div>
   <div class="topbar-right">
     <span class="handle" id="user-handle"></span>
@@ -820,6 +825,12 @@ canvas{display:none}
             <button class="feed-tab active" onclick="setPlan(3,this)">3</button>
             <button class="feed-tab" onclick="setPlan(6,this)">6</button>
             <button class="feed-tab" onclick="setPlan(9,this)">9</button>
+            <!-- Studio-only tabs, hidden by default -->
+            <div id="feed-tabs-extra" style="display:none;gap:3px;align-items:center">
+              <button class="feed-tab" onclick="setPlan(12,this)">12</button>
+              <button class="feed-tab" onclick="setPlan(15,this)">15</button>
+              <button class="feed-tab" onclick="setPlan(18,this)">18</button>
+            </div>
           </div>
           <span style="font-size:11px;color:var(--text3)" id="feed-hint">arraste do repositório ou clique no +</span>
           <button id="export-btn" onclick="exportGrid()" title="Exportar grid como imagem"

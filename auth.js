@@ -61,8 +61,28 @@ async function loadCredits() {
       headers: { 'Authorization': 'Bearer ' + authToken }
     })
     const data = await res.json()
+    // Update cached plan in state.js so maxRepoSize() returns correct value
+    if (typeof currentUserPlan !== 'undefined') currentUserPlan = data.plan || 'free'
     updateCreditsUI(data.credits, data.plan)
+    // Update feed tabs and repo counter for Studio (30 photos, more grid sizes)
+    updatePlanUI(data.plan)
   } catch {}
+}
+
+function updatePlanUI(plan) {
+  const isStudio = plan === 'studio'
+  // Update repo counter max display
+  const pcnt = document.getElementById('pcnt')
+  if (pcnt) {
+    const max = isStudio ? 30 : 12
+    const cur = typeof repository !== 'undefined' ? repository.length : 0
+    pcnt.textContent = `${cur} / ${max}`
+  }
+  // Show extra feed tabs for Studio (12, 15, 18)
+  const extraTabs   = document.getElementById('feed-tabs-extra')
+  const topbarExtra = document.getElementById('topbar-tabs-extra')
+  if (extraTabs)   extraTabs.style.display   = isStudio ? 'flex' : 'none'
+  if (topbarExtra) topbarExtra.style.display = isStudio ? 'flex' : 'none'
 }
 
 function updateCreditsUI(credits, plan) {
