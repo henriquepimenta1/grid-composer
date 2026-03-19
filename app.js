@@ -12,18 +12,20 @@ function init() {
 }
 
 function renderHarmonies() {
-  document.getElementById('hm-list').innerHTML = HARMONIES.map(h =>
-    `<div class="hchip ${h.id===selH?'on':''}" onclick="selHarmony('${h.id}')">
+  document.getElementById('hm-list').innerHTML = HARMONIES.map(h => {
+    const isHL = h.highlight && h.id !== selH
+    return `<div class="hchip ${h.id===selH?'on':''} ${h.highlight?'hchip-hl':''}" onclick="selHarmony('${h.id}')">
       <div class="hchip-dot" style="background:${h.dot}"></div>
       <span class="hchip-name">${h.name}</span>
       <button class="hchip-help" onclick="event.stopPropagation();showHarmonyInfo('${h.id}')" title="Saiba mais">?</button>
-    </div>`).join('')
+    </div>`
+  }).join('')
 }
 
 function renderPatterns() {
   document.getElementById('pat-list').innerHTML = PATTERNS.map(p => {
     const cells = p.cells.map(v => `<div class="pm ${v===true?'w':''}"></div>`).join('')
-    return `<div class="pchip ${p.id===selP?'on':''}" onclick="selPattern('${p.id}')">
+    return `<div class="pchip ${p.id===selP?'on':''} ${p.highlight?'hchip-hl':''}" onclick="selPattern('${p.id}')">
       <div class="pg-mini">${cells}</div>
       <span style="flex:1">${p.name}</span>
       <button class="hchip-help" onclick="event.stopPropagation();showPatternInfo('${p.id}')" title="Saiba mais">?</button>
@@ -33,7 +35,7 @@ function renderPatterns() {
 
 function renderContrast() {
   document.getElementById('contrast-list').innerHTML = CONTRAST_AXES.map(a =>
-    `<div class="cchip ${a.id===selC?'on':''}" onclick="selContrast('${a.id}')">
+    `<div class="cchip ${a.id===selC?'on':''} ${a.highlight?'hchip-hl':''}" onclick="selContrast('${a.id}')">
       <span class="cchip-icon">${a.icon}</span>
       <div class="cchip-body">
         <span class="cchip-name">${a.name}</span>
@@ -96,7 +98,7 @@ function updateActionButtons() {
   const costEl=document.getElementById('credit-cost'), expBtn=document.getElementById('export-btn')
   if (go)    go.disabled    = !hasRepo
   if (goAdv) goAdv.disabled = !hasRepo
-  if (expBtn) expBtn.style.display = hasFeed ? 'block' : 'none'
+  if (expBtn) expBtn.style.display = (hasFeed || currentPlan.length > 0) ? 'block' : 'none'
   if (costEl && typeof updateCreditsUI === 'undefined') {
     costEl.textContent = 'temperatura · paleta · harmonia · 1 crédito'
   }
@@ -131,18 +133,50 @@ function renderResults(data, H) {
     if (slotIdx>=0 && slotIdx<planSize) feedSlots[slotIdx]=s.photo-1
   })
   renderUploadGrid()
+
+  // Build palette from all colors in plan
   const allColors=[]
   currentPlan.forEach(s => {
     const p=repository[s.photo-1]
     if (p) (p.colors||[]).slice(0,2).forEach(c=>{ if (!allColors.includes(c.hex)) allColors.push(c.hex) })
   })
-  const palHtml=allColors.slice(0,10).map(hex=>`<div class="ppal-c" style="background:${hex}"></div>`).join('')
+  const palHtml=allColors.slice(0,12).map(hex=>`<div class="ppal-c" style="background:${hex}"></div>`).join('')
+
+  // Temperature distribution badge
+  const warm = currentPlan.filter(s=>s.temp==='warm').length
+  const cool = currentPlan.filter(s=>s.temp==='cool').length
+  const total = currentPlan.length
+  const tempBar = total > 0 ? `
+    <div style="display:flex;align-items:center;gap:8px;margin-top:4px">
+      <div style="flex:1;height:6px;border-radius:3px;background:var(--border-light);overflow:hidden">
+        <div style="height:100%;width:${Math.round(warm/total*100)}%;background:linear-gradient(90deg,#e8920a,#f59e0b);border-radius:3px"></div>
+      </div>
+      <span style="font-size:10px;color:var(--warm);font-weight:600;white-space:nowrap">🟠 ${warm} quente${warm!==1?'s':''}</span>
+      <span style="font-size:10px;color:var(--cool);font-weight:600;white-space:nowrap">🔵 ${cool} fri${cool!==1?'as':'a'}</span>
+    </div>` : ''
+
+  const H_name = H?.name || ''
+  const axis = CONTRAST_AXES.find(a=>a.id===selC)
+
   const results=document.getElementById('results')
   results.innerHTML=`
     <div class="plan-post-summary">
-      <div class="pp-pal" style="padding:10px 16px 6px">${palHtml}</div>
-      <div class="pp-harmony" style="padding:0 16px 14px;font-size:12px;color:var(--text3)">${data.harmony_note||''}</div>
-      <div style="padding:0 16px 14px;font-size:12px;color:var(--text2)">${data.overview||''}</div>
+      <div style="padding:14px 16px 10px;border-bottom:1px solid var(--border-light)">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+          <div style="font-size:13px;font-weight:700">Análise da composição</div>
+          <div style="display:flex;gap:6px">
+            <span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:100px;background:var(--bg);border:1px solid var(--border);color:var(--text2)">${H_name}</span>
+            ${axis ? `<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:100px;background:var(--bg);border:1px solid var(--border);color:var(--text2)">${axis.icon} ${axis.name}</span>` : ''}
+          </div>
+        </div>
+        <div style="font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:8px">${data.overview||''}</div>
+        <div style="font-size:12px;color:var(--text3);line-height:1.5;font-style:italic">${data.harmony_note||''}</div>
+        ${tempBar}
+      </div>
+      <div style="padding:10px 16px 10px">
+        <div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Paleta do feed</div>
+        <div class="pp-pal" style="margin:0">${palHtml}</div>
+      </div>
     </div>
     <div class="detail-panel">
       <div class="detail-hdr">Detalhe por post · clique em ℹ no grid para ver</div>
@@ -151,6 +185,11 @@ function renderResults(data, H) {
   renderDetails()
   results.classList.add('show')
   document.querySelector('.main').scrollTo({top:0,behavior:'smooth'})
+
+  // Show export button
+  const expBtn = document.getElementById('export-btn')
+  if (expBtn) expBtn.style.display = 'block'
+
   saveAnalysisToHistory(data, H)
 }
 
