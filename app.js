@@ -54,12 +54,33 @@ function extractColors(img, k=5) {
 
 function estimateKelvin(colors) {
   if (!colors.length) return 6500
-  const hex = colors[0].hex
-  const r = parseInt(hex.slice(1,3), 16), b = parseInt(hex.slice(5,7), 16)
-  const rb = r / (b + 1)
-  if (rb > 3.5) return 1900; if (rb > 2.5) return 2800; if (rb > 1.8) return 3500
-  if (rb > 1.3) return 4500; if (rb > 1.0) return 5800; if (rb > 0.7) return 7200
-  if (rb > 0.5) return 8500; return 9800
+
+  function hexToRB(hex) {
+    const r = parseInt(hex.slice(1,3), 16)
+    const b = parseInt(hex.slice(5,7), 16)
+    return r / (b + 1)
+  }
+
+  function rbToKelvin(rb) {
+    if (rb > 3.5) return 1900
+    if (rb > 2.5) return 2800
+    if (rb > 1.8) return 3500
+    if (rb > 1.3) return 4500
+    if (rb > 1.0) return 5800
+    if (rb > 0.7) return 7200
+    if (rb > 0.5) return 8500
+    return 9800
+  }
+
+  // Simple weighted average by pixel percentage — reflects overall image mood
+  // Accent colors (2% orange hat) naturally have low weight vs dominant tones (40% dark rock)
+  let total = 0, weighted = 0
+  for (const c of colors) {
+    weighted += rbToKelvin(hexToRB(c.hex)) * c.pct
+    total    += c.pct
+  }
+
+  return total > 0 ? Math.round(weighted / total) : 6500
 }
 
 async function compressImage(dataUrl, maxDim=800, quality=0.75) {
