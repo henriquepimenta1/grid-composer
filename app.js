@@ -330,7 +330,9 @@ function estimateSaturation(colors) {
 
 // Core reorder: takes photo list, assigns to slots following current pattern
 function applyReorder(scoredPhotos) {
-  if (!scoredPhotos.length || !currentPlan.length) return
+  if (!scoredPhotos.length || !originalPlan.length) return
+  // Always start from a fresh copy of the original AI plan
+  currentPlan = JSON.parse(JSON.stringify(originalPlan))
 
   // scoredPhotos: [{repoIdx, score, group}] — group is 'A' or 'B'
   // Visual pattern for current grid pattern:
@@ -400,7 +402,8 @@ function applyReorder(scoredPhotos) {
 }
 
 function reorderByAxis(axisId) {
-  const photos = currentPlan.map(s => {
+  if (!originalPlan.length) return
+  const photos = originalPlan.map(s => {
     const p = repository[s.photo - 1]
     if (!p) return null
     const repoIdx = s.photo - 1
@@ -451,8 +454,9 @@ function reorderByAxis(axisId) {
 }
 
 function reorderByHarmony(harmonyId) {
+  if (!originalPlan.length) return
   // Harmony reorder: classify photos by dominant hue, then arrange per harmony type
-  const photos = currentPlan.map(s => {
+  const photos = originalPlan.map(s => {
     const p = repository[s.photo - 1]
     if (!p) return null
     const repoIdx = s.photo - 1
@@ -996,7 +1000,8 @@ function clearAll() {
   if (mp) mp.style.display = ''
   document.getElementById('results').classList.remove('show')
   document.getElementById('results').innerHTML = ''
-  currentPlan = []
+  currentPlan  = []
+  originalPlan = []
   hideErr(); setStatus('', '')
 }
 
@@ -1224,12 +1229,14 @@ Kelvin: MENOR=quente/laranja MAIOR=frio/azul`
 
 // ══ RENDER RESULTS ═══════════════════════════════════
 // currentPlan is mutable — drag-and-drop updates it without re-calling API
-let currentPlan = []
+let currentPlan  = []   // mutable — changes on local reorder
+let originalPlan = []   // immutable — always the raw AI result
 let currentHarmony = null
 let isManualMode = false
 
 function renderResults(data, H) {
-  currentPlan    = data.plan || []
+  originalPlan   = JSON.parse(JSON.stringify(data.plan || []))  // immutable snapshot
+  currentPlan    = JSON.parse(JSON.stringify(originalPlan))      // working copy
   currentHarmony = H
 
   // Apply AI plan to feedSlots — the feed IS the result
