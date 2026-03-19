@@ -288,9 +288,225 @@ function renderContrast() {
   if (ks) ks.className = 'sb-section kelvin-section' + (axis?.useKelvin ? '' : ' dim')
 }
 
-function selHarmony(id) { selH = id; renderHarmonies() }
-function selPattern(id)  { selP = id; renderPatterns() }
-function selContrast(id) { selC = id; renderContrast() }
+function selHarmony(id) {
+  selH = id
+  renderHarmonies()
+  if (currentPlan.length > 0) reorderByHarmony(id)
+}
+function selPattern(id) {
+  selP = id
+  renderPatterns()
+  if (currentPlan.length > 0) reorderByAxis(selC)
+}
+function selContrast(id) {
+  selC = id
+  renderContrast()
+  if (currentPlan.length > 0) reorderByAxis(id)
+}
+
+// ══ LOCAL REORDERING (no API call) ═══════════════════
+
+// Returns LAB L* (luminosity 0-100) from a hex color
+function hexToL(hex) {
+  const r = parseInt(hex.slice(1,3),16)/255
+  const g = parseInt(hex.slice(3,5),16)/255
+  const b = parseInt(hex.slice(5,7),16)/255
+  const toLinear = c => c > 0.04045 ? Math.pow((c+0.055)/1.055, 2.4) : c/12.92
+  const Y = 0.2126729*toLinear(r) + 0.7151522*toLinear(g) + 0.0721750*toLinear(b)
+  const fy = Y > 0.008856 ? Math.cbrt(Y) : 7.787*Y + 16/116
+  return 116*fy - 16  // L* value 0–100
+}
+
+// Returns estimated saturation from colors array
+function estimateSaturation(colors) {
+  if (!colors?.length) return 0
+  const hex = colors[0].hex
+  const r = parseInt(hex.slice(1,3),16)
+  const g = parseInt(hex.slice(3,5),16)
+  const b = parseInt(hex.slice(5,7),16)
+  const max = Math.max(r,g,b), min = Math.min(r,g,b)
+  return max === 0 ? 0 : (max - min) / max  // simple saturation 0–1
+}
+
+// Core reorder: takes photo list, assigns to slots following current pattern
+function applyReorder(scoredPhotos) {
+  if (!scoredPhotos.length || !currentPlan.length) return
+
+  // scoredPhotos: [{repoIdx, score, group}] — group is 'A' or 'B'
+  // Visual pattern for current grid pattern:
+  // checkerboard: A B A B A B A B A
+  // columns:      A A B A A B A A B
+  // rows:         A A A B B B A A A
+  // diagonal:     A A B A B A A B A
+  // free:         sort by score descending
+
+  const size = currentPlan.length
+  const rows = Math.ceil(size / 3)
+
+  // Build visual slot order (left→right, top→bottom) mapped to slot numbers
+  const visualToSlot = []
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < 3; c++) {
+      const slotNum = r * 3 + (2 - c) + 1  // Instagram: right→left
+      if (slotNum <= size) visualToSlot.push(slotNum)
+    }
+  }
+
+  // Determine which visual positions get group A vs B based on pattern
+  const patternMap = {
+    checkerboard: (vi) => vi % 2 === 0 ? 'A' : 'B',
+    columns:      (vi) => vi % 3 === 2 ? 'B' : 'A',
+    rows:         (vi) => Math.floor(vi / 3) % 2 === 0 ? 'A' : 'B',
+    diagonal:     (vi) => (Math.floor(vi/3) + vi%3) % 2 === 0 ? 'A' : 'B',
+    free:         ()   => 'A',  // all same group, sorted by score
+  }
+  const groupFn = patternMap[selP] || patternMap.checkerboard
+
+  // Separate photos into A and B groups, sorted by score
+  const groupA = scoredPhotos.filter(p => p.group === 'A').sort((a,b) => b.score - a.score)
+  const groupB = scoredPhotos.filter(p => p.group === 'B').sort((a,b) => b.score - a.score)
+
+  // If free pattern, just sort all by score
+  if (selP === 'free') {
+    const sorted = [...scoredPhotos].sort((a,b) => b.score - a.score)
+    visualToSlot.forEach((slotNum, vi) => {
+      const photo = sorted[vi]
+      if (!photo) return
+      const planItem = currentPlan.find(x => x.slot === slotNum)
+      if (planItem) planItem.photo = photo.repoIdx + 1
+    })
+  } else {
+    let aiA = 0, aiB = 0
+    visualToSlot.forEach((slotNum, vi) => {
+      const wantsGroup = groupFn(vi)
+      let photo
+      if (wantsGroup === 'A' && groupA[aiA]) { photo = groupA[aiA++] }
+      else if (wantsGroup === 'B' && groupB[aiB]) { photo = groupB[aiB++] }
+      else if (groupA[aiA]) { photo = groupA[aiA++] }
+      else if (groupB[aiB]) { photo = groupB[aiB++] }
+      if (!photo) return
+      const planItem = currentPlan.find(x => x.slot === slotNum)
+      if (planItem) planItem.photo = photo.repoIdx + 1
+    })
+  }
+
+  // Update feedSlots to match new plan
+  currentPlan.forEach(s => {
+    feedSlots[s.slot - 1] = s.photo - 1
+  })
+
+  renderUploadGrid()
+  renderDetails()
+}
+
+function reorderByAxis(axisId) {
+  const photos = currentPlan.map(s => {
+    const p = repository[s.photo - 1]
+    if (!p) return null
+    const repoIdx = s.photo - 1
+
+    let score, group
+    switch (axisId) {
+      case 'temperature':
+        score = p.kelvin
+        group = p.kelvin < 5000 ? 'A' : 'B'
+        break
+      case 'luminance': {
+        const L = p.colors?.length ? hexToL(p.colors[0].hex) : 50
+        score = L
+        group = L > 55 ? 'A' : 'B'
+        break
+      }
+      case 'subject': {
+        const t = (s.type || '').toUpperCase()
+        score = t.includes('RETRATO') || t.includes('PESSOA') ? 2
+              : t.includes('DETALHE') ? 1 : 0
+        group = (t.includes('RETRATO') || t.includes('PESSOA') || t.includes('GRUPO')) ? 'B' : 'A'
+        break
+      }
+      case 'saturation': {
+        const sat = estimateSaturation(p.colors)
+        score = sat
+        group = sat > 0.35 ? 'A' : 'B'
+        break
+      }
+      case 'combined':
+      default: {
+        // Pick the axis with highest variance among the photos
+        const kelvins = currentPlan.map(x => repository[x.photo-1]?.kelvin || 5500)
+        const kVar = Math.max(...kelvins) - Math.min(...kelvins)
+        const lums  = currentPlan.map(x => {
+          const ph = repository[x.photo-1]
+          return ph?.colors?.length ? hexToL(ph.colors[0].hex) : 50
+        })
+        const lVar = Math.max(...lums) - Math.min(...lums)
+        const bestAxis = kVar > 2000 ? 'temperature' : lVar > 20 ? 'luminance' : 'subject'
+        return reorderByAxis(bestAxis), null
+      }
+    }
+    return { repoIdx, score, group }
+  }).filter(Boolean)
+
+  applyReorder(photos)
+}
+
+function reorderByHarmony(harmonyId) {
+  // Harmony reorder: classify photos by dominant hue, then arrange per harmony type
+  const photos = currentPlan.map(s => {
+    const p = repository[s.photo - 1]
+    if (!p) return null
+    const repoIdx = s.photo - 1
+    const hex  = p.colors?.[0]?.hex || '#888888'
+    const r    = parseInt(hex.slice(1,3),16)
+    const g    = parseInt(hex.slice(3,5),16)
+    const b    = parseInt(hex.slice(5,7),16)
+    const max  = Math.max(r,g,b), min = Math.min(r,g,b)
+    const d    = max - min
+    let hue    = 0
+    if (d > 0) {
+      if (max===r)      hue = ((g-b)/d + (g<b?6:0)) * 60
+      else if (max===g) hue = ((b-r)/d + 2) * 60
+      else              hue = ((r-g)/d + 4) * 60
+    }
+    const warm = p.kelvin < 5000
+    const L    = hexToL(hex)
+    const sat  = estimateSaturation(p.colors)
+    return { repoIdx, hue, warm, L, sat, kelvin: p.kelvin }
+  }).filter(Boolean)
+
+  let scored
+  switch (harmonyId) {
+    case 'complementary':
+      // Alternate warm/cool — strongest contrast
+      scored = photos.map(p => ({ ...p, score: p.warm ? 100 - p.kelvin/100 : p.kelvin/100, group: p.warm ? 'A' : 'B' }))
+      break
+    case 'analogous':
+      // Group by hue proximity — warm together, cool together, sorted by hue
+      scored = photos.map(p => ({ ...p, score: p.hue, group: p.hue < 180 ? 'A' : 'B' }))
+      break
+    case 'split':
+    case 'triad':
+    case 'square':
+      // Alternate by hue thirds/quarters
+      scored = photos.map(p => ({ ...p, score: p.hue, group: Math.floor(p.hue / 120) % 2 === 0 ? 'A' : 'B' }))
+      break
+    case 'monochrome':
+      // Sort by luminosity within same hue family
+      scored = photos.map(p => ({ ...p, score: p.L, group: p.L > 55 ? 'A' : 'B' }))
+      break
+    case 'shades':
+      // Darkest photos alternate with less dark
+      scored = photos.map(p => ({ ...p, score: p.L, group: p.L < 35 ? 'A' : 'B' }))
+      break
+    case 'custom':
+    default:
+      // Let axis decide — keep original AI order
+      reorderByAxis(selC)
+      return
+  }
+
+  applyReorder(scored)
+}
 
 // ── Generic info popover helper ───────────────────────
 function showInfoPopover({ title, icon, body, example, feel, ctaLabel, ctaFn }) {
@@ -589,15 +805,63 @@ function renderUploadGrid() {
 
 // Open info for a feed slot — palette if no AI plan, detail modal if AI ran
 function openSlotInfo(slotIdx) {
-  if (currentPlan.length > 0) {
-    // Map feedSlot index to slot number in plan
-    const repoIdx = feedSlots[slotIdx]
-    const s = currentPlan.find(x => (x.photo - 1) === repoIdx)
-    if (s) { openPhotoModal(s.slot); return }
-  }
-  // Fallback: palette
   const repoIdx = feedSlots[slotIdx]
-  if (repoIdx !== null && repoIdx !== undefined) openPaletteModal(repoIdx)
+  if (repoIdx === null || repoIdx === undefined) return
+
+  const p = repository[repoIdx]
+  if (!p) return
+
+  if (currentPlan.length > 0) {
+    // Find plan item: feedSlots[slotIdx] = s.photo - 1
+    const s = currentPlan.find(x => (x.photo - 1) === repoIdx)
+    if (s) {
+      openPhotoModalDirect(s, p, slotIdx)
+      return
+    }
+  }
+  // No plan or not found — show basic info from repo
+  openPhotoModalFromRepo(repoIdx, slotIdx)
+}
+
+// Direct modal open — receives plan item + photo + slotIdx
+function openPhotoModalDirect(s, p, slotIdx) {
+  const iW      = s.temp === 'warm'
+  const gridPos = getGridPosition(slotIdx + 1, planSize)
+
+  document.getElementById('pm-img').src             = p.cropUrl || p.dataUrl
+  document.getElementById('pm-slot').textContent    = `+${slotIdx + 1}`
+  document.getElementById('pm-type').textContent    = s.type ? `· ${s.type}` : ''
+  document.getElementById('pm-pos').textContent     = `📍 ${gridPos}`
+  document.getElementById('pm-reason').textContent  = s.reason || '—'
+  document.getElementById('pm-harmony').textContent = s.harmony_role || '—'
+
+  const tempEl = document.getElementById('pm-temp')
+  tempEl.textContent = iW ? `🟠 Quente · ${s.kelvin}` : `🔵 Frio · ${s.kelvin}`
+  tempEl.className   = `pm-temp ${iW ? 'pr-tw' : 'pr-tc'}`
+
+  renderPaletteInModal(p, slotIdx)
+  document.getElementById('photo-modal').classList.add('open')
+}
+
+// Opens info modal using raw repo data (no AI plan needed)
+function openPhotoModalFromRepo(repoIdx, slotIdx) {
+  const p = repository[repoIdx]
+  if (!p) return
+
+  document.getElementById('pm-img').src          = p.cropUrl || p.dataUrl
+  document.getElementById('pm-slot').textContent = `+${slotIdx + 1}`
+  document.getElementById('pm-type').textContent = ''
+  document.getElementById('pm-pos').textContent  = getGridPosition(slotIdx + 1, planSize)
+  document.getElementById('pm-reason').textContent  = 'Sem análise de IA ainda.'
+  document.getElementById('pm-harmony').textContent = 'Clique em "Compor" para obter análise completa.'
+
+  const tempEl = document.getElementById('pm-temp')
+  const iW = p.kelvin < 5000
+  tempEl.textContent = iW ? `🟠 Quente · ${p.kelvin}K` : `🔵 Frio · ${p.kelvin}K`
+  tempEl.className   = `pm-temp ${iW ? 'pr-tw' : 'pr-tc'}`
+
+  renderPaletteInModal(p, 0)
+  document.getElementById('photo-modal').classList.add('open')
 }
 
 // drop from repo onto feed slot
@@ -768,7 +1032,7 @@ async function compose(mode = 'basic') {
   if (repoPhotos.length < 1) return
 
   const isAdvanced = mode === 'advanced'
-  const creditCost = isAdvanced ? 2 : 1
+  const creditCost = isAdvanced ? 5 : 1
 
   hideErr()
   document.getElementById('results').classList.remove('show')
@@ -1321,43 +1585,39 @@ function closePaletteModal() {
 
 // ── Photo detail modal ────────────────────────────────
 function openPhotoModal(slotNum) {
-  // Don't open if we just finished a drag
   if (gridDragSlot !== null) return
   const s = currentPlan.find(x => x.slot === slotNum)
   if (!s) return
   const p = repository[s.photo - 1]
   if (!p) return
+  openPhotoModalDirect(s, p, slotNum - 1)
+}
 
-  const iW      = s.temp === 'warm'
-  const gridPos = getGridPosition(slotNum, currentPlan.length)
-
-  document.getElementById('pm-img').src             = p.dataUrl
-  document.getElementById('pm-slot').textContent    = `+${slotNum}`
-  document.getElementById('pm-type').textContent    = s.type || ''
-  document.getElementById('pm-pos').textContent     = `📍 ${gridPos}`
-  document.getElementById('pm-reason').textContent  = s.reason || ''
-  document.getElementById('pm-harmony').textContent = s.harmony_role || ''
-  document.getElementById('pm-preset').textContent  = s.preset || ''
-
-  const tempEl = document.getElementById('pm-temp')
-  tempEl.textContent = iW ? '🟠 Quente' : '🔵 Frio'
-  tempEl.className   = `pm-temp ${iW ? 'pr-tw' : 'pr-tc'}`
-
-  // Palette — large swatches with hex + click to copy
-  document.getElementById('pm-palette').innerHTML = (p.colors || []).slice(0,5).map((c,ci) =>
-    `<div class="pm-swatch" id="pm-sw-${s.slot}-${ci}"
-      onclick="navigator.clipboard?.writeText('${c.hex}').then(()=>{
-        const el=document.getElementById('pm-sw-${s.slot}-${ci}');
-        if(el){el.classList.add('pm-sw-copied');el.querySelector('.pm-sw-lbl').textContent='✓';}
-        setTimeout(()=>{if(el){el.classList.remove('pm-sw-copied');el.querySelector('.pm-sw-lbl').textContent='${c.hex.toUpperCase()}';}},1400)
-      }).catch(()=>{})">
+// Renders palette swatches safely — no template literal onclick issues
+function renderPaletteInModal(p, id) {
+  const container = document.getElementById('pm-palette')
+  if (!container) return
+  container.innerHTML = ''
+  ;(p.colors || []).slice(0, 5).forEach((c, ci) => {
+    const sw = document.createElement('div')
+    sw.className = 'pm-swatch'
+    sw.id = `pm-sw-${id}-${ci}`
+    sw.innerHTML = `
       <div class="pm-sw-color" style="background:${c.hex}"></div>
       <div class="pm-sw-lbl">${c.hex.toUpperCase()}</div>
-      <div class="pm-sw-pct">${c.pct}%</div>
-    </div>`
-  ).join('')
-
-  document.getElementById('photo-modal').classList.add('open')
+      <div class="pm-sw-pct">${c.pct}%</div>`
+    sw.onclick = () => {
+      navigator.clipboard?.writeText(c.hex).then(() => {
+        sw.classList.add('pm-sw-copied')
+        sw.querySelector('.pm-sw-lbl').textContent = '✓ copiado'
+        setTimeout(() => {
+          sw.classList.remove('pm-sw-copied')
+          sw.querySelector('.pm-sw-lbl').textContent = c.hex.toUpperCase()
+        }, 1400)
+      }).catch(() => {})
+    }
+    container.appendChild(sw)
+  })
 }
 
 function closePhotoModal() {

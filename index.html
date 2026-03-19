@@ -151,7 +151,11 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
 .ig-up-btn:hover{border-color:var(--blue);color:var(--blue)}
 
 /* MAIN */
-.main{flex:1;overflow-y:auto;overflow-x:hidden;padding:24px;display:flex;flex-direction:column;gap:20px;min-height:0}
+.main{flex:1;overflow-y:auto;overflow-x:hidden;padding:16px;display:flex;flex-direction:column;gap:12px;min-height:0}
+
+/* Feed panel — constrain width so grid isn't huge on wide screens */
+.feed-panel{max-width:340px;width:100%}
+@media(max-width:768px){.feed-panel{max-width:100%}}
 
 /* Upload */
 .upload-panel{background:var(--white);border:1px solid var(--border-light);border-radius:var(--r);box-shadow:var(--shadow)}
@@ -161,7 +165,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
 .up-cnt{font-size:12px;font-weight:600;background:var(--bg);border:1px solid var(--border);padding:2px 9px;border-radius:100px;color:var(--text2)}
 .up-clear{font-size:12px;font-weight:600;color:var(--text3);cursor:pointer;padding:2px 6px;border-radius:4px;background:none;border:none;font-family:var(--font)}
 .up-clear:hover{color:var(--red)}
-.up-body{padding:16px}
+.up-body{padding:10px}
 .dz{border:2px dashed var(--border);border-radius:var(--r-sm);padding:24px;text-align:center;cursor:pointer;transition:all .2s;margin-bottom:14px}
 .dz:hover,.dz.drag{border-color:var(--blue);background:#f0f8ff}
 .dz-icon{font-size:28px;margin-bottom:6px}
@@ -244,37 +248,37 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
 /* Upload grid — 4:5 ratio, Instagram portrait */
 .upload-grid{
   display:grid;grid-template-columns:repeat(3,1fr);
-  gap:3px;margin-bottom:12px;
+  gap:2px;margin-bottom:8px;
 }
 .ugslot{
   aspect-ratio:4/5;position:relative;overflow:hidden;
-  border-radius:4px;background:var(--border-light);
+  border-radius:3px;background:var(--border-light);
   cursor:pointer;transition:all .15s;
 }
-.ugslot:hover{background:#e8f4fd;outline:2px dashed var(--blue)}
+.ugslot:hover{background:#e8f4fd;outline:1.5px dashed var(--blue)}
 .ugslot.filled{cursor:grab;background:transparent}
-.ugslot.filled:hover{outline:2px solid var(--blue)}
+.ugslot.filled:hover{outline:1.5px solid var(--blue)}
 .ugslot img{width:100%;height:100%;object-fit:cover;display:block}
 .ugslot-empty{
   display:flex;flex-direction:column;align-items:center;justify-content:center;
-  height:100%;gap:4px;
+  height:100%;gap:3px;
 }
-.ugslot-num{font-size:11px;font-weight:700;color:var(--text3)}
-.ugslot-plus{font-size:20px;color:var(--text3);line-height:1}
+.ugslot-num{font-size:10px;font-weight:700;color:var(--text3)}
+.ugslot-plus{font-size:18px;color:var(--text3);line-height:1}
 .ugslot-del{
-  position:absolute;top:4px;right:4px;
-  width:20px;height:20px;border-radius:50%;
+  position:absolute;top:3px;right:3px;
+  width:16px;height:16px;border-radius:50%;
   background:rgba(0,0,0,.65);color:white;
-  font-size:10px;display:none;align-items:center;justify-content:center;
+  font-size:8px;display:none;align-items:center;justify-content:center;
   cursor:pointer;z-index:2;border:none;
 }
 .ugslot.filled:hover .ugslot-del{display:flex}
 .ugslot-n{
-  position:absolute;bottom:4px;left:4px;
-  font-size:9px;font-weight:700;color:white;
+  position:absolute;bottom:3px;left:3px;
+  font-size:8px;font-weight:700;color:white;
   text-shadow:0 1px 3px rgba(0,0,0,.9);z-index:2;
 }
-.ugslot-pal{position:absolute;bottom:0;left:0;right:0;height:3px;display:flex}
+.ugslot-pal{position:absolute;bottom:0;left:0;right:0;height:2px;display:flex}
 .ugslot-drag{opacity:.4}
 
 /* Compact dz when grid is shown */
@@ -351,7 +355,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
   box-shadow:0 20px 60px rgba(0,0,0,.3);
   display:flex;flex-direction:column;
 }
-.pm-img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:var(--r) var(--r) 0 0}
+.pm-img{width:100%;aspect-ratio:4/5;object-fit:cover;border-radius:var(--r) var(--r) 0 0}
 .pm-body{padding:20px}
 .pm-top{display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap}
 .pm-slot{font-size:13px;font-weight:700;padding:3px 10px;border-radius:100px;background:var(--text);color:white}
@@ -755,7 +759,7 @@ canvas{display:none}
     </div>
 
     <!-- ② FEED -->
-    <div class="upload-panel">
+    <div class="upload-panel feed-panel">
       <div class="up-hdr">
         <span class="up-title">Feed</span>
         <div class="up-meta">
@@ -878,28 +882,29 @@ canvas{display:none}
         <span class="pm-pos" id="pm-pos"></span>
         <span class="pm-temp" id="pm-temp"></span>
       </div>
+
       <div class="pm-section">
-        <div class="pm-label">Análise cromática <span style="font-size:10px;color:var(--text3);font-weight:400">· clique para copiar hex</span></div>
+        <div class="pm-label">Paleta de cores <span style="font-size:10px;color:var(--text3);font-weight:400">· clique para copiar</span></div>
         <div class="pm-palette" id="pm-palette"></div>
       </div>
+
       <div class="pm-section">
         <div class="pm-label">Por que este slot</div>
         <div class="pm-value" id="pm-reason"></div>
       </div>
+
       <div class="pm-section">
         <div class="pm-label">Papel na harmonia</div>
         <div class="pm-harmony" id="pm-harmony"></div>
       </div>
+
       <div style="display:flex;gap:8px;margin-top:4px">
-        <button class="pm-close" style="flex:1" onclick="replaceSlotPhoto()">🔄 Trocar foto</button>
         <button class="pm-close" style="flex:1;color:var(--red);border-color:#fca5a5" onclick="removeSlotPhoto()">🗑 Remover</button>
         <button class="pm-close" style="flex:1" onclick="closePhotoModal()">Fechar</button>
       </div>
     </div>
   </div>
 </div>
-<!-- hidden file input for slot replacement -->
-<input type="file" id="slot-replace-fin" accept="image/*" style="display:none" onchange="handleSlotReplace(this.files)">
 
 <!-- SETTINGS MODAL -->
 <div id="settings-modal" class="modal-overlay" onclick="if(event.target===this)closeSettings()">
