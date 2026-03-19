@@ -1593,12 +1593,94 @@ function openPhotoModal(slotNum) {
   openPhotoModalDirect(s, p, slotNum - 1)
 }
 
-// Renders palette swatches safely — no template literal onclick issues
+// Renders color wheel (Adobe Color style) + palette swatches
 function renderPaletteInModal(p, id) {
   const container = document.getElementById('pm-palette')
   if (!container) return
   container.innerHTML = ''
-  ;(p.colors || []).slice(0, 5).forEach((c, ci) => {
+
+  const colors = (p.colors || []).slice(0, 5)
+  if (!colors.length) return
+
+  // ── Color wheel SVG ──────────────────────────────────
+  const SIZE  = 160
+  const CX    = SIZE / 2
+  const CY    = SIZE / 2
+  const R     = SIZE / 2 - 8   // outer radius
+  const INNER = R * 0.35       // inner hole
+
+  // Build hue gradient stops for the wheel ring
+  const stops = Array.from({length: 13}, (_,i) => {
+    const h = i * 30
+    return `<stop offset="${Math.round(i/12*100)}%" stop-color="hsl(${h},100%,50%)"/>`
+  }).join('')
+
+  // Plot each color as a dot on the wheel
+  // Position = angle from hue, radius from saturation
+  const dots = colors.map((c, ci) => {
+    const r    = parseInt(c.hex.slice(1,3),16) / 255
+    const g    = parseInt(c.hex.slice(3,5),16) / 255
+    const b    = parseInt(c.hex.slice(5,7),16) / 255
+    const max  = Math.max(r,g,b), min = Math.min(r,g,b), d = max - min
+    let hue = 0
+    if (d > 0) {
+      if (max===r)      hue = ((g-b)/d + (g<b?6:0)) * 60
+      else if (max===g) hue = ((b-r)/d + 2) * 60
+      else              hue = ((r-g)/d + 4) * 60
+    }
+    const sat = max === 0 ? 0 : d / max   // 0–1
+    const rad = (hue - 90) * Math.PI / 180  // rotate so 0° = top
+    const dr  = INNER + (R - INNER) * sat   // distance from center
+    const x   = CX + dr * Math.cos(rad)
+    const y   = CY + dr * Math.sin(rad)
+    const isLarge = ci === 0  // dominant color = larger dot
+    const dotR = isLarge ? 9 : 6
+
+    return `
+      <circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${dotR+2}"
+        fill="white" opacity="0.9"/>
+      <circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${dotR}"
+        fill="${c.hex}" stroke="white" stroke-width="1.5"/>
+      ${isLarge ? `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${dotR+3}"
+        fill="none" stroke="white" stroke-width="1.5" opacity="0.6"/>` : ''}
+    `
+  }).join('')
+
+  const wheelHTML = `
+    <div style="display:flex;justify-content:center;margin-bottom:12px">
+      <svg width="${SIZE}" height="${SIZE}" viewBox="0 0 ${SIZE} ${SIZE}"
+           style="border-radius:50%;display:block">
+        <defs>
+          <radialGradient id="wgr">
+            <stop offset="${Math.round(INNER/R*100)}%" stop-color="white"/>
+            <stop offset="100%" stop-color="white" stop-opacity="0"/>
+          </radialGradient>
+          <linearGradient id="wh" x1="1" y1="0" x2="0" y2="0">
+            ${stops}
+          </linearGradient>
+          <mask id="wmask">
+            <circle cx="${CX}" cy="${CY}" r="${R}" fill="white"/>
+            <circle cx="${CX}" cy="${CY}" r="${INNER}" fill="black"/>
+          </mask>
+        </defs>
+        <!-- Hue ring -->
+        <circle cx="${CX}" cy="${CY}" r="${R}" fill="url(#wh)" mask="url(#wmask)"/>
+        <!-- White center fade -->
+        <circle cx="${CX}" cy="${CY}" r="${R}" fill="url(#wgr)" mask="url(#wmask)"/>
+        <!-- Dark center hole -->
+        <circle cx="${CX}" cy="${CY}" r="${INNER}" fill="#1a1a1a"/>
+        <!-- Color dots -->
+        ${dots}
+      </svg>
+    </div>`
+
+  container.innerHTML = wheelHTML
+
+  // ── Swatches below the wheel ─────────────────────────
+  const swatchWrap = document.createElement('div')
+  swatchWrap.style.cssText = 'display:flex;gap:6px;flex-wrap:wrap'
+
+  colors.forEach((c, ci) => {
     const sw = document.createElement('div')
     sw.className = 'pm-swatch'
     sw.id = `pm-sw-${id}-${ci}`
@@ -1616,8 +1698,10 @@ function renderPaletteInModal(p, id) {
         }, 1400)
       }).catch(() => {})
     }
-    container.appendChild(sw)
+    swatchWrap.appendChild(sw)
   })
+
+  container.appendChild(swatchWrap)
 }
 
 function closePhotoModal() {
