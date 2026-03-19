@@ -1022,13 +1022,16 @@ function updateCnt() {
 }
 
 function updateActionButtons() {
-  const hasRepo = repository.length > 0
-  const go      = document.getElementById('go')
-  const goAdv   = document.getElementById('go-advanced')
-  const costEl  = document.getElementById('credit-cost')
+  const hasRepo   = repository.length > 0
+  const hasFeed   = feedSlots.some(s => s !== null && s !== undefined)
+  const go        = document.getElementById('go')
+  const goAdv     = document.getElementById('go-advanced')
+  const costEl    = document.getElementById('credit-cost')
+  const expBtn    = document.getElementById('export-btn')
 
   if (go)    go.disabled    = !hasRepo
   if (goAdv) goAdv.disabled = !hasRepo
+  if (expBtn) expBtn.style.display = hasFeed ? 'block' : 'none'
 
   if (costEl && typeof updateCreditsUI === 'undefined') {
     costEl.textContent = 'temperatura · paleta · harmonia · 1 crédito'
@@ -1321,10 +1324,6 @@ function renderResults(data, H) {
   renderDetails()
   results.classList.add('show')
   document.querySelector('.main').scrollTo({ top: 0, behavior: 'smooth' })
-
-  // Show export button
-  const expBtn = document.getElementById('export-btn')
-  if (expBtn) expBtn.style.display = 'block'
 
   // Auto-save to history (async, non-blocking)
   saveAnalysisToHistory(data, H)
