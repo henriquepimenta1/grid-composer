@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>GridAI — Planos</title>
+<title>Grid Composer — Planos</title>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="/i18n.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -68,7 +68,7 @@ footer{text-align:center;padding:24px;font-size:12px;color:var(--text3);border-t
 <body>
 
 <div class="topbar">
-  <a href="/app" class="logo">GridAI</a>
+  <a href="/app" class="logo">Grid Composer</a>
   <div class="topbar-right">
     <a href="/app" class="back-btn" data-i18n="back_app">← Voltar ao app</a>
     <button class="lang-toggle" id="lang-toggle" onclick="toggleLang()">🇧🇷 PT</button>
@@ -126,13 +126,46 @@ footer{text-align:center;padding:24px;font-size:12px;color:var(--text3);border-t
   </div>
 </div>
 
+<!-- CREDIT PACKS -->
+<div style="max-width:960px;margin:0 auto;padding:0 24px 64px">
+  <div style="text-align:center;margin-bottom:32px">
+    <h2 style="font-size:24px;font-weight:800;letter-spacing:-.3px;margin-bottom:8px">✦ Créditos avulsos</h2>
+    <p style="font-size:15px;color:var(--text2)">Sem assinatura. Créditos não expiram e somam ao seu saldo.</p>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;max-width:720px;margin:0 auto">
+    <div style="background:var(--white);border:1.5px solid var(--border-light);border-radius:var(--r);padding:24px;text-align:center;transition:transform .2s,box-shadow .2s" onmouseover="this.style.transform='translateY(-3px)';this.style.boxShadow='0 8px 32px rgba(0,0,0,.1)'" onmouseout="this.style.transform='';this.style.boxShadow=''">
+      <div style="font-size:28px;font-weight:800;margin-bottom:4px">10</div>
+      <div style="font-size:13px;font-weight:700;color:var(--text2);margin-bottom:16px">créditos</div>
+      <div style="font-size:24px;font-weight:800;margin-bottom:4px">$1.99</div>
+      <div style="font-size:11px;color:var(--text3);margin-bottom:20px">2 análises avançadas</div>
+      <button class="plan-cta" id="btn-pack10" onclick="buyPack('pack10')" style="background:var(--text);color:white;border-color:var(--text)">Comprar</button>
+    </div>
+    <div style="background:var(--white);border:2px solid var(--text);border-radius:var(--r);padding:24px;text-align:center;position:relative;transform:translateY(-4px);box-shadow:0 8px 32px rgba(0,0,0,.12)">
+      <div style="position:absolute;top:-12px;left:50%;transform:translateX(-50%);background:var(--text);color:white;font-size:11px;font-weight:700;padding:3px 14px;border-radius:100px">POPULAR</div>
+      <div style="font-size:28px;font-weight:800;margin-bottom:4px">30</div>
+      <div style="font-size:13px;font-weight:700;color:var(--text2);margin-bottom:16px">créditos</div>
+      <div style="font-size:24px;font-weight:800;margin-bottom:4px">$4.99</div>
+      <div style="font-size:11px;color:var(--text3);margin-bottom:20px">6 análises avançadas</div>
+      <button class="plan-cta" id="btn-pack30" onclick="buyPack('pack30')" style="background:var(--text);color:white;border-color:var(--text)">Comprar</button>
+    </div>
+    <div style="background:var(--white);border:1.5px solid var(--border-light);border-radius:var(--r);padding:24px;text-align:center;transition:transform .2s,box-shadow .2s" onmouseover="this.style.transform='translateY(-3px)';this.style.boxShadow='0 8px 32px rgba(0,0,0,.1)'" onmouseout="this.style.transform='';this.style.boxShadow=''">
+      <div style="font-size:28px;font-weight:800;margin-bottom:4px">100</div>
+      <div style="font-size:13px;font-weight:700;color:var(--text2);margin-bottom:16px">créditos</div>
+      <div style="font-size:24px;font-weight:800;margin-bottom:4px">$14.99</div>
+      <div style="font-size:11px;color:var(--text3);margin-bottom:20px">20 análises avançadas · melhor preço</div>
+      <button class="plan-cta" id="btn-pack100" onclick="buyPack('pack100')" style="background:var(--text);color:white;border-color:var(--text)">Comprar</button>
+    </div>
+  </div>
+  <p style="text-align:center;font-size:12px;color:var(--text3);margin-top:20px">Pagamento seguro via Stripe · disponível para todos os planos</p>
+</div>
+
 <div class="faq">
   <div class="faq-title" data-i18n="faq_title">Perguntas frequentes</div>
   <div id="faq-list"></div>
 </div>
 
 <footer>
-  GridAI © 2026 ·
+  Grid Composer © 2026 ·
   <a href="#" style="color:var(--text3)" data-i18n="terms_link">Termos</a> ·
   <a href="#" style="color:var(--text3)" data-i18n="privacy_link">Privacidade</a>
 </footer>
@@ -154,7 +187,7 @@ const PRICING_EXTRA = {
     studio_desc: 'Para agências e fotógrafos com múltiplos clientes.',
     faq_title: 'Perguntas frequentes',
     faqs: [
-      { q: 'O que é uma análise?', a: 'Uma análise é quando você faz upload de fotos e o GridAI sugere a sequência ideal para o seu grid — baseado em harmonia de cores, Kelvin e padrão de composição.' },
+      { q: 'O que é uma análise?', a: 'Uma análise é quando você faz upload de fotos e o Grid Composer sugere a sequência ideal para o seu grid — baseado em harmonia de cores, Kelvin e padrão de composição.' },
       { q: 'Posso cancelar quando quiser?', a: 'Sim. Sem fidelidade. Cancele a qualquer momento e continue com acesso até o fim do período pago.' },
       { q: 'O plano Free expira?', a: 'Não. As 5 análises do plano Free não expiram. Use quando quiser.' },
       { q: 'Como funciona o plano anual?', a: 'Você paga com 30% de desconto, cobrado uma vez por ano. Equivale a pagar 8,4 meses e ganhar 3,6.' },
@@ -175,7 +208,7 @@ const PRICING_EXTRA = {
     studio_desc: 'For agencies and photographers with multiple clients.',
     faq_title: 'Frequently asked questions',
     faqs: [
-      { q: 'What counts as an analysis?', a: 'One analysis is when you upload photos and GridAI suggests the ideal grid sequence — based on color harmony, Kelvin temperature and composition pattern.' },
+      { q: 'What counts as an analysis?', a: 'One analysis is when you upload photos and Grid Composer suggests the ideal grid sequence — based on color harmony, Kelvin temperature and composition pattern.' },
       { q: 'Can I cancel anytime?', a: 'Yes. No commitment. Cancel whenever and keep access until end of billing period.' },
       { q: 'Do the Free analyses expire?', a: 'No. Your 5 free analyses never expire.' },
       { q: 'How does annual billing work?', a: 'You pay a 30% discounted rate billed once per year — equivalent to 8.4 months for the price of 12.' },
@@ -232,7 +265,7 @@ function toggleFAQ(i) { document.getElementById('faq-' + i).classList.toggle('op
 // Override setLang to re-render dynamic content
 function setLang(lang) {
   LANG = lang
-  localStorage.setItem('gridai_lang', lang)
+  localStorage.setItem('grid-composer_lang', lang)
   applyTranslations()
   updatePrices()
   renderFeatures()
@@ -277,8 +310,35 @@ const params = new URLSearchParams(window.location.search)
 if (params.get('payment') === 'success') {
   const banner = document.createElement('div')
   banner.style.cssText = 'background:#f0fdf4;border:1px solid #86efac;color:#166534;padding:12px 24px;text-align:center;font-size:14px;font-weight:600'
-  banner.textContent = '✓ Pagamento confirmado! Bem-vindo ao GridAI Pro.'
+  banner.textContent = '✓ Pagamento confirmado! Bem-vindo ao Grid Composer Pro.'
   document.body.insertBefore(banner, document.body.firstChild)
+}
+if (params.get('credits_added')) {
+  const banner = document.createElement('div')
+  banner.style.cssText = 'background:#f0fdf4;border:1px solid #86efac;color:#166534;padding:12px 24px;text-align:center;font-size:14px;font-weight:600'
+  banner.textContent = `✦ ${params.get('credits_added')} créditos adicionados ao seu saldo!`
+  document.body.insertBefore(banner, document.body.firstChild)
+}
+
+// ── Buy credit packs ──────────────────────────────────
+async function buyPack(pack) {
+  const btn = document.getElementById('btn-' + pack)
+  if (btn) { btn.disabled = true; btn.textContent = '...' }
+  try {
+    const { data: { session } } = await sb.auth.getSession()
+    if (!session) { window.location.href = '/login?next=/comprar'; return }
+    const res  = await fetch('/api/buy-credits', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session.access_token },
+      body: JSON.stringify({ pack })
+    })
+    const data = await res.json()
+    if (data.url) { window.location.href = data.url }
+    else { alert(data.error || 'Erro ao iniciar checkout.'); if (btn) { btn.disabled=false; btn.textContent='Comprar' } }
+  } catch(e) {
+    alert('Erro de conexão.')
+    if (btn) { btn.disabled=false; btn.textContent='Comprar' }
+  }
 }
 
 setLang(LANG)
