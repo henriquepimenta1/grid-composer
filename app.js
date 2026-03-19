@@ -15,12 +15,17 @@ function extractColors(img, k=5) {
   const ctx = cv.getContext('2d')
   ctx.drawImage(img, 0, 0, w, h)
   const data = ctx.getImageData(0, 0, w, h).data
-  const px = []
+
+  // Store pixels with their spatial position (normalized 0–1)
+  const px = [], pos = []
   for (let i = 0; i < data.length; i += 16) {
     if (data[i+3] < 128) continue
+    const pi = i / 4  // pixel index
     px.push(rgbToLab(data[i], data[i+1], data[i+2]))
+    pos.push({ x: (pi % w) / w, y: Math.floor(pi / w) / h })
   }
   if (!px.length) return []
+
   // k-means++ init
   const c = [px[Math.floor(Math.random() * px.length)]]
   for (let ci = 1; ci < k; ci++) {
@@ -30,6 +35,7 @@ function extractColors(img, k=5) {
     for (let pi = 0; pi < px.length; pi++) { r -= d[pi]; if (r <= 0) { c.push([...px[pi]]); break } }
     if (c.length <= ci) c.push([...px[Math.floor(Math.random() * px.length)]])
   }
+
   // iterate
   let asgn = new Array(px.length).fill(0)
   for (let it = 0; it < 10; it++) {
@@ -44,11 +50,26 @@ function extractColors(img, k=5) {
       c[ci] = [cp.reduce((s,p)=>s+p[0],0)/cp.length, cp.reduce((s,p)=>s+p[1],0)/cp.length, cp.reduce((s,p)=>s+p[2],0)/cp.length]
     }
   }
-  const cnt = new Array(k).fill(0)
-  asgn.forEach(ci => cnt[ci]++)
-  return c.map((cc,ci) => {
-    const [r,g,b] = labToRgb(cc[0],cc[1],cc[2])
-    return { hex: rgbToHex(r,g,b), pct: Math.round(cnt[ci]/px.length*100) }
+
+  // Compute centroid spatial position (average x/y of all pixels in cluster)
+  const cnt  = new Array(k).fill(0)
+  const sumX = new Array(k).fill(0)
+  const sumY = new Array(k).fill(0)
+  asgn.forEach((ci, pi) => {
+    cnt[ci]++
+    sumX[ci] += pos[pi].x
+    sumY[ci] += pos[pi].y
+  })
+
+  return c.map((cc, ci) => {
+    const [r,g,b] = labToRgb(cc[0], cc[1], cc[2])
+    return {
+      hex: rgbToHex(r,g,b),
+      pct: Math.round(cnt[ci] / px.length * 100),
+      // Centroid position normalized 0–1 for overlay on photo
+      cx: cnt[ci] > 0 ? sumX[ci] / cnt[ci] : 0.5,
+      cy: cnt[ci] > 0 ? sumY[ci] / cnt[ci] : 0.5,
+    }
   }).sort((a,b) => b.pct - a.pct).slice(0, 5)
 }
 
@@ -1621,7 +1642,7 @@ function openPhotoModal(slotNum) {
   openPhotoModalDirect(s, p, slotNum - 1)
 }
 
-// Renders color wheel (Adobe Color style) + palette swatches
+// Renders photo with color extraction dots overlaid (Adobe Color style) + swatches below
 function renderPaletteInModal(p, id) {
   const container = document.getElementById('pm-palette')
   if (!container) return
@@ -1630,83 +1651,64 @@ function renderPaletteInModal(p, id) {
   const colors = (p.colors || []).slice(0, 5)
   if (!colors.length) return
 
-  // ── Color wheel SVG ──────────────────────────────────
-  const SIZE  = 160
-  const CX    = SIZE / 2
-  const CY    = SIZE / 2
-  const R     = SIZE / 2 - 8   // outer radius
-  const INNER = R * 0.35       // inner hole
+  const imgSrc = p.cropUrl || p.dataUrl
 
-  // Build hue gradient stops for the wheel ring
-  const stops = Array.from({length: 13}, (_,i) => {
-    const h = i * 30
-    return `<stop offset="${Math.round(i/12*100)}%" stop-color="hsl(${h},100%,50%)"/>`
-  }).join('')
+  // ── Photo with overlaid dots ──────────────────────────
+  const photoWrap = document.createElement('div')
+  photoWrap.style.cssText = 'position:relative;width:100%;aspect-ratio:4/5;border-radius:10px;overflow:hidden;margin-bottom:12px;cursor:default'
 
-  // Plot each color as a dot on the wheel
-  // Position = angle from hue, radius from saturation
-  const dots = colors.map((c, ci) => {
-    const r    = parseInt(c.hex.slice(1,3),16) / 255
-    const g    = parseInt(c.hex.slice(3,5),16) / 255
-    const b    = parseInt(c.hex.slice(5,7),16) / 255
-    const max  = Math.max(r,g,b), min = Math.min(r,g,b), d = max - min
-    let hue = 0
-    if (d > 0) {
-      if (max===r)      hue = ((g-b)/d + (g<b?6:0)) * 60
-      else if (max===g) hue = ((b-r)/d + 2) * 60
-      else              hue = ((r-g)/d + 4) * 60
-    }
-    const sat = max === 0 ? 0 : d / max   // 0–1
-    const rad = (hue - 90) * Math.PI / 180  // rotate so 0° = top
-    const dr  = INNER + (R - INNER) * sat   // distance from center
-    const x   = CX + dr * Math.cos(rad)
-    const y   = CY + dr * Math.sin(rad)
-    const isLarge = ci === 0  // dominant color = larger dot
-    const dotR = isLarge ? 9 : 6
+  const img = document.createElement('img')
+  img.src = imgSrc
+  img.style.cssText = 'width:100%;height:100%;object-fit:cover;display:block'
+  photoWrap.appendChild(img)
 
-    return `
-      <circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${dotR+2}"
-        fill="white" opacity="0.9"/>
-      <circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${dotR}"
-        fill="${c.hex}" stroke="white" stroke-width="1.5"/>
-      ${isLarge ? `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${dotR+3}"
-        fill="none" stroke="white" stroke-width="1.5" opacity="0.6"/>` : ''}
-    `
-  }).join('')
+  // Overlay SVG for dots — rendered on top of the photo
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
+  svg.setAttribute('width', '100%')
+  svg.setAttribute('height', '100%')
+  svg.style.cssText = 'position:absolute;inset:0;pointer-events:none'
+  svg.setAttribute('viewBox', '0 0 100 125')  // 4:5 aspect ratio
 
-  const wheelHTML = `
-    <div style="display:flex;justify-content:center;margin-bottom:12px">
-      <svg width="${SIZE}" height="${SIZE}" viewBox="0 0 ${SIZE} ${SIZE}"
-           style="border-radius:50%;display:block">
-        <defs>
-          <radialGradient id="wgr">
-            <stop offset="${Math.round(INNER/R*100)}%" stop-color="white"/>
-            <stop offset="100%" stop-color="white" stop-opacity="0"/>
-          </radialGradient>
-          <linearGradient id="wh" x1="1" y1="0" x2="0" y2="0">
-            ${stops}
-          </linearGradient>
-          <mask id="wmask">
-            <circle cx="${CX}" cy="${CY}" r="${R}" fill="white"/>
-            <circle cx="${CX}" cy="${CY}" r="${INNER}" fill="black"/>
-          </mask>
-        </defs>
-        <!-- Hue ring -->
-        <circle cx="${CX}" cy="${CY}" r="${R}" fill="url(#wh)" mask="url(#wmask)"/>
-        <!-- White center fade -->
-        <circle cx="${CX}" cy="${CY}" r="${R}" fill="url(#wgr)" mask="url(#wmask)"/>
-        <!-- Dark center hole -->
-        <circle cx="${CX}" cy="${CY}" r="${INNER}" fill="#1a1a1a"/>
-        <!-- Color dots -->
-        ${dots}
-      </svg>
-    </div>`
+  colors.forEach((c, ci) => {
+    // cx/cy are normalized 0–1 from extractColors
+    const x = ((c.cx ?? 0.5) * 100).toFixed(1)
+    const y = ((c.cy ?? 0.5) * 125).toFixed(1)  // scale Y to 4:5 viewBox
 
-  container.innerHTML = wheelHTML
+    // Size proportional to percentage — dominant color is larger
+    const r = ci === 0 ? 6 : 4
 
-  // ── Swatches below the wheel ─────────────────────────
+    // White ring + colored circle + label
+    const outerRing = document.createElementNS('http://www.w3.org/2000/svg', 'circle')
+    outerRing.setAttribute('cx', x); outerRing.setAttribute('cy', y)
+    outerRing.setAttribute('r', r + 2); outerRing.setAttribute('fill', 'rgba(255,255,255,0.85)')
+    svg.appendChild(outerRing)
+
+    const dot = document.createElementNS('http://www.w3.org/2000/svg', 'circle')
+    dot.setAttribute('cx', x); dot.setAttribute('cy', y)
+    dot.setAttribute('r', r); dot.setAttribute('fill', c.hex)
+    dot.setAttribute('stroke', 'white'); dot.setAttribute('stroke-width', '1.5')
+    svg.appendChild(dot)
+
+    // Percentage label next to dot
+    const lbl = document.createElementNS('http://www.w3.org/2000/svg', 'text')
+    lbl.setAttribute('x', parseFloat(x) + r + 3)
+    lbl.setAttribute('y', parseFloat(y) + 3)
+    lbl.setAttribute('font-size', '5')
+    lbl.setAttribute('font-weight', '700')
+    lbl.setAttribute('fill', 'white')
+    lbl.setAttribute('stroke', 'rgba(0,0,0,0.5)')
+    lbl.setAttribute('stroke-width', '0.3')
+    lbl.setAttribute('paint-order', 'stroke')
+    lbl.textContent = c.pct + '%'
+    svg.appendChild(lbl)
+  })
+
+  photoWrap.appendChild(svg)
+  container.appendChild(photoWrap)
+
+  // ── Swatches below the photo ──────────────────────────
   const swatchWrap = document.createElement('div')
-  swatchWrap.style.cssText = 'display:flex;gap:6px;flex-wrap:wrap'
+  swatchWrap.style.cssText = 'display:flex;gap:4px;flex-wrap:wrap'
 
   colors.forEach((c, ci) => {
     const sw = document.createElement('div')
