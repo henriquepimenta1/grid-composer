@@ -14,14 +14,32 @@ function extractColors(img, k=5) {
   const ctx = cv.getContext('2d')
   ctx.drawImage(img, 0, 0, w, h)
   const data = ctx.getImageData(0, 0, w, h).data
+
+  // Block averaging (Photoshop Mosaic method) — 4x4 blocks
+  // Each block becomes one sample, preserving small vivid accents like orange hats/trailers
+  // A 2% accent scattered over individual pixels dissolves in k-means
+  // A 4x4 block over that accent returns pure accent color — k-means keeps it as centroid
+  const BLOCK = 4
   const px = [], pos = []
-  for (let i = 0; i < data.length; i += 16) {
-    if (data[i+3] < 128) continue
-    const pi = i / 4
-    px.push(rgbToLab(data[i], data[i+1], data[i+2]))
-    pos.push({ x: (pi % w) / w, y: Math.floor(pi / w) / h })
+  for (let by = 0; by < h; by += BLOCK) {
+    for (let bx = 0; bx < w; bx += BLOCK) {
+      let rSum = 0, gSum = 0, bSum = 0, count = 0
+      // Average all pixels in this block
+      for (let dy = 0; dy < BLOCK && by+dy < h; dy++) {
+        for (let dx = 0; dx < BLOCK && bx+dx < w; dx++) {
+          const idx = ((by+dy)*w + (bx+dx)) * 4
+          if (data[idx+3] < 128) continue  // skip transparent
+          rSum += data[idx]; gSum += data[idx+1]; bSum += data[idx+2]; count++
+        }
+      }
+      if (!count) continue
+      px.push(rgbToLab(rSum/count, gSum/count, bSum/count))
+      pos.push({ x: (bx + BLOCK/2) / w, y: (by + BLOCK/2) / h })
+    }
   }
   if (!px.length) return []
+
+  // k-means++ init
   const c = [px[Math.floor(Math.random() * px.length)]]
   for (let ci = 1; ci < k; ci++) {
     const d = px.map(p => Math.min(...c.map(cc => labDist(p, cc))))
@@ -30,6 +48,8 @@ function extractColors(img, k=5) {
     for (let pi = 0; pi < px.length; pi++) { r -= d[pi]; if (r <= 0) { c.push([...px[pi]]); break } }
     if (c.length <= ci) c.push([...px[Math.floor(Math.random() * px.length)]])
   }
+
+  // Iterate
   let asgn = new Array(px.length).fill(0)
   for (let it = 0; it < 10; it++) {
     for (let pi = 0; pi < px.length; pi++) {
@@ -43,6 +63,7 @@ function extractColors(img, k=5) {
       c[ci] = [cp.reduce((s,p)=>s+p[0],0)/cp.length, cp.reduce((s,p)=>s+p[1],0)/cp.length, cp.reduce((s,p)=>s+p[2],0)/cp.length]
     }
   }
+
   const cnt = new Array(k).fill(0)
   const sumX = new Array(k).fill(0)
   const sumY = new Array(k).fill(0)

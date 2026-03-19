@@ -188,6 +188,70 @@ function verifyNoAdjacentConflict(assignment, rows) {
   return true
 }
 
+// Build pattern-aware accent placement map
+// Returns array[visualIndex (left→right, top→bottom)] = 'A' | 'B'
+// Rules per pattern:
+//   checkerboard: 2 acentos/linha → laterais (col0,col2) | 1 acento/linha → centro (col1) | 0 → respiro
+//   columns:      distribui acentos em colunas — 1 col → centro | 2 cols → laterais | 3 cols → todas
+//   rows:         distribui acentos em linhas inteiras — proporcional ao ratio
+//   diagonal:     diagonal clássica (row+col)%2
+//   free:         sem mapa — ordena por score
+function buildPatternMap(rows, totalAccents, totalPhotos, pattern) {
+  const map = []  // 'A' = acento, 'B' = neutro
+  const ratio = totalAccents / totalPhotos
+
+  if (pattern === 'checkerboard') {
+    // Distribute accents across rows:
+    // - Rows with 2 accents → laterais (col0, col2)
+    // - Rows with 1 accent  → centro (col1)
+    // - Rows with 0 accents → respiro total
+    // Priority: fill pairs first (2/row), then singles (1/row), then respiro
+    let remaining = totalAccents
+    const rowPlan = []  // how many accents per row
+    for (let r = 0; r < rows; r++) {
+      if (remaining >= 2 && r % 2 === 0) { rowPlan.push(2); remaining -= 2 }
+      else if (remaining === 1)           { rowPlan.push(1); remaining -= 1 }
+      else                                { rowPlan.push(0) }
+    }
+    // If still remaining after first pass, fill remaining rows
+    for (let r = 0; r < rows && remaining > 0; r++) {
+      if (rowPlan[r] === 0) {
+        if (remaining >= 2) { rowPlan[r] = 2; remaining -= 2 }
+        else                { rowPlan[r] = 1; remaining -= 1 }
+      }
+    }
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < 3; c++) {
+        if (rowPlan[r] === 2) map.push(c === 1 ? 'B' : 'A')  // [A][n][A] laterais
+        else if (rowPlan[r] === 1) map.push(c === 1 ? 'A' : 'B')  // [n][A][n] centro
+        else map.push('B')  // [n][n][n] respiro
+      }
+    }
+  } else if (pattern === 'columns') {
+    // Quantas colunas de acento: 1=centro, 2=laterais, 3=todas
+    const accentCols = ratio < 0.4 ? [1] : ratio < 0.7 ? [0, 2] : [0, 1, 2]
+    for (let r = 0; r < rows; r++)
+      for (let c = 0; c < 3; c++)
+        map.push(accentCols.includes(c) ? 'A' : 'B')
+  } else if (pattern === 'rows') {
+    // Quantas linhas de acento
+    const accentRows = ratio < 0.4 ? 1 : ratio < 0.7 ? Math.ceil(rows * 0.5) : rows
+    for (let r = 0; r < rows; r++)
+      for (let c = 0; c < 3; c++)
+        map.push(r < accentRows ? 'A' : 'B')
+  } else if (pattern === 'diagonal') {
+    for (let r = 0; r < rows; r++)
+      for (let c = 0; c < 3; c++)
+        map.push((r + c) % 2 === 0 ? 'A' : 'B')
+  } else {
+    // default: graph 2-coloring
+    for (let r = 0; r < rows; r++)
+      for (let c = 0; c < 3; c++)
+        map.push((r + c) % 2 === 0 ? 'A' : 'B')
+  }
+  return map
+}
+
 function applyReorder(scoredPhotos) {
   if (!scoredPhotos.length || !originalPlan.length) return
   currentPlan = JSON.parse(JSON.stringify(originalPlan))
@@ -196,16 +260,18 @@ function applyReorder(scoredPhotos) {
   const rows = Math.ceil(size / 3)
 
   // Instagram slot order: slot 1 = top-right, fills right→left per row
-  // Build visualIndex → slotNum mapping
+  // visualIndex: left→right, top→bottom — col0=esquerda, col1=centro, col2=direita
   const visualToSlot = []
   for (let r = 0; r < rows; r++)
     for (let c = 0; c < 3; c++) {
-      const slotNum = r*3 + (2-c) + 1  // Instagram: right→left
+      const slotNum = r*3 + (2-c) + 1  // Instagram: right→left (col2=slot1, col1=slot2, col0=slot3)
       if (slotNum <= size) visualToSlot.push(slotNum)
     }
 
+  const groupA = scoredPhotos.filter(p => p.group === 'A').sort((a,b) => b.score - a.score)
+  const groupB = scoredPhotos.filter(p => p.group === 'B').sort((a,b) => b.score - a.score)
+
   if (selP === 'free') {
-    // Free pattern: sort by score, no adjacency constraint
     const sorted = [...scoredPhotos].sort((a,b) => b.score - a.score)
     visualToSlot.forEach((slotNum, vi) => {
       const photo = sorted[vi]; if (!photo) return
@@ -213,30 +279,16 @@ function applyReorder(scoredPhotos) {
       if (item) item.photo = photo.repoIdx + 1
     })
   } else {
-    // Graph 2-coloring: mathematically guaranteed non-adjacent assignment
-    const colorMap = buildGridColorMap(rows)
+    const colorMap = buildPatternMap(rows, groupA.length, size, selP)
 
-    // Sort each group by score descending
-    const groupA = scoredPhotos.filter(p => p.group === 'A').sort((a,b) => b.score - a.score)
-    const groupB = scoredPhotos.filter(p => p.group === 'B').sort((a,b) => b.score - a.score)
-
-    // If one group is larger than its positions, overflow into the other group
-    // This handles odd numbers of photos gracefully
-    const posA = colorMap.filter(g => g === 'A').length
-    const posB = colorMap.filter(g => g === 'B').length
-
-    // Pad smaller group with overflow from larger group (by lower score)
-    const allSorted = [...scoredPhotos].sort((a,b) => b.score - a.score)
-    const usedA = [], usedB = []
-    // First pass: fill each position with its preferred group
     let aiA = 0, aiB = 0
     visualToSlot.forEach((slotNum, vi) => {
-      const wantsGroup = colorMap[vi]
+      const wantsGroup = colorMap[vi] || 'B'
       let photo
       if (wantsGroup === 'A' && groupA[aiA])      photo = groupA[aiA++]
       else if (wantsGroup === 'B' && groupB[aiB]) photo = groupB[aiB++]
-      else if (groupA[aiA])  photo = groupA[aiA++]  // overflow
-      else if (groupB[aiB])  photo = groupB[aiB++]  // overflow
+      else if (groupA[aiA])                        photo = groupA[aiA++]  // overflow
+      else if (groupB[aiB])                        photo = groupB[aiB++]  // overflow
       if (!photo) return
       const item = currentPlan.find(x => x.slot === slotNum)
       if (item) item.photo = photo.repoIdx + 1
