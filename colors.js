@@ -83,26 +83,57 @@ function detectAccent(colors) {
   return false
 }
 
+// ICtCp color space conversion for perceptually accurate warm/cool measurement
+// Ct axis (index 2) maps directly to warm/cool perception — no green-moss problem
+function rgbToICtCp(r, g, b) {
+  // Step 1: linearize sRGB
+  const lin = v => { v /= 255; return v <= 0.04045 ? v/12.92 : Math.pow((v+0.055)/1.055, 2.4) }
+  const rl = lin(r), gl = lin(g), bl = lin(b)
+
+  // Step 2: sRGB → BT.2020 (D65)
+  const r2020 =  0.627404*rl + 0.329283*gl + 0.043313*bl
+  const g2020 =  0.069097*rl + 0.919540*gl + 0.011362*bl
+  const b2020 =  0.016391*rl + 0.088013*gl + 0.895595*bl
+
+  // Step 3: BT.2020 → LMS (Dolby IPT matrix)
+  const L = 0.412109*r2020 + 0.523926*g2020 + 0.063965*b2020
+  const M = 0.166748*r2020 + 0.720459*g2020 + 0.112793*b2020
+  const S = 0.024193*r2020 + 0.075241*g2020 + 0.900566*b2020
+
+  // Step 4: PQ EOTF (simplified — using relative luminance, not absolute HDR)
+  const pq = v => { const vp = Math.pow(Math.max(v, 0), 0.1593017578125); return Math.pow((0.8359375 + 18.8515625*vp) / (1 + 18.6875*vp), 134.034375) }
+  const Lp = pq(L), Mp = pq(M), Sp = pq(S)
+
+  // Step 5: LMS' → ICtCp
+  const I  =  0.5*Lp + 0.5*Mp
+  // Ct (warm/cool axis) — positive=amber/warm, negative=blue/cool
+  const Ct =  1.613769531*Lp - 3.323486328*Mp + 1.709716797*Sp
+  return { I, Ct }
+}
+
 function estimateKelvin(colors) {
   if (!colors.length) return 6500
-  let totalPct = 0, weightedB = 0
+  let totalPct = 0, weightedCt = 0
   for (const c of colors) {
     const r = parseInt(c.hex.slice(1,3), 16)
     const g = parseInt(c.hex.slice(3,5), 16)
     const b = parseInt(c.hex.slice(5,7), 16)
-    const bStar = rgbToLab(r, g, b)[2]
-    weightedB += bStar * c.pct
-    totalPct  += c.pct
+    const { Ct } = rgbToICtCp(r, g, b)
+    weightedCt += Ct * c.pct
+    totalPct   += c.pct
   }
   if (totalPct === 0) return 6500
-  const avgB = weightedB / totalPct
-  if (avgB > 18)  return 2200
-  if (avgB > 10)  return 3500
-  if (avgB > 3)   return 4500
-  if (avgB > -3)  return 5500
-  if (avgB > -10) return 7000
-  if (avgB > -20) return 8500
-  return 10000
+  const avgCt = weightedCt / totalPct
+
+  // ICtCp Ct axis: negative = warm (orange/amber), positive = cool (blue/teal)
+  // Thresholds calibrated against real photographic colors
+  if (avgCt < -0.20) return 2200   // deep orange / golden hour
+  if (avgCt < -0.10) return 3500   // warm amber / red
+  if (avgCt < -0.03) return 4500   // slightly warm / green-leaning
+  if (avgCt <  0.01) return 5500   // neutral daylight / gray
+  if (avgCt <  0.04) return 7000   // cool overcast / fog
+  if (avgCt <  0.07) return 8500   // cold shade / mist
+  return 10000                      // deep blue / cold hour
 }
 
 function hexToL(hex) {

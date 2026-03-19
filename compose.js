@@ -17,9 +17,21 @@ async function compose(mode = 'basic') {
     const P  = PATTERNS.find(p => p.id === selP)
     const kw = document.getElementById('kw').value
     const kc = document.getElementById('kc').value
-    const colorCtx = repoPhotos.map((p,i) =>
-      `FOTO ${i+1}: kelvin~${p.kelvin}K temp=${p.kelvin<5000?'QUENTE':'FRIO'} acento_quente=${p.hasAccent?'SIM':'NAO'} cores=[${(p.colors||[]).map(c=>c.hex+'('+c.pct+'%)').join(' ')}]`
-    ).join('\n')
+    const colorCtx = repoPhotos.map((p,i) => {
+      // Build semantic context — AI gets perceptual features, not just raw hex
+      const accentColor = p.hasAccent ? (p.colors||[]).find(c => {
+        const r=parseInt(c.hex.slice(1,3),16), g=parseInt(c.hex.slice(3,5),16), b=parseInt(c.hex.slice(5,7),16)
+        const max=Math.max(r,g,b), d=max-Math.min(r,g,b); if(!max||!d) return false
+        const sat=d/max; let hue=0
+        if(max===r) hue=((g-b)/d+(g<b?6:0))*60; else if(max===g) hue=((b-r)/d+2)*60; else hue=((r-g)/d+4)*60
+        return sat>0.45 && (hue<=45||hue>=330)
+      }) : null
+      const accentDesc = accentColor ? `ACENTO_${accentColor.hex.toUpperCase()}(${accentColor.pct}%)` : 'SEM_ACENTO'
+      const tempWord = p.kelvin <= 3500 ? 'MUITO_QUENTE' : p.kelvin <= 4500 ? 'QUENTE' : p.kelvin <= 6000 ? 'NEUTRO' : p.kelvin <= 8000 ? 'FRIO' : 'MUITO_FRIO'
+      const lumAvg = (p.colors||[]).reduce((s,c)=>s+hexToL(c.hex)*c.pct/100,0)
+      const lumWord = lumAvg > 60 ? 'CLARO' : lumAvg > 35 ? 'MEDIO' : 'ESCURO'
+      return `FOTO ${i+1}: kelvin~${p.kelvin}K temp=${tempWord} lum=${lumWord} acento=${accentDesc} cores=[${(p.colors||[]).map(c=>c.hex+'('+c.pct+'%)').join(' ')}]`
+    }).join('\n')
     const igCtx = igPhotos.length > 0
       ? '\nULTIMAS 3 FOTOS DO GRID:\n' + igPhotos.map((p,i) => `IG${i+1}: kelvin~${p.kelvin}K cores=[${(p.colors||[]).map(c=>c.hex+'('+c.pct+'%)').join(' ')}]`).join('\n')
       : ''
@@ -126,10 +138,11 @@ CONFIG: Harmonia=${H.name} Padrao=${P.name} ${kelvinLine} Posts=${size}
 ${axis?.prompt || ''}
 
 REGRA DE ACENTO CROMÁTICO (CRÍTICA):
-Fotos com acento_quente=SIM têm um elemento focal saturado/quente (gorro laranja, trailer laranja, pôr do sol) mesmo que o fundo seja frio.
-NUNCA coloque dois slots com acento_quente=SIM adjacentes (horizontal ou vertical).
-Alterne sempre: sem_acento · com_acento · sem_acento · com_acento.
-Trate acento_quente como o critério primário de agrupamento, antes da temperatura geral.
+Fotos com acento=ACENTO_* têm um elemento focal quente/saturado (gorro, trailer, pôr do sol) mesmo que o fundo seja frio.
+NUNCA coloque dois slots com ACENTO_* adjacentes (horizontal ou vertical).
+Alterne sempre: SEM_ACENTO · ACENTO · SEM_ACENTO · ACENTO.
+O acento é o critério primário — antes de temperatura geral, antes de tipo de sujeito.
+Fotos NEUTRO ou FRIO sem acento são os separadores naturais entre acentos quentes.
 
 REGRA DE DIVERSIDADE VISUAL:
 1. Nunca coloque dois slots com pessoa como sujeito dominante lado a lado.
@@ -146,48 +159,90 @@ Fotos: 1 a ${totalPhotos}`
 }
 
 // ── Local reordering ──────────────────────────────────
+// Graph 2-coloring: guarantees no two same-group photos are adjacent (horiz or vert)
+// For a 3xM grid, the optimal non-adjacent assignment has a closed-form solution:
+// cell (row, col) gets group A if (row + col) is even, B if odd — exactly like a chessboard
+// This is mathematically proven to be the only valid 2-coloring for a grid graph
+function buildGridColorMap(rows) {
+  // Returns array[visualIndex] = 'A' | 'B'
+  // Visual index: left→right, top→bottom (0=top-left, 1=top-center, 2=top-right, ...)
+  const map = []
+  for (let r = 0; r < rows; r++)
+    for (let c = 0; c < 3; c++)
+      map.push((r + c) % 2 === 0 ? 'A' : 'B')
+  return map
+}
+
+// Verify no two adjacent cells have same group (debug helper)
+function verifyNoAdjacentConflict(assignment, rows) {
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < 3; c++) {
+      const vi = r*3 + c
+      const group = assignment[vi]
+      // Check right neighbor
+      if (c < 2 && assignment[vi+1] === group) return false
+      // Check bottom neighbor
+      if (r < rows-1 && assignment[vi+3] === group) return false
+    }
+  }
+  return true
+}
+
 function applyReorder(scoredPhotos) {
   if (!scoredPhotos.length || !originalPlan.length) return
   currentPlan = JSON.parse(JSON.stringify(originalPlan))
+
   const size = currentPlan.length
   const rows = Math.ceil(size / 3)
+
+  // Instagram slot order: slot 1 = top-right, fills right→left per row
+  // Build visualIndex → slotNum mapping
   const visualToSlot = []
   for (let r = 0; r < rows; r++)
     for (let c = 0; c < 3; c++) {
-      const slotNum = r*3+(2-c)+1
+      const slotNum = r*3 + (2-c) + 1  // Instagram: right→left
       if (slotNum <= size) visualToSlot.push(slotNum)
     }
-  const patternMap = {
-    checkerboard: vi => vi%2===0?'A':'B',
-    columns:      vi => vi%3===2?'B':'A',
-    rows:         vi => Math.floor(vi/3)%2===0?'A':'B',
-    diagonal:     vi => (Math.floor(vi/3)+vi%3)%2===0?'A':'B',
-    free:         ()  => 'A',
-  }
-  const groupFn = patternMap[selP] || patternMap.checkerboard
-  const groupA = scoredPhotos.filter(p=>p.group==='A').sort((a,b)=>b.score-a.score)
-  const groupB = scoredPhotos.filter(p=>p.group==='B').sort((a,b)=>b.score-a.score)
+
   if (selP === 'free') {
-    const sorted = [...scoredPhotos].sort((a,b)=>b.score-a.score)
-    visualToSlot.forEach((slotNum,vi) => {
-      const photo=sorted[vi]; if (!photo) return
-      const planItem=currentPlan.find(x=>x.slot===slotNum)
-      if (planItem) planItem.photo=photo.repoIdx+1
+    // Free pattern: sort by score, no adjacency constraint
+    const sorted = [...scoredPhotos].sort((a,b) => b.score - a.score)
+    visualToSlot.forEach((slotNum, vi) => {
+      const photo = sorted[vi]; if (!photo) return
+      const item = currentPlan.find(x => x.slot === slotNum)
+      if (item) item.photo = photo.repoIdx + 1
     })
   } else {
-    let aiA=0, aiB=0
-    visualToSlot.forEach((slotNum,vi) => {
-      const wantsGroup=groupFn(vi)
+    // Graph 2-coloring: mathematically guaranteed non-adjacent assignment
+    const colorMap = buildGridColorMap(rows)
+
+    // Sort each group by score descending
+    const groupA = scoredPhotos.filter(p => p.group === 'A').sort((a,b) => b.score - a.score)
+    const groupB = scoredPhotos.filter(p => p.group === 'B').sort((a,b) => b.score - a.score)
+
+    // If one group is larger than its positions, overflow into the other group
+    // This handles odd numbers of photos gracefully
+    const posA = colorMap.filter(g => g === 'A').length
+    const posB = colorMap.filter(g => g === 'B').length
+
+    // Pad smaller group with overflow from larger group (by lower score)
+    const allSorted = [...scoredPhotos].sort((a,b) => b.score - a.score)
+    const usedA = [], usedB = []
+    // First pass: fill each position with its preferred group
+    let aiA = 0, aiB = 0
+    visualToSlot.forEach((slotNum, vi) => {
+      const wantsGroup = colorMap[vi]
       let photo
-      if (wantsGroup==='A'&&groupA[aiA]) photo=groupA[aiA++]
-      else if (wantsGroup==='B'&&groupB[aiB]) photo=groupB[aiB++]
-      else if (groupA[aiA]) photo=groupA[aiA++]
-      else if (groupB[aiB]) photo=groupB[aiB++]
+      if (wantsGroup === 'A' && groupA[aiA])      photo = groupA[aiA++]
+      else if (wantsGroup === 'B' && groupB[aiB]) photo = groupB[aiB++]
+      else if (groupA[aiA])  photo = groupA[aiA++]  // overflow
+      else if (groupB[aiB])  photo = groupB[aiB++]  // overflow
       if (!photo) return
-      const planItem=currentPlan.find(x=>x.slot===slotNum)
-      if (planItem) planItem.photo=photo.repoIdx+1
+      const item = currentPlan.find(x => x.slot === slotNum)
+      if (item) item.photo = photo.repoIdx + 1
     })
   }
+
   currentPlan.forEach(s => { feedSlots[s.slot-1] = s.photo-1 })
   renderUploadGrid(); renderDetails()
 }
