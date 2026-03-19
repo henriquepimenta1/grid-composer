@@ -67,46 +67,53 @@ async function loadCredits() {
 
 function updateCreditsUI(credits, plan) {
   const isUnlimited = plan !== 'free'
-  const label = isUnlimited
-    ? (LANG === 'en' ? 'Unlimited' : 'Ilimitado')
-    : `${credits} ${credits === 1 ? t('credit_singular') : t('credits_label')}`
+  const planLabel   = plan === 'studio' ? 'Studio' : plan === 'pro' ? 'Pro' : 'Free'
 
   const badge = document.getElementById('credits-badge')
   if (badge) {
-    badge.textContent = label
-    badge.style.color = (!isUnlimited && credits < 3) ? '#dc2626' : '#374151'
+    if (plan === 'free') {
+      // Free: show credits count with warning if low
+      badge.innerHTML = `<span style="color:var(--text3);margin-right:3px">Free</span> · ${credits} cr`
+      badge.style.color = credits < 3 ? '#dc2626' : '#374151'
+      badge.style.background = credits < 3 ? '#fff5f5' : '#f3f4f6'
+      badge.style.borderColor = credits < 3 ? '#fca5a5' : '#e5e7eb'
+    } else {
+      // Pro/Studio: show plan name + credit balance
+      const planColor = plan === 'studio' ? '#7c3aed' : '#0095f6'
+      const planBg    = plan === 'studio' ? '#faf5ff' : '#eff6ff'
+      const planBorder = plan === 'studio' ? '#ddd6fe' : '#bfdbfe'
+      badge.innerHTML = `<span style="color:${planColor};font-weight:700">${planLabel}</span> · ${credits} cr`
+      badge.style.color      = '#374151'
+      badge.style.background = planBg
+      badge.style.borderColor = planBorder
+    }
   }
 
-  // Update compose button credit indicator
+  // Update compose button labels
   const costEl = document.getElementById('credit-cost')
   const goBtn  = document.getElementById('go')
   const goAdv  = document.getElementById('go-advanced')
+
   if (costEl) {
-    if (isUnlimited) {
-      costEl.textContent = 'temperatura · paleta · harmonia · ilimitado'
-    } else {
-      const c = credits
-      costEl.textContent = `temperatura · paleta · harmonia · 1 crédito (${c} restante${c!==1?'s':''})`
-    }
+    costEl.textContent = isUnlimited
+      ? 'temperatura · paleta · harmonia · ilimitado ✦'
+      : `temperatura · paleta · harmonia · 1 crédito (${credits} disponíveis)`
   }
-  // Advanced button sub-text
-  const advSub = goAdv?.querySelector('.mode-btn-sub')
+
+  const advCost = plan === 'studio' ? 3 : 5
+  const advSub  = goAdv?.querySelector('.mode-btn-sub')
   if (advSub) {
-    const advCost = plan === 'studio' ? 3 : 5
-    advSub.textContent = isUnlimited
-      ? `leitura visual completa · ${advCost} créditos`
-      : `leitura visual completa · ${advCost} créditos (${credits} disponíveis)`
+    advSub.textContent = `leitura visual completa · ${advCost} créditos (${credits} disponíveis)`
   }
-  if (goBtn && !isUnlimited && credits < 1) {
-    goBtn.classList.add('warn-credits')
-  } else if (goBtn) {
-    goBtn.classList.remove('warn-credits')
+
+  if (goBtn) {
+    goBtn.classList.toggle('warn-credits', !isUnlimited && credits < 1)
   }
 
   const ddPlan  = document.getElementById('dd-plan')
   const ddCreds = document.getElementById('dd-credits')
-  if (ddPlan)  ddPlan.textContent  = plan === 'free' ? 'Free' : plan === 'pro' ? 'Pro' : 'Studio'
-  if (ddCreds) ddCreds.textContent = label
+  if (ddPlan)  ddPlan.textContent  = planLabel
+  if (ddCreds) ddCreds.textContent = `${credits} créditos`
 }
 
 // ── Dropdown ──────────────────────────────────────────
