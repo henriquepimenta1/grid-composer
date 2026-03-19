@@ -153,8 +153,8 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
 /* MAIN */
 .main{flex:1;overflow-y:auto;overflow-x:hidden;padding:16px;display:flex;flex-direction:column;gap:12px;min-height:0}
 
-/* Feed panel — constrain width so grid isn't huge on wide screens */
-.feed-panel{max-width:340px;width:100%}
+/* Feed panel — proportional, not too big, not too small */
+.feed-panel{max-width:480px;width:100%}
 @media(max-width:768px){.feed-panel{max-width:100%}}
 
 /* Upload */
@@ -495,7 +495,8 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
 .upload-grid.drop-active .ugslot.empty{border-color:var(--blue);background:#f0f8ff}
 .ugslot.drop-hover{outline:2.5px solid var(--blue);outline-offset:-2px}
 
-.mode-panel{background:var(--white);border:1px solid var(--border-light);border-radius:var(--r);padding:16px;box-shadow:var(--shadow)}
+.mode-panel{background:var(--white);border:1px solid var(--border-light);border-radius:var(--r);padding:16px;box-shadow:var(--shadow);max-width:480px;width:100%}
+@media(max-width:768px){.mode-panel{max-width:100%}}
 .mode-hint{font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px}
 .mode-btns{display:flex;gap:8px}
 .mode-btn{
