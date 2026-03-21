@@ -20,7 +20,6 @@ async function initAuth() {
   currentUser = session.user
   authToken   = session.access_token
 
-  // Keep token fresh + detect logout from other tabs
   sb.auth.onAuthStateChange((event, newSession) => {
     if (event === 'SIGNED_OUT' || !newSession) {
       window.location.replace('/login')
@@ -61,36 +60,40 @@ async function loadCredits() {
       headers: { 'Authorization': 'Bearer ' + authToken }
     })
     const data = await res.json()
-    // Update cached plan in state.js so maxRepoSize() returns correct value
+    // Update cached plan in state.js
     if (typeof currentUserPlan !== 'undefined') currentUserPlan = data.plan || 'free'
     updateCreditsUI(data.credits, data.plan)
-    // Update feed tabs and repo counter for Studio (30 photos, more grid sizes)
     updatePlanUI(data.plan)
+    // Show trial banner if applicable
+    if (data.trial_expires_at) showTrialBanner(data.trial_expires_at, data.plan)
+    else hideTrialBanner()
   } catch {}
 }
 
 function updatePlanUI(plan) {
-  const isStudio = plan === 'studio'
-  // Update repo counter max display
+  // Update repo counter display
+  const limits = typeof planLimits === 'function' ? planLimits() : null
   const pcnt = document.getElementById('pcnt')
-  if (pcnt) {
-    const max = isStudio ? 30 : 12
+  if (pcnt && limits) {
     const cur = typeof repository !== 'undefined' ? repository.length : 0
-    pcnt.textContent = `${cur} / ${max}`
+    pcnt.textContent = `${cur} / ${limits.maxRepo}`
   }
-  // Show extra feed tabs for Studio (12, 15, 18)
-  const extraTabs   = document.getElementById('feed-tabs-extra')
-  if (extraTabs)   extraTabs.style.display   = isStudio ? 'flex' : 'none'
+  // Re-render feed tabs with lock gates
+  if (typeof renderFeedTabs === 'function') renderFeedTabs()
+  // Re-render upload grid (existing photos gate)
+  if (typeof renderUploadGrid === 'function') renderUploadGrid()
+  // Update action buttons (advanced gate text)
+  if (typeof updateActionButtons === 'function') updateActionButtons()
 }
 
 function updateCreditsUI(credits, plan) {
-  const isUnlimited = plan !== 'free'
-  const planLabel   = plan === 'studio' ? 'Studio' : plan === 'pro' ? 'Pro' : 'Free'
+  const limits = typeof planLimits === 'function' ? planLimits() : null
+  const isPaid    = plan !== 'free'
+  const planLabel = plan === 'studio' ? 'Studio' : plan === 'pro' ? 'Pro' : 'Free'
 
   const badge = document.getElementById('credits-badge')
   if (badge) {
     if (plan === 'free') {
-      // Free: show credits count with warning if low
       badge.innerHTML = `<span style="color:var(--text3);margin-right:3px">Free</span> · ${credits} cr`
       badge.style.color = credits < 3 ? '#dc2626' : '#374151'
       badge.style.background = credits < 3 ? '#fff5f5' : '#f3f4f6'
@@ -99,42 +102,78 @@ function updateCreditsUI(credits, plan) {
       badge.title   = credits < 3 ? '✦ Comprar créditos' : 'Comprar mais créditos'
       badge.style.cursor = 'pointer'
     } else {
-      // Pro/Studio: show plan name + credit balance
-      const planColor = plan === 'studio' ? '#7c3aed' : '#0095f6'
-      const planBg    = plan === 'studio' ? '#faf5ff' : '#eff6ff'
+      const planColor  = plan === 'studio' ? '#7c3aed' : '#0095f6'
+      const planBg     = plan === 'studio' ? '#faf5ff' : '#eff6ff'
       const planBorder = plan === 'studio' ? '#ddd6fe' : '#bfdbfe'
       badge.innerHTML = `<span style="color:${planColor};font-weight:700">${planLabel}</span> · ${credits} cr`
       badge.style.color      = '#374151'
       badge.style.background = planBg
       badge.style.borderColor = planBorder
+      badge.onclick = () => openBuyCredits()
+      badge.style.cursor = 'pointer'
     }
   }
 
-  // Update compose button labels
+  // Update compose button labels (uses PLAN_LIMITS)
   const costEl = document.getElementById('credit-cost')
-  const goBtn  = document.getElementById('go')
-  const goAdv  = document.getElementById('go-advanced')
-
-  if (costEl) {
-    costEl.textContent = isUnlimited
-      ? 'temperatura · paleta · harmonia · ilimitado ✦'
-      : `temperatura · paleta · harmonia · 1 crédito (${credits} disponíveis)`
+  if (costEl && limits) {
+    if (limits.basicCost === 0) {
+      costEl.textContent = 'temperatura · paleta · harmonia · ilimitado ✦'
+    } else {
+      costEl.textContent = `temperatura · paleta · harmonia · ${limits.basicCost} crédito (${credits} disponíveis)`
+    }
   }
 
-  const advCost = plan === 'studio' ? 3 : 5
-  const advSub  = goAdv?.querySelector('.mode-btn-sub')
-  if (advSub) {
-    advSub.textContent = `leitura visual completa · ${advCost} créditos (${credits} disponíveis)`
+  const goAdv = document.getElementById('go-advanced')
+  if (goAdv && limits) {
+    const advSub = goAdv.querySelector('.mode-btn-sub')
+    if (advSub) {
+      if (limits.advancedCost === null) {
+        advSub.textContent = '🔒 Disponível no Pro e Studio'
+      } else {
+        advSub.textContent = `leitura visual completa · ${limits.advancedCost} créditos (${credits} disponíveis)`
+      }
+    }
   }
 
-  if (goBtn) {
-    goBtn.classList.toggle('warn-credits', !isUnlimited && credits < 1)
-  }
+  const goBtn = document.getElementById('go')
+  if (goBtn) goBtn.classList.toggle('warn-credits', !isPaid && credits < 1)
 
   const ddPlan  = document.getElementById('dd-plan')
   const ddCreds = document.getElementById('dd-credits')
   if (ddPlan)  ddPlan.textContent  = planLabel
   if (ddCreds) ddCreds.textContent = `${credits} créditos`
+}
+
+// ── Trial banner ──────────────────────────────────────
+function showTrialBanner(expiresAt, plan) {
+  const expires = new Date(expiresAt)
+  const now     = Date.now()
+  const diff    = expires - now
+  if (diff <= 0) { hideTrialBanner(); return }
+
+  const days  = Math.ceil(diff / (1000 * 60 * 60 * 24))
+  const hours = Math.ceil(diff / (1000 * 60 * 60))
+  const planLabel = plan === 'studio' ? 'Studio' : 'Pro'
+  const timeLabel = days > 1 ? `${days} dias` : hours > 1 ? `${hours} horas` : 'menos de 1 hora'
+
+  let banner = document.getElementById('trial-banner')
+  if (!banner) {
+    banner = document.createElement('div')
+    banner.id = 'trial-banner'
+    banner.style.cssText = 'padding:8px 16px;background:linear-gradient(90deg,#eff6ff,#faf5ff);border-bottom:1px solid #bfdbfe;display:flex;align-items:center;justify-content:center;gap:8px;font-size:13px;font-weight:600;color:#1e40af;flex-shrink:0'
+    const topbar = document.querySelector('.topbar')
+    if (topbar) topbar.after(banner)
+  }
+
+  banner.innerHTML = `
+    <span>✦ Trial ${planLabel} ativo</span>
+    <span style="color:#6b7280;font-weight:400">· expira em ${timeLabel}</span>
+    <a href="/comprar" style="color:#7c3aed;text-decoration:none;font-weight:700;margin-left:4px">Assinar para manter →</a>`
+}
+
+function hideTrialBanner() {
+  document.getElementById('trial-banner')?.remove()
 }
 
 // ── Dropdown ──────────────────────────────────────────
@@ -161,21 +200,17 @@ function closeOnOutside(e) {
 
 // ── Instagram handle sync ─────────────────────────────
 function syncIgHandle(val) {
-  // Remove @ if typed, strip spaces
   const clean = val.replace(/^@/, '').replace(/\s/g, '')
-  // Sync both inputs
   const topbar   = document.getElementById('ig-handle-topbar')
   const settings = document.getElementById('settings-ig')
   if (topbar   && topbar   !== document.activeElement) topbar.value   = clean
   if (settings && settings !== document.activeElement) settings.value = clean
-  // Update feed preview username
   updateFeedHandle(clean)
 }
 
 function saveIgHandle(val) {
   const clean = val.replace(/^@/, '').replace(/\s/g, '')
   localStorage.setItem('gc_ig_handle', clean)
-  // Sync the other field
   const topbar   = document.getElementById('ig-handle-topbar')
   const settings = document.getElementById('settings-ig')
   if (topbar)   topbar.value   = clean
@@ -184,7 +219,6 @@ function saveIgHandle(val) {
 }
 
 function updateFeedHandle(handle) {
-  // Update any visible feed preview username
   const nameEls = document.querySelectorAll('.pp-name, #manual-name')
   nameEls.forEach(el => { if (handle) el.textContent = handle })
 }
@@ -197,11 +231,11 @@ function loadIgHandle() {
   if (settings) settings.value = saved
   if (saved) updateFeedHandle(saved)
 }
+
 function openSettings(tab) {
   closeDropdown()
   document.getElementById('settings-modal')?.classList.add('open')
   switchSettingsTab(tab || 'profile')
-
   const meta    = currentUser?.user_metadata || {}
   const nameEl  = document.getElementById('settings-name')
   const emailEl = document.getElementById('settings-email')

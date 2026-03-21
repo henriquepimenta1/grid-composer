@@ -155,7 +155,11 @@ app.get('/api/credits', requireAuth, async (req, res) => {
   let userData = data || { credits: 0, plan: 'free' };
   userData = await checkTrialExpiry(req.user.id, userData);
 
-  res.json({ credits: userData.credits ?? 0, plan: userData.plan ?? 'free' });
+  res.json({
+    credits: userData.credits ?? 0,
+    plan: userData.plan ?? 'free',
+    trial_expires_at: userData.trial_expires_at || null,
+  });
 });
 
 // ── POST /api/analyze ───────────────────────────────

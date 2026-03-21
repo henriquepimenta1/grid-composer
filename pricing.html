@@ -35,7 +35,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);-webkit-font
 .toggle-thumb{width:18px;height:18px;border-radius:50%;background:white;position:absolute;top:3px;left:3px;transition:transform .2s;box-shadow:0 1px 3px rgba(0,0,0,.2)}
 .toggle-track.on .toggle-thumb{transform:translateX(20px)}
 .save-badge{font-size:11px;font-weight:700;color:white;background:var(--green);padding:2px 8px;border-radius:100px}
-.plans{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;max-width:960px;margin:0 auto;padding:0 24px 80px}
+.plans{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;max-width:960px;margin:0 auto;padding:0 24px 64px}
 @media(max-width:768px){.plans{grid-template-columns:1fr;max-width:400px}.hero h1{font-size:26px}}
 .plan-card{background:var(--white);border:1.5px solid var(--border-light);border-radius:var(--r);padding:28px 24px;position:relative;transition:transform .2s,box-shadow .2s;display:flex;flex-direction:column}
 .plan-card:hover{transform:translateY(-3px);box-shadow:var(--shadow-md)}
@@ -62,6 +62,21 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);-webkit-font
 .faq-item.open .faq-arrow{transform:rotate(180deg)}
 .faq-a{font-size:13px;color:var(--text2);line-height:1.65;margin-top:10px;display:none}
 .faq-item.open .faq-a{display:block}
+/* Coupon section */
+.coupon-section{max-width:480px;margin:0 auto;padding:0 24px 48px;text-align:center}
+.coupon-box{background:var(--white);border:1.5px solid var(--border-light);border-radius:var(--r);padding:24px;transition:all .2s}
+.coupon-box:hover{box-shadow:var(--shadow-md)}
+.coupon-input-row{display:flex;gap:8px;margin-top:14px}
+.coupon-input{flex:1;padding:10px 14px;border:1.5px solid var(--border);border-radius:var(--r-sm);font-size:14px;font-weight:600;font-family:var(--font);color:var(--text);text-transform:uppercase;letter-spacing:.1em;outline:none;transition:border-color .15s}
+.coupon-input:focus{border-color:var(--text)}
+.coupon-input::placeholder{text-transform:none;letter-spacing:0;color:var(--text3);font-weight:400}
+.coupon-btn{padding:10px 20px;border-radius:var(--r-sm);background:var(--ig);border:none;color:white;font-size:14px;font-weight:700;font-family:var(--font);cursor:pointer;transition:opacity .15s;white-space:nowrap}
+.coupon-btn:hover:not(:disabled){opacity:.88}
+.coupon-btn:disabled{opacity:.4;cursor:not-allowed}
+.coupon-msg{font-size:13px;margin-top:10px;padding:8px 12px;border-radius:var(--r-sm);display:none}
+.coupon-msg.show{display:block}
+.coupon-msg.success{background:#f0fdf4;border:1px solid #86efac;color:#166534}
+.coupon-msg.error{background:#fff5f5;border:1px solid #fca5a5;color:var(--red)}
 footer{text-align:center;padding:24px;font-size:12px;color:var(--text3);border-top:1px solid var(--border-light)}
 </style>
 </head>
@@ -106,7 +121,7 @@ footer{text-align:center;padding:24px;font-size:12px;color:var(--text3);border-t
       <span id="pro-price">R$ 24,90</span>
       <span class="plan-period" data-i18n="per_month">/mês</span>
     </div>
-    <div class="plan-desc" data-i18n="pro_desc">Para fotógrafos ativos que postam toda semana.</div>
+    <div class="plan-desc" data-i18n="pro_desc">Para creators que levam o feed a sério.</div>
     <button class="plan-cta" id="btn-pro" onclick="subscribe('pro')" data-i18n="pro_cta">Assinar Pro</button>
     <div class="features-title" data-i18n="includes">Inclui</div>
     <ul class="features" id="pro-features"></ul>
@@ -119,10 +134,23 @@ footer{text-align:center;padding:24px;font-size:12px;color:var(--text3);border-t
       <span id="studio-price">R$ 59,90</span>
       <span class="plan-period" data-i18n="per_month">/mês</span>
     </div>
-    <div class="plan-desc" data-i18n="studio_desc">Para agências e fotógrafos com múltiplos clientes.</div>
+    <div class="plan-desc" data-i18n="studio_desc">Para quem quer o máximo — análise de perfil e mentor visual.</div>
     <button class="plan-cta" id="btn-studio" onclick="subscribe('studio')" data-i18n="studio_cta">Assinar Studio</button>
     <div class="features-title" data-i18n="includes">Inclui</div>
     <ul class="features" id="studio-features"></ul>
+  </div>
+</div>
+
+<!-- COUPON SECTION -->
+<div class="coupon-section">
+  <div class="coupon-box">
+    <div style="font-size:15px;font-weight:700;margin-bottom:4px">🎟️ Tem um cupom?</div>
+    <div style="font-size:13px;color:var(--text2)">Insira seu código promocional para ativar.</div>
+    <div class="coupon-input-row">
+      <input type="text" class="coupon-input" id="coupon-code" placeholder="Ex: LAUNCH2026" maxlength="30">
+      <button class="coupon-btn" id="coupon-btn" onclick="redeemCoupon()">Ativar</button>
+    </div>
+    <div class="coupon-msg" id="coupon-msg"></div>
   </div>
 </div>
 
@@ -137,7 +165,7 @@ footer{text-align:center;padding:24px;font-size:12px;color:var(--text3);border-t
       <div style="font-size:28px;font-weight:800;margin-bottom:4px">10</div>
       <div style="font-size:13px;font-weight:700;color:var(--text2);margin-bottom:16px">créditos</div>
       <div style="font-size:24px;font-weight:800;margin-bottom:4px">$1.99</div>
-      <div style="font-size:11px;color:var(--text3);margin-bottom:20px">2 análises avançadas</div>
+      <div style="font-size:11px;color:var(--text3);margin-bottom:20px">~3 composições avançadas</div>
       <button class="plan-cta" id="btn-pack10" onclick="buyPack('pack10')" style="background:var(--text);color:white;border-color:var(--text)">Comprar</button>
     </div>
     <div style="background:var(--white);border:2px solid var(--text);border-radius:var(--r);padding:24px;text-align:center;position:relative;transform:translateY(-4px);box-shadow:0 8px 32px rgba(0,0,0,.12)">
@@ -145,14 +173,14 @@ footer{text-align:center;padding:24px;font-size:12px;color:var(--text3);border-t
       <div style="font-size:28px;font-weight:800;margin-bottom:4px">30</div>
       <div style="font-size:13px;font-weight:700;color:var(--text2);margin-bottom:16px">créditos</div>
       <div style="font-size:24px;font-weight:800;margin-bottom:4px">$4.99</div>
-      <div style="font-size:11px;color:var(--text3);margin-bottom:20px">6 análises avançadas</div>
+      <div style="font-size:11px;color:var(--text3);margin-bottom:20px">10 composições avançadas</div>
       <button class="plan-cta" id="btn-pack30" onclick="buyPack('pack30')" style="background:var(--text);color:white;border-color:var(--text)">Comprar</button>
     </div>
     <div style="background:var(--white);border:1.5px solid var(--border-light);border-radius:var(--r);padding:24px;text-align:center;transition:transform .2s,box-shadow .2s" onmouseover="this.style.transform='translateY(-3px)';this.style.boxShadow='0 8px 32px rgba(0,0,0,.1)'" onmouseout="this.style.transform='';this.style.boxShadow=''">
       <div style="font-size:28px;font-weight:800;margin-bottom:4px">100</div>
       <div style="font-size:13px;font-weight:700;color:var(--text2);margin-bottom:16px">créditos</div>
       <div style="font-size:24px;font-weight:800;margin-bottom:4px">$14.99</div>
-      <div style="font-size:11px;color:var(--text3);margin-bottom:20px">20 análises avançadas · melhor preço</div>
+      <div style="font-size:11px;color:var(--text3);margin-bottom:20px">33 composições avançadas · melhor preço</div>
       <button class="plan-cta" id="btn-pack100" onclick="buyPack('pack100')" style="background:var(--text);color:white;border-color:var(--text)">Comprar</button>
     </div>
   </div>
@@ -171,32 +199,56 @@ footer{text-align:center;padding:24px;font-size:12px;color:var(--text3);border-t
 </footer>
 
 <script>
-// Supabase keys injected by server
 const SUPABASE_URL      = '__SUPABASE_URL__'
 const SUPABASE_ANON_KEY = '__SUPABASE_ANON_KEY__'
 const { createClient } = supabase
 const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
 
-// Page-specific translations
 const PRICING_EXTRA = {
   pt: {
     back_app: '← Voltar ao app', monthly: 'Mensal', annual: 'Anual',
     save_badge: 'Economize 30%', includes: 'Inclui',
     free_desc: 'Para experimentar. Sem cartão necessário.',
-    pro_desc: 'Para fotógrafos ativos que postam toda semana.',
-    studio_desc: 'Para agências e fotógrafos com múltiplos clientes.',
+    pro_desc: 'Para creators que levam o feed a sério.',
+    studio_desc: 'Para quem quer o máximo — análise de perfil e mentor visual.',
     faq_title: 'Perguntas frequentes',
     faqs: [
-      { q: 'O que é uma análise?', a: 'Uma análise é quando você faz upload de fotos e o Grid Composer sugere a sequência ideal para o seu grid — baseado em harmonia de cores, Kelvin e padrão de composição.' },
+      { q: 'O que é uma composição?', a: 'Uma composição é quando você faz upload de fotos e o Grid Composer sugere a sequência ideal para o seu grid — baseado em harmonia de cores, temperatura Kelvin e padrão de composição.' },
       { q: 'Posso cancelar quando quiser?', a: 'Sim. Sem fidelidade. Cancele a qualquer momento e continue com acesso até o fim do período pago.' },
-      { q: 'O plano Free expira?', a: 'Não. As 5 análises do plano Free não expiram. Use quando quiser.' },
+      { q: 'O plano Free expira?', a: 'Não. Os 6 créditos do plano Free não expiram. Mas tem cooldown de 30 minutos entre composições.' },
       { q: 'Como funciona o plano anual?', a: 'Você paga com 30% de desconto, cobrado uma vez por ano. Equivale a pagar 8,4 meses e ganhar 3,6.' },
-      { q: 'O Studio serve para agências?', a: 'Sim. O Studio permite gerenciar múltiplos perfis — ideal para quem cuida do grid de vários clientes.' },
+      { q: 'O que é a análise de perfil?', a: 'Exclusiva do Studio. A IA analisa seu feed atual e retorna: harmonia detectada, score de consistência, mapa de temperatura e recomendação de próxima foto.' },
       { q: 'Como funciona a análise de cores?', a: 'Usamos k-means clustering no espaço LAB — o mesmo método do Adobe Color. As cores são extraídas dos pixels reais da imagem, não estimadas.' },
+      { q: 'O que é o cupom de trial?', a: 'No lançamento, distribuímos cupons que ativam 3 dias de Pro grátis. Sem cartão, sem compromisso. Depois volta pra Free automaticamente.' },
     ],
-    free_features:   ['5 análises de teste', 'Sem cartão necessário', 'Todas as harmonias', 'Acesso básico'],
-    pro_features:    ['Análises ilimitadas', 'Histórico de planos salvo', 'Export em PDF', 'Comparação com referências', 'Sugestão de preset por foto', 'Suporte prioritário'],
-    studio_features: ['Tudo do Pro', 'Até 10 perfis de Instagram', 'Relatório semanal automático', 'Análise em lote', 'API access', 'Suporte dedicado'],
+    free_features: [
+      '6 composições básicas',
+      'Grid de até 6 posts',
+      '7 fotos no repositório',
+      'Cooldown de 30 min',
+      'Export com marca d\'água',
+      'Todas as harmonias e padrões',
+    ],
+    pro_features: [
+      'Composições básicas ilimitadas',
+      'Composição avançada (3 cr)',
+      'Grid de até 9 posts',
+      '12 fotos no repositório',
+      'Fotos existentes como contexto (6)',
+      'Sem cooldown',
+      'Export limpo (sem marca d\'água)',
+      'Histórico de 50 análises',
+      'Score de foto · Sugestão de legenda',
+    ],
+    studio_features: [
+      'Tudo do Pro',
+      'Grid de até 18 posts',
+      '30 fotos no repositório',
+      'Histórico ilimitado',
+      'Análise de perfil (3 cr)',
+      'Mentor visual com sugestões',
+      'Score de foto após avançada',
+    ],
     pro_monthly: 'R$ 24,90', pro_annual: 'R$ 17,43',
     studio_monthly: 'R$ 59,90', studio_annual: 'R$ 41,93',
   },
@@ -204,26 +256,51 @@ const PRICING_EXTRA = {
     back_app: '← Back to app', monthly: 'Monthly', annual: 'Annual',
     save_badge: 'Save 30%', includes: 'Includes',
     free_desc: 'Try it out. No card required.',
-    pro_desc: 'For active photographers who post every week.',
-    studio_desc: 'For agencies and photographers with multiple clients.',
+    pro_desc: 'For creators who take their feed seriously.',
+    studio_desc: 'For the full experience — profile analysis and visual mentor.',
     faq_title: 'Frequently asked questions',
     faqs: [
-      { q: 'What counts as an analysis?', a: 'One analysis is when you upload photos and Grid Composer suggests the ideal grid sequence — based on color harmony, Kelvin temperature and composition pattern.' },
+      { q: 'What counts as a composition?', a: 'One composition is when you upload photos and Grid Composer suggests the ideal grid sequence — based on color harmony, Kelvin temperature and composition pattern.' },
       { q: 'Can I cancel anytime?', a: 'Yes. No commitment. Cancel whenever and keep access until end of billing period.' },
-      { q: 'Do the Free analyses expire?', a: 'No. Your 5 free analyses never expire.' },
+      { q: 'Does the Free plan expire?', a: 'No. Your 6 free credits never expire. But there\'s a 30-minute cooldown between compositions.' },
       { q: 'How does annual billing work?', a: 'You pay a 30% discounted rate billed once per year — equivalent to 8.4 months for the price of 12.' },
-      { q: 'Is Studio good for agencies?', a: 'Yes. Studio lets you manage multiple Instagram profiles — perfect for agencies handling multiple clients.' },
+      { q: 'What is profile analysis?', a: 'Studio exclusive. AI analyzes your current feed and returns: detected harmony, consistency score, temperature map and next photo recommendation.' },
       { q: 'How does color analysis work?', a: 'We use k-means clustering in LAB color space — the same method as Adobe Color. Colors extracted from real pixels, not AI-estimated.' },
+      { q: 'What is the trial coupon?', a: 'At launch we distribute coupons that activate 3 days of Pro for free. No card, no commitment. Reverts to Free automatically.' },
     ],
-    free_features:   ['5 trial analyses', 'No card required', 'All harmonies', 'Basic access'],
-    pro_features:    ['Unlimited analyses', 'Saved plan history', 'PDF export', 'Reference comparison', 'Per-photo preset suggestion', 'Priority support'],
-    studio_features: ['Everything in Pro', 'Up to 10 Instagram profiles', 'Automated weekly report', 'Batch analysis', 'API access', 'Dedicated support'],
+    free_features: [
+      '6 basic compositions',
+      'Grid up to 6 posts',
+      '7 photos in repository',
+      '30-minute cooldown',
+      'Export with watermark',
+      'All harmonies and patterns',
+    ],
+    pro_features: [
+      'Unlimited basic compositions',
+      'Advanced composition (3 cr)',
+      'Grid up to 9 posts',
+      '12 photos in repository',
+      'Existing photos as context (6)',
+      'No cooldown',
+      'Clean export (no watermark)',
+      'History of 50 analyses',
+      'Photo score · Caption suggestion',
+    ],
+    studio_features: [
+      'Everything in Pro',
+      'Grid up to 18 posts',
+      '30 photos in repository',
+      'Unlimited history',
+      'Profile analysis (3 cr)',
+      'Visual mentor with suggestions',
+      'Photo score after advanced',
+    ],
     pro_monthly: '$4.99', pro_annual: '$3.49',
     studio_monthly: '$11.99', studio_annual: '$8.39',
   }
 }
 
-// Merge into base translations
 Object.keys(PRICING_EXTRA).forEach(lang => Object.assign(TRANSLATIONS[lang], PRICING_EXTRA[lang]))
 
 let billing = 'monthly'
@@ -262,7 +339,6 @@ function renderFAQ() {
 
 function toggleFAQ(i) { document.getElementById('faq-' + i).classList.toggle('open') }
 
-// Override setLang to re-render dynamic content
 function setLang(lang) {
   LANG = lang
   localStorage.setItem('grid-composer_lang', lang)
@@ -275,26 +351,21 @@ function setLang(lang) {
   document.documentElement.lang = lang
 }
 
-// ── Subscribe — calls Stripe checkout ────────────────
+// ── Subscribe ───────────────────────────────────────
 async function subscribe(plan) {
   const btn = document.getElementById('btn-' + plan)
-  btn.disabled = true
-  btn.textContent = '...'
-
+  btn.disabled = true; btn.textContent = '...'
   try {
     const { data: { session } } = await sb.auth.getSession()
     if (!session) { window.location.href = '/login?plan=' + plan; return }
-
     const res  = await fetch('/api/checkout', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session.access_token },
       body: JSON.stringify({ plan, interval: billing })
     })
     const data = await res.json()
-
-    if (data.url) {
-      window.location.href = data.url
-    } else {
+    if (data.url) window.location.href = data.url
+    else {
       alert(data.error || 'Erro ao iniciar checkout.')
       btn.disabled = false
       btn.textContent = LANG === 'en' ? `Subscribe ${plan.charAt(0).toUpperCase()+plan.slice(1)}` : `Assinar ${plan.charAt(0).toUpperCase()+plan.slice(1)}`
@@ -305,22 +376,7 @@ async function subscribe(plan) {
   }
 }
 
-// Check for payment result in URL
-const params = new URLSearchParams(window.location.search)
-if (params.get('payment') === 'success') {
-  const banner = document.createElement('div')
-  banner.style.cssText = 'background:#f0fdf4;border:1px solid #86efac;color:#166534;padding:12px 24px;text-align:center;font-size:14px;font-weight:600'
-  banner.textContent = '✓ Pagamento confirmado! Bem-vindo ao Grid Composer Pro.'
-  document.body.insertBefore(banner, document.body.firstChild)
-}
-if (params.get('credits_added')) {
-  const banner = document.createElement('div')
-  banner.style.cssText = 'background:#f0fdf4;border:1px solid #86efac;color:#166534;padding:12px 24px;text-align:center;font-size:14px;font-weight:600'
-  banner.textContent = `✦ ${params.get('credits_added')} créditos adicionados ao seu saldo!`
-  document.body.insertBefore(banner, document.body.firstChild)
-}
-
-// ── Buy credit packs ──────────────────────────────────
+// ── Buy credit packs ────────────────────────────────
 async function buyPack(pack) {
   const btn = document.getElementById('btn-' + pack)
   if (btn) { btn.disabled = true; btn.textContent = '...' }
@@ -333,12 +389,66 @@ async function buyPack(pack) {
       body: JSON.stringify({ pack })
     })
     const data = await res.json()
-    if (data.url) { window.location.href = data.url }
+    if (data.url) window.location.href = data.url
     else { alert(data.error || 'Erro ao iniciar checkout.'); if (btn) { btn.disabled=false; btn.textContent='Comprar' } }
   } catch(e) {
     alert('Erro de conexão.')
     if (btn) { btn.disabled=false; btn.textContent='Comprar' }
   }
+}
+
+// ── Redeem coupon ───────────────────────────────────
+async function redeemCoupon() {
+  const code = document.getElementById('coupon-code').value.trim()
+  const btn  = document.getElementById('coupon-btn')
+  const msg  = document.getElementById('coupon-msg')
+  if (!code) { showCouponMsg('Insira um código de cupom.', 'error'); return }
+  btn.disabled = true; btn.textContent = '...'
+  try {
+    const { data: { session } } = await sb.auth.getSession()
+    if (!session) { window.location.href = '/login'; return }
+    const res = await fetch('/api/redeem-coupon', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session.access_token },
+      body: JSON.stringify({ code })
+    })
+    const data = await res.json()
+    if (res.ok && data.success) {
+      const expires = new Date(data.expires_at)
+      const days = Math.ceil((expires - Date.now()) / (1000*60*60*24))
+      showCouponMsg(`${data.message} Expira em ${days} dia${days>1?'s':''}.`, 'success')
+      // Disable button after success
+      btn.textContent = '✓ Ativado'
+      btn.disabled = true
+    } else {
+      showCouponMsg(data.error || 'Erro ao ativar cupom.', 'error')
+      btn.disabled = false; btn.textContent = 'Ativar'
+    }
+  } catch(e) {
+    showCouponMsg('Erro de conexão.', 'error')
+    btn.disabled = false; btn.textContent = 'Ativar'
+  }
+}
+
+function showCouponMsg(text, type) {
+  const el = document.getElementById('coupon-msg')
+  el.textContent = text
+  el.className = 'coupon-msg show ' + type
+}
+
+// ── Payment result banners ──────────────────────────
+const params = new URLSearchParams(window.location.search)
+if (params.get('payment') === 'success') {
+  const banner = document.createElement('div')
+  banner.style.cssText = 'background:#f0fdf4;border:1px solid #86efac;color:#166534;padding:12px 24px;text-align:center;font-size:14px;font-weight:600'
+  banner.textContent = '✓ Pagamento confirmado! Bem-vindo ao Grid Composer.'
+  document.body.insertBefore(banner, document.body.firstChild)
+}
+if (params.get('credits_added')) {
+  const banner = document.createElement('div')
+  banner.style.cssText = 'background:#f0fdf4;border:1px solid #86efac;color:#166534;padding:12px 24px;text-align:center;font-size:14px;font-weight:600'
+  banner.textContent = `✦ ${params.get('credits_added')} créditos adicionados ao seu saldo!`
+  document.body.insertBefore(banner, document.body.firstChild)
 }
 
 setLang(LANG)
