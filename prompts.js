@@ -1,8 +1,7 @@
 // prompts.js — Prompt templates for AI composition
-// Extraído do compose.js para facilitar iteração e versionamento.
-// Alterar o prompt aqui não exige tocar na lógica de composição.
+// Existing photos (já postadas) são contexto — IA só preenche novos posts.
 
-function buildPrompt(H, P, kw, kc, colorCtx, igCtx, size, totalPhotos, isAdvanced = false) {
+function buildPrompt(H, P, kw, kc, colorCtx, existingCtx, size, totalPhotos, isAdvanced = false) {
   const axis = CONTRAST_AXES.find(a => a.id === selC)
   const kelvinLine = axis?.useKelvin
     ? `Kelvin-Q=ate${kw}K Kelvin-F=acima${kc}K`
@@ -19,15 +18,25 @@ function buildPrompt(H, P, kw, kc, colorCtx, igCtx, size, totalPhotos, isAdvance
     gridMap += `Linha ${r + 1}: ${rowSlots.join(' | ')}\n`
   }
 
+  // Seção de contexto do feed existente
+  const existingSection = existingCtx
+    ? `\nFEED EXISTENTE (contexto visual — NÃO atribuir, apenas considerar para continuidade):
+${existingCtx}
+As fotos existentes ficam ABAIXO dos novos posts no grid do Instagram.
+Os novos posts (slots acima) devem criar continuidade visual com essas fotos existentes.
+`
+    : ''
+
   return `Especialista em color grading e grid Instagram outdoor/adventure.
 
 REGRA CRÍTICA: slot 1 = PRIMEIRO a ser postado = posição SUPERIOR DIREITA do grid.
+Novos posts ficam NO TOPO do grid. Fotos existentes ficam embaixo (contexto).
 
-MAPA DO GRID (${size} posts, ${rows} linha${rows > 1 ? 's' : ''}):
+MAPA DO GRID — NOVOS POSTS (${size} posts, ${rows} linha${rows > 1 ? 's' : ''}):
 ${gridMap}
-CORES K-MEANS LAB:
-${colorCtx}${igCtx}
-
+FOTOS CANDIDATAS (repositório) — k-means LAB:
+${colorCtx}
+${existingSection}
 CONFIG: Harmonia=${H.name} Padrao=${P.name} ${kelvinLine} Posts=${size}
 ${axis?.prompt || ''}
 
@@ -37,6 +46,7 @@ NUNCA coloque dois slots com ACENTO_* adjacentes (horizontal ou vertical).
 Alterne sempre: SEM_ACENTO · ACENTO · SEM_ACENTO · ACENTO.
 O acento é o critério primário — antes de temperatura geral, antes de tipo de sujeito.
 Fotos NEUTRO ou FRIO sem acento são os separadores naturais entre acentos quentes.
+${existingCtx ? 'Considere TAMBÉM adjacência vertical entre o último slot novo e a primeira foto existente.' : ''}
 
 REGRA DE DIVERSIDADE VISUAL:
 1. Nunca coloque dois slots com pessoa como sujeito dominante lado a lado.
@@ -49,7 +59,8 @@ RETORNE APENAS JSON SEM MARKDOWN:
 {"plan":[{"slot":1,"photo":N,"grid_position":"top-right","temp":"cool","kelvin":"7500K","contrast_role":"frio","type":"TIPO","harmony_role":"papel na harmonia","reason":"max 70 chars","preset":"ajustes PS/LR max 60 chars"}],"overview":"1 frase","harmony_note":"1 frase com eixo usado"}
 
 Slots: ${Array.from({ length: size }, (_, i) => i + 1).join(', ')}
-Fotos: 1 a ${totalPhotos}`
+Fotos candidatas: 1 a ${totalPhotos}
+${existingCtx ? 'IMPORTANTE: atribua APENAS fotos candidatas (1 a ' + totalPhotos + ') aos slots. Fotos existentes são só contexto.' : ''}`
 }
 
 // Prompt para pré-análise visual (modo advanced)

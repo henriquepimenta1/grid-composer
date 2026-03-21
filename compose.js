@@ -15,14 +15,13 @@ const LOADING_TIPS = [
   '♟️ Graph 2-coloring garante que acentos nunca fiquem adjacentes',
   '🔬 Fotos neutras funcionam como separadores entre acentos quentes',
   '📸 Slot +1 é sempre a primeira foto a ser postada',
+  '📌 Fotos existentes servem de contexto — a IA cria continuidade',
 ]
 
 function startLoadingExtras() {
   loadingStart = Date.now()
   const loading = document.getElementById('loading')
   if (!loading) return
-
-  // Injeta container de timer + tip (se ainda não existir)
   let extras = document.getElementById('ld-extras')
   if (!extras) {
     extras = document.createElement('div')
@@ -34,16 +33,12 @@ function startLoadingExtras() {
     loading.appendChild(extras)
   }
   extras.style.display = 'block'
-
-  // Timer — atualiza a cada segundo
   const timerEl = document.getElementById('ld-timer')
   if (timerEl) timerEl.textContent = '⏱ 0s'
   loadingTimer = setInterval(() => {
     const elapsed = Math.floor((Date.now() - loadingStart) / 1000)
     if (timerEl) timerEl.textContent = `⏱ ${elapsed}s`
   }, 1000)
-
-  // Tips rotativas — troca a cada 4s com fade
   const tipEl = document.getElementById('ld-tip')
   let tipIdx = Math.floor(Math.random() * LOADING_TIPS.length)
   if (tipEl) tipEl.textContent = LOADING_TIPS[tipIdx]
@@ -89,6 +84,8 @@ async function compose(mode = 'basic') {
     const P  = PATTERNS.find(p => p.id === selP)
     const kw = document.getElementById('kw').value
     const kc = document.getElementById('kc').value
+
+    // Context from candidate photos (repository)
     const colorCtx = repoPhotos.map((p,i) => {
       const accentColor = p.hasAccent ? (p.colors||[]).find(c => {
         const r=parseInt(c.hex.slice(1,3),16), g=parseInt(c.hex.slice(3,5),16), b=parseInt(c.hex.slice(5,7),16)
@@ -103,9 +100,15 @@ async function compose(mode = 'basic') {
       const lumWord = lumAvg > 60 ? 'CLARO' : lumAvg > 35 ? 'MEDIO' : 'ESCURO'
       return `FOTO ${i+1}: kelvin~${p.kelvin}K temp=${tempWord} lum=${lumWord} acento=${accentDesc} cores=[${(p.colors||[]).map(c=>c.hex+'('+c.pct+'%)').join(' ')}]`
     }).join('\n')
-    const igCtx = igPhotos.length > 0
-      ? '\nULTIMAS 3 FOTOS DO GRID:\n' + igPhotos.map((p,i) => `IG${i+1}: kelvin~${p.kelvin}K cores=[${(p.colors||[]).map(c=>c.hex+'('+c.pct+'%)').join(' ')}]`).join('\n')
+
+    // Context from existing feed photos (replaces igPhotos)
+    const existingCtx = existingPhotos.length > 0
+      ? existingPhotos.map((p,i) => {
+          const tempWord = p.kelvin <= 3500 ? 'MUITO_QUENTE' : p.kelvin <= 4500 ? 'QUENTE' : p.kelvin <= 6000 ? 'NEUTRO' : p.kelvin <= 8000 ? 'FRIO' : 'MUITO_FRIO'
+          return `EXISTENTE ${i+1}: kelvin~${p.kelvin}K temp=${tempWord} cores=[${(p.colors||[]).map(c=>c.hex+'('+c.pct+'%)').join(' ')}]`
+        }).join('\n')
       : ''
+
     let visualCtx = ''
     if (isAdvanced) {
       step(2); document.getElementById('ldtxt').textContent = 'Lendo as fotos...'
@@ -140,8 +143,16 @@ async function compose(mode = 'basic') {
       content.push({ type:'image', source:{ type:'base64', media_type:'image/jpeg', data:p.compressed.split(',')[1] } })
       content.push({ type:'text', text:`[FOTO ${i+1}]` })
     })
+    // Include existing photos as visual context (IA sees but doesn't assign)
+    if (existingPhotos.length > 0) {
+      content.push({ type:'text', text:'[FOTOS EXISTENTES NO FEED — CONTEXTO]' })
+      existingPhotos.forEach((p,i) => {
+        content.push({ type:'image', source:{ type:'base64', media_type:'image/jpeg', data:p.compressed.split(',')[1] } })
+        content.push({ type:'text', text:`[EXISTENTE ${i+1}]` })
+      })
+    }
     step(isAdvanced ? 4 : 3)
-    content.push({ type:'text', text: buildPrompt(H,P,kw,kc,colorCtx+visualCtx,igCtx,planSize,repoPhotos.length,isAdvanced) })
+    content.push({ type:'text', text: buildPrompt(H,P,kw,kc,colorCtx+visualCtx,existingCtx,planSize,repoPhotos.length,isAdvanced) })
 
     const res = await fetch('/api/analyze', {
       method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+authToken},
@@ -269,7 +280,6 @@ function applyReorder(scoredPhotos) {
     })
   } else {
     const colorMap = buildPatternMap(rows, groupA.length, size, selP)
-
     let aiA = 0, aiB = 0
     visualToSlot.forEach((slotNum, vi) => {
       const wantsGroup = colorMap[vi] || 'B'

@@ -29,16 +29,17 @@ const CONTRAST_AXES = [
 
 // ── Global state ──────────────────────────────────────
 let selH = 'custom', selP = 'free', selC = 'combined'
-let repository  = []              // {file, dataUrl, cropUrl, compressed, colors, kelvin}
-let feedSlots   = [null,null,null] // indices into repository
-let igPhotos    = [], planSize = 3, igMode = 'skip'
-let currentPlan  = []
-let originalPlan = []
-let currentHarmony = null
-let isManualMode   = false
-let repoDragIdx = null, dragSource = null
-let slotTargetIdx = null, ugDragging = false, ugDragIdx = null
-let gridDragSlot = null
+let repository      = []              // {file, dataUrl, cropUrl, compressed, colors, kelvin, hasAccent}
+let existingPhotos  = []              // {dataUrl, compressed, colors, kelvin, hasAccent} — fotos já postadas (contexto)
+let feedSlots       = [null,null,null] // indices into repository — SÓ para novos posts
+let planSize        = 3               // quantos novos posts planejar (1, 2, 3, 6, 9...)
+let currentPlan     = []
+let originalPlan    = []
+let currentHarmony  = null
+let isManualMode    = false
+let repoDragIdx     = null, dragSource = null
+let slotTargetIdx   = null, ugDragging = false, ugDragIdx = null
+let gridDragSlot    = null
 let currentUserPlan = 'free'  // cached from last loadCredits
 
 // Legacy alias

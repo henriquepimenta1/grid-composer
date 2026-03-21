@@ -1,4 +1,7 @@
 // feed.js — Feed grid, repository, drag/drop, crop
+// Grid has two zones:
+//   TOP:    new post slots (planSize) — IA fills from repository
+//   BOTTOM: existing photos (context) — locked, just for IA context
 
 // ── Repository ────────────────────────────────────────
 function setupDrop() {
@@ -36,7 +39,6 @@ async function handleFiles(files) {
   const max = maxRepoSize()
   const remaining = max - repository.length
   const batch = toAdd.slice(0, remaining)
-
   for (let i = 0; i < batch.length; i++) {
     setUploadProgress(i + 1, batch.length)
     const file = batch[i]
@@ -80,11 +82,57 @@ function removeFromRepo(i) {
   renderRepo(); renderUploadGrid(); updateActionButtons()
 }
 
-// ── Feed grid ─────────────────────────────────────────
+// ── Existing photos (feed context) ────────────────────
+async function handleExistingFiles(files) {
+  const toAdd = Array.from(files).filter(f => f.type.startsWith('image/'))
+  if (!toAdd.length) return
+  const max = 12  // max existing context photos
+  const remaining = max - existingPhotos.length
+  const batch = toAdd.slice(0, remaining)
+  for (const file of batch) {
+    const raw = await readFile(file)
+    const img = await loadImg(raw)
+    const colors = extractColors(img, 5)
+    const kelvin = estimateKelvin(colors)
+    const hasAccent = detectAccent(colors)
+    const compressed = await compressImage(raw, 800, 0.75)
+    existingPhotos.push({ dataUrl: raw, compressed, colors, kelvin, hasAccent })
+  }
+  renderUploadGrid(); updateActionButtons()
+}
+
+function removeExisting(i) {
+  existingPhotos.splice(i, 1)
+  renderUploadGrid(); updateActionButtons()
+}
+
+// ── Dynamic row management ────────────────────────────
+function addNewRow() {
+  planSize += 3
+  while (feedSlots.length < planSize) feedSlots.push(null)
+  renderUploadGrid(); updateActionButtons()
+  // Update tab active state
+  document.querySelectorAll('.feed-tab').forEach(t => t.classList.remove('active'))
+}
+
+function removeLastRow() {
+  if (planSize <= 1) return
+  const newSize = Math.max(1, planSize - 3)
+  // Clear slots being removed
+  for (let i = newSize; i < planSize; i++) feedSlots[i] = null
+  planSize = newSize
+  feedSlots.length = planSize
+  renderUploadGrid(); updateActionButtons()
+  document.querySelectorAll('.feed-tab').forEach(t => t.classList.remove('active'))
+}
+
+// ── Feed grid — two zones ─────────────────────────────
 function renderUploadGrid() {
   const grid = document.getElementById('upload-grid')
   if (!grid) return
   const cells = []
+
+  // ── Zone 1: New post slots (top) ────────────────────
   for (let i = 0; i < planSize; i++) {
     const repoIdx = feedSlots[i]
     const photo = repoIdx !== null && repoIdx !== undefined ? repository[repoIdx] : null
@@ -116,10 +164,59 @@ function renderUploadGrid() {
         </div>`)
     }
   }
+
+  // ── Add/Remove row buttons ──────────────────────────
+  const canRemove = planSize > 3
+  cells.push(`
+    <div style="grid-column:1/-1;display:flex;gap:6px;margin:4px 0">
+      <button class="existing-add-btn" onclick="addNewRow()" style="flex:1">+ Adicionar linha</button>
+      ${canRemove ? `<button class="existing-add-btn" onclick="removeLastRow()" style="flex:0 0 auto;color:var(--red);border-color:#fca5a5">− Remover</button>` : ''}
+    </div>`)
+
+  // ── Separator ───────────────────────────────────────
+  cells.push(`
+    <div style="grid-column:1/-1;display:flex;align-items:center;gap:8px;margin:6px 0 2px">
+      <div style="flex:1;height:1px;background:var(--border-light)"></div>
+      <span style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;white-space:nowrap">📌 Feed existente · contexto</span>
+      <div style="flex:1;height:1px;background:var(--border-light)"></div>
+    </div>`)
+
+  // ── Zone 2: Existing photos (bottom, context) ───────
+  if (existingPhotos.length > 0) {
+    existingPhotos.forEach((p, i) => {
+      const pal = (p.colors||[]).slice(0,3).map(c=>`<div style="flex:1;background:${c.hex}"></div>`).join('')
+      cells.push(`
+        <div class="ugslot existing-slot">
+          <img src="${p.dataUrl}" style="opacity:.7">
+          <button class="ugslot-del" style="display:flex" onclick="event.stopPropagation();removeExisting(${i})" title="Remover">✕</button>
+          <div class="existing-pin">📌</div>
+          <div class="ugslot-pal">${pal}</div>
+        </div>`)
+    })
+    // Pad to complete the last row of 3
+    const remainder = existingPhotos.length % 3
+    if (remainder > 0) {
+      for (let i = 0; i < 3 - remainder; i++) {
+        cells.push(`<div style="aspect-ratio:4/5"></div>`)
+      }
+    }
+  }
+
+  // ── Upload existing photos button ───────────────────
+  const maxExisting = 12
+  if (existingPhotos.length < maxExisting) {
+    cells.push(`
+      <div style="grid-column:1/-1;margin-top:2px">
+        <button class="existing-add-btn" onclick="document.getElementById('existing-fin').click()">
+          📎 Adicionar fotos já postadas ${existingPhotos.length > 0 ? `(${existingPhotos.length}/12)` : ''}
+        </button>
+      </div>`)
+  }
+
   grid.innerHTML = cells.join('')
 }
 
-// ── Drag/drop ─────────────────────────────────────────
+// ── Drag/drop (only for new post slots) ───────────────
 function slotDragOver(e)  { e.preventDefault(); e.currentTarget.classList.add('drop-hover') }
 function slotDragLeave(e) { e.currentTarget.classList.remove('drop-hover') }
 function slotDropFromRepo(e, slotIdx) {
@@ -174,17 +271,7 @@ async function handleSlotFile(files) {
 }
 function clearSlot(i) { feedSlots[i]=null; renderUploadGrid(); updateActionButtons() }
 
-async function handleIG(files) {
-  igPhotos=[]
-  const g=document.getElementById('ig-grid'); if (!g) return
-  g.innerHTML=''
-  for (const f of Array.from(files).slice(0,3)) {
-    const url=await readFile(f), img=await loadImg(url)
-    igPhotos.push({ dataUrl:url, colors:extractColors(img,5), kelvin:estimateKelvin(extractColors(img,5)) })
-    const c=document.createElement('div'); c.className='igmc'; c.innerHTML=`<img src="${url}">`; g.appendChild(c)
-  }
-  while (g.children.length<3) { const c=document.createElement('div'); c.className='igmc'; c.innerHTML='<div class="igmc-e">+</div>'; g.appendChild(c) }
-}
+// ── Legacy: handleIG removed — replaced by handleExistingFiles ──
 
 // ── Crop modal ────────────────────────────────────────
 let cropRepoIdx=null,cropOffX=0,cropOffY=0,cropZoomVal=100

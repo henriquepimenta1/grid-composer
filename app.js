@@ -62,21 +62,13 @@ function kUpdate() {
 
 function setPlan(n, btn) {
   planSize=n
+  feedSlots = Array(planSize).fill(null)
+  // Keep existing assignments where possible
   document.querySelectorAll('.feed-tab').forEach(t=>t.classList.remove('active'))
-  btn.classList.add('active')
-  while (feedSlots.length<n) feedSlots.push(null)
-  feedSlots.length=n
+  if (btn) btn.classList.add('active')
   renderUploadGrid(); updateActionButtons()
 }
 function setPlanM(n, btn) { setPlan(n,btn) }
-
-function setIG(mode) {
-  igMode=mode
-  document.getElementById('ig-skip').className='ig-opt'+(mode==='skip'?' on':'')
-  document.getElementById('ig-up-opt').className='ig-opt'+(mode==='upload'?' on':'')
-  document.getElementById('ig-up-area').style.display=mode==='upload'?'block':'none'
-  document.getElementById('ig-note').style.display=mode==='skip'?'block':'none'
-}
 
 function setStatus(msg, cls) {
   const el=document.getElementById('exts'); if (!el) return
@@ -91,7 +83,6 @@ function showErr(msg) {
 }
 function hideErr() { document.getElementById('err').classList.remove('show') }
 
-// FIX 2.3: Validação repo vs planSize + feedback visual
 function updateActionButtons() {
   const repoCount = repository.length
   const hasEnough = repoCount >= planSize
@@ -102,13 +93,11 @@ function updateActionButtons() {
   const costEl = document.getElementById('credit-cost')
   const expBtn = document.getElementById('export-btn')
 
-  // Botões de compor: só habilitam se há fotos suficientes para o grid
   if (go)    go.disabled    = !hasEnough
   if (goAdv) goAdv.disabled = !hasEnough
 
   if (expBtn) expBtn.style.display = (hasFeed || currentPlan.length > 0) ? 'block' : 'none'
 
-  // Feedback: mostrar quantas fotos faltam
   if (costEl) {
     if (!hasEnough && repoCount > 0) {
       const missing = planSize - repoCount
@@ -121,14 +110,17 @@ function updateActionButtons() {
       costEl.textContent = 'temperatura · paleta · harmonia · 1 crédito'
       costEl.style.color = ''
     } else {
-      // Se updateCreditsUI existe, ela cuida do texto — só resetar a cor
       costEl.style.color = ''
     }
   }
+
+  // Update new post count display
+  const countEl = document.getElementById('new-post-count')
+  if (countEl) countEl.textContent = `${planSize} novo${planSize > 1 ? 's' : ''}`
 }
 
 function clearAll() {
-  repository=[]; feedSlots=Array(planSize).fill(null); igPhotos=[]; isManualMode=false
+  repository=[]; feedSlots=Array(planSize).fill(null); existingPhotos=[]; isManualMode=false
   renderRepo(); renderUploadGrid()
   document.getElementById('fin').value=''
   document.getElementById('results').classList.remove('show')
@@ -158,7 +150,6 @@ function renderResults(data, H) {
   })
   renderUploadGrid()
 
-  // Build palette from all colors in plan
   const allColors=[]
   currentPlan.forEach(s => {
     const p=repository[s.photo-1]
@@ -166,7 +157,6 @@ function renderResults(data, H) {
   })
   const palHtml=allColors.slice(0,12).map(hex=>`<div class="ppal-c" style="background:${hex}"></div>`).join('')
 
-  // Temperature distribution badge
   const warm = currentPlan.filter(s=>s.temp==='warm').length
   const cool = currentPlan.filter(s=>s.temp==='cool').length
   const total = currentPlan.length
@@ -210,7 +200,6 @@ function renderResults(data, H) {
   results.classList.add('show')
   document.querySelector('.main').scrollTo({top:0,behavior:'smooth'})
 
-  // Show export button
   const expBtn = document.getElementById('export-btn')
   if (expBtn) expBtn.style.display = 'block'
 

@@ -144,22 +144,10 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
 .kdiff-row{text-align:center;font-size:11px;color:var(--text3);margin-top:4px}
 .kdiff-v{font-weight:700;color:var(--text2)}
 
-/* IG context */
-.ig-toggle{display:flex;gap:4px;margin-bottom:10px}
-.ig-opt{flex:1;padding:6px;border-radius:var(--r-sm);border:1.5px solid var(--border);background:transparent;cursor:pointer;font-size:12px;font-weight:600;color:var(--text2);transition:all .15s;text-align:center}
-.ig-opt.on{border-color:var(--text);background:var(--text);color:white}
-.ig-mini{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;border-radius:var(--r-sm);overflow:hidden;margin-bottom:8px}
-.igmc{aspect-ratio:1;background:var(--border-light);overflow:hidden}
-.igmc img{width:100%;height:100%;object-fit:cover}
-.igmc-e{display:flex;align-items:center;justify-content:center;height:100%;font-size:18px;color:var(--text3)}
-.ig-note{font-size:11px;color:var(--text3);line-height:1.55}
-.ig-up-btn{width:100%;margin-top:8px;padding:7px;background:var(--bg);border:1.5px dashed var(--border);border-radius:var(--r-sm);cursor:pointer;font-size:12px;font-weight:600;color:var(--text2);transition:all .15s;font-family:var(--font)}
-.ig-up-btn:hover{border-color:var(--blue);color:var(--blue)}
-
 /* MAIN */
 .main{flex:1;overflow-y:auto;overflow-x:hidden;padding:16px;display:flex;flex-direction:column;gap:12px;min-height:0}
 
-/* Feed panel — proportional, not too big, not too small */
+/* Feed panel */
 .feed-panel{max-width:480px;width:100%}
 @media(max-width:768px){.feed-panel{max-width:100%}}
 
@@ -251,6 +239,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
 .pp-caption{padding:0 16px 6px;font-size:13px;line-height:1.5}
 .pp-caption strong{font-weight:700}
 .pp-harmony{padding:0 16px 14px;font-size:12px;color:var(--text3)}
+
 /* Upload grid — 4:5 ratio, Instagram portrait */
 .upload-grid{
   display:grid;grid-template-columns:repeat(3,1fr);
@@ -286,6 +275,20 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
 }
 .ugslot-pal{position:absolute;bottom:0;left:0;right:0;height:2px;display:flex}
 .ugslot-drag{opacity:.4}
+
+/* Existing photo slots (locked, context only) */
+.existing-slot{cursor:default!important;pointer-events:none;position:relative}
+.existing-slot:hover{outline:none!important;background:transparent!important}
+.existing-slot .ugslot-del{display:flex!important;pointer-events:auto;background:rgba(0,0,0,.5)}
+.existing-pin{position:absolute;top:4px;left:4px;font-size:10px;z-index:2;filter:drop-shadow(0 1px 2px rgba(0,0,0,.5))}
+/* Add/remove row buttons */
+.existing-add-btn{
+  width:100%;padding:8px;border-radius:var(--r-sm);
+  border:1.5px dashed var(--border);background:transparent;
+  cursor:pointer;font-size:12px;font-weight:600;
+  color:var(--text2);transition:all .15s;font-family:var(--font);
+}
+.existing-add-btn:hover{border-color:var(--blue);color:var(--blue);background:#f0f8ff}
 
 /* Compact dz when grid is shown */
 .dz-small{padding:12px;margin-bottom:10px}
@@ -415,6 +418,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
   #lang-toggle{display:none!important}
   .howto-btn-label{display:none}
 }
+
 /* ── HISTORY MODAL ── */
 .history-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);backdrop-filter:blur(6px);z-index:900;align-items:flex-start;justify-content:center;padding:24px 16px;overflow-y:auto}
 .history-modal.open{display:flex}
@@ -484,8 +488,6 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
   transition:all .15s;
 }
 .howto-close:hover{background:var(--border-light);color:var(--text)}
-
-/* Step content */
 .howto-content{
   padding:24px 28px 8px;
   min-height:260px;
@@ -500,8 +502,6 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
   background:var(--bg);border-radius:8px;border-left:3px solid var(--blue);
   font-size:12px;color:var(--text2);line-height:1.5;
 }
-
-/* Dots */
 .howto-dots{
   display:flex;justify-content:center;gap:6px;
   padding:16px 0 8px;
@@ -512,8 +512,6 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
 }
 .ht-dot.active{background:var(--text);transform:scale(1.2)}
 .ht-dot.done{background:var(--text3)}
-
-/* Nav */
 .howto-nav{
   display:flex;align-items:center;justify-content:space-between;
   padding:12px 20px 20px;gap:8px;
@@ -527,6 +525,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
 .ht-prev:hover{border-color:var(--text);color:var(--text)}
 .ht-next{background:var(--text);border:1.5px solid var(--text);color:white;flex:1;max-width:160px}
 .ht-next:hover{opacity:.85}
+
 /* ── REPOSITÓRIO ── */
 .repo-grid{display:flex;flex-wrap:wrap;gap:4px;min-height:60px}
 .repo-thumb{width:64px;height:64px;border-radius:6px;position:relative;overflow:hidden;cursor:grab;flex-shrink:0;border:1.5px solid transparent;transition:all .15s}
@@ -580,7 +579,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
 }
 .crop-modal.open{display:flex}
 .crop-frame{
-  width:280px;height:350px; /* 4:5 */
+  width:280px;height:350px;
   overflow:hidden;border-radius:8px;position:relative;
   cursor:move;user-select:none;box-shadow:0 0 0 2px white;
 }
@@ -600,7 +599,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
 .crop-btn-cancel{background:rgba(255,255,255,.15);color:white}
 .crop-hint{font-size:12px;color:rgba(255,255,255,.5);text-align:center}
 
-/* ── PALETTE MODAL (large hex) ── */
+/* ── PALETTE MODAL ── */
 .palette-modal{
   display:none;position:fixed;inset:0;
   background:rgba(0,0,0,.6);backdrop-filter:blur(6px);
@@ -657,7 +656,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
 .plan-tabs-mobile{display:none}
 
 canvas{display:none}
-#fin,#ig-fin{display:none}
+#fin{display:none}
 </style>
 </head>
 <body>
@@ -667,7 +666,6 @@ canvas{display:none}
   <div class="logo">Grid Composer</div>
   <div class="topbar-right">
     <span class="handle" id="user-handle" style="display:none"></span>
-    <!-- Instagram @ handle -->
     <div class="ig-handle-wrap" title="Seu @ do Instagram">
       <span class="ig-handle-at">@</span>
       <input class="ig-handle-input" id="ig-handle-topbar" type="text"
@@ -718,7 +716,7 @@ canvas{display:none}
 <!-- APP BODY (hidden until auth confirmed) -->
 <div class="app-body" id="app-body" style="visibility:hidden">
 
-  <!-- SIDEBAR -->
+  <!-- SIDEBAR — bloco IG removido -->
   <aside class="sidebar">
     <div class="sb-section">
       <div class="sb-title" data-i18n="harmony">Harmonia</div>
@@ -772,25 +770,6 @@ canvas{display:none}
       </div>
       <div class="kdiff-row">Contraste: <span class="kdiff-v" id="kdiff">4300K</span></div>
     </div>
-    <div class="sb-section">
-      <div class="sb-title" data-i18n="current_grid">Grid atual (contexto)</div>
-      <div class="ig-toggle">
-        <div class="ig-opt on" id="ig-skip"   onclick="setIG('skip')"   data-i18n="ignore">Ignorar</div>
-        <div class="ig-opt"   id="ig-up-opt" onclick="setIG('upload')" data-i18n="last_3">Últimas 3</div>
-      </div>
-      <div id="ig-note">
-        <div class="ig-note" data-i18n="ig_note">Upload das últimas 3 fotos do seu grid para melhorar a continuidade.</div>
-      </div>
-      <div id="ig-up-area" style="display:none">
-        <div class="ig-mini" id="ig-grid">
-          <div class="igmc"><div class="igmc-e">+</div></div>
-          <div class="igmc"><div class="igmc-e">+</div></div>
-          <div class="igmc"><div class="igmc-e">+</div></div>
-        </div>
-        <button class="ig-up-btn" onclick="document.getElementById('ig-fin').click()" data-i18n="select_photos">📎 Selecionar fotos</button>
-        <input type="file" id="ig-fin" accept="image/*" multiple onchange="handleIG(this.files)">
-      </div>
-    </div>
   </aside>
 
   <!-- MAIN -->
@@ -807,7 +786,6 @@ canvas{display:none}
       </div>
       <div class="up-body">
         <div class="repo-grid" id="repo-grid">
-          <!-- thumbs rendered by JS -->
           <div class="repo-add" id="repo-add" onclick="document.getElementById('fin').click()">
             <span style="font-size:22px;color:var(--text3)">+</span>
             <span style="font-size:11px;color:var(--text3);margin-top:2px">Adicionar</span>
@@ -828,20 +806,19 @@ canvas{display:none}
             <button class="feed-tab active" onclick="setPlan(3,this)">3</button>
             <button class="feed-tab" onclick="setPlan(6,this)">6</button>
             <button class="feed-tab" onclick="setPlan(9,this)">9</button>
-            <!-- Studio-only tabs, hidden by default -->
             <div id="feed-tabs-extra" style="display:none;gap:3px;align-items:center">
               <button class="feed-tab" onclick="setPlan(12,this)">12</button>
               <button class="feed-tab" onclick="setPlan(15,this)">15</button>
               <button class="feed-tab" onclick="setPlan(18,this)">18</button>
             </div>
           </div>
-          <span style="font-size:11px;color:var(--text3)" id="feed-hint">arraste do repositório ou clique no +</span>
+          <span style="font-size:11px;color:var(--text3)" id="feed-hint">novos posts · arraste do repositório</span>
         </div>
       </div>
       <div class="up-body" style="padding-bottom:10px">
         <div class="upload-grid" id="upload-grid"></div>
         <input type="file" id="slot-fin" accept="image/*" style="display:none" onchange="handleSlotFile(this.files)">
-        <!-- Export button below grid -->
+        <input type="file" id="existing-fin" accept="image/*" multiple style="display:none" onchange="handleExistingFiles(this.files)">
         <button id="export-btn" onclick="exportGrid()" title="Exportar grid como imagem"
           style="display:none;width:100%;margin-top:8px;padding:8px;border-radius:var(--r-sm);
           border:1.5px solid var(--border);background:transparent;cursor:pointer;
@@ -858,8 +835,6 @@ canvas{display:none}
     <div class="mode-panel" id="mode-panel">
       <div class="mode-hint">Organizar o feed</div>
       <div class="mode-btns">
-
-        <!-- Compor por cores -->
         <button class="mode-btn mode-btn-ai" id="go" onclick="compose('basic')" disabled>
           <span class="mode-btn-icon">✦</span>
           <div>
@@ -867,8 +842,6 @@ canvas{display:none}
             <div class="mode-btn-sub" id="credit-cost">temperatura · paleta · harmonia · 1 crédito</div>
           </div>
         </button>
-
-        <!-- Composição avançada -->
         <button class="mode-btn mode-btn-advanced" id="go-advanced" onclick="compose('advanced')" disabled>
           <span class="mode-btn-icon">✦✦</span>
           <div>
@@ -876,7 +849,6 @@ canvas{display:none}
             <div class="mode-btn-sub">leitura visual completa · 2 créditos</div>
           </div>
         </button>
-
       </div>
     </div>
 
@@ -906,7 +878,6 @@ canvas{display:none}
   </main>
 </div>
 
-<!-- HOW TO USE MODAL -->
 <!-- HOWTO MODAL -->
 <div id="howto-modal" class="howto-overlay" onclick="if(event.target===this)closeHowTo()">
   <div class="howto-box">
@@ -960,22 +931,18 @@ canvas{display:none}
         <span class="pm-pos" id="pm-pos"></span>
         <span class="pm-temp" id="pm-temp"></span>
       </div>
-
       <div class="pm-section">
         <div class="pm-label">Paleta de cores <span style="font-size:10px;color:var(--text3);font-weight:400">· clique para copiar</span></div>
         <div class="pm-palette" id="pm-palette"></div>
       </div>
-
       <div class="pm-section">
         <div class="pm-label">Por que este slot</div>
         <div class="pm-value" id="pm-reason"></div>
       </div>
-
       <div class="pm-section">
         <div class="pm-label">Papel na harmonia</div>
         <div class="pm-harmony" id="pm-harmony"></div>
       </div>
-
       <div style="display:flex;gap:8px;margin-top:4px">
         <button class="pm-close" style="flex:1;color:var(--red);border-color:#fca5a5" onclick="removeSlotPhoto()">🗑 Remover</button>
         <button class="pm-close" style="flex:1" onclick="closePhotoModal()">Fechar</button>
@@ -996,8 +963,6 @@ canvas{display:none}
       <button class="stab"        id="stab-security" onclick="switchSettingsTab('security')" data-i18n="security">Segurança</button>
       <button class="stab"        id="stab-plan"     onclick="switchSettingsTab('plan')"     data-i18n="plan_tab">Plano</button>
     </div>
-
-    <!-- Profile -->
     <div class="spanel active" id="spanel-profile">
       <div class="sfield">
         <label class="slabel" data-i18n="name_label">Nome</label>
@@ -1024,8 +989,6 @@ canvas{display:none}
         <button class="sbtn sbtn-outline" id="save-email-btn" onclick="saveEmail()">Atualizar e-mail</button>
       </div>
     </div>
-
-    <!-- Security -->
     <div class="spanel" id="spanel-security">
       <div class="sfield">
         <label class="slabel" data-i18n="new_password">Nova senha</label>
@@ -1038,8 +1001,6 @@ canvas{display:none}
       <div class="smsg" id="pw-msg"></div>
       <button class="sbtn" id="save-pw-btn" onclick="savePassword()">Atualizar senha</button>
     </div>
-
-    <!-- Plan -->
     <div class="spanel" id="spanel-plan">
       <div class="plan-info-row">
         <div>
@@ -1071,10 +1032,11 @@ canvas{display:none}
 <script>
 document.addEventListener('DOMContentLoaded', async () => {
   setLang(LANG)
-  await initAuth()   // blocks until session verified — redirects to /login if not logged in
-  init()             // app init only runs if user is logged in
+  await initAuth()
+  init()
 })
 </script>
+
 <!-- BUY CREDITS MODAL -->
 <div id="buy-credits-modal" class="history-modal" onclick="if(event.target===this)closeBuyCredits()">
   <div class="history-box" style="max-width:400px">
@@ -1084,8 +1046,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     </div>
     <div style="padding:20px;display:flex;flex-direction:column;gap:10px">
       <p style="font-size:13px;color:var(--text2);margin-bottom:6px">Créditos não expiram e somam ao seu saldo atual.</p>
-
-      <!-- Pack 10 -->
       <div style="display:flex;align-items:center;justify-content:space-between;border:1.5px solid var(--border-light);border-radius:var(--r-sm);padding:14px 16px">
         <div>
           <div style="font-size:15px;font-weight:700">10 créditos</div>
@@ -1096,8 +1056,6 @@ document.addEventListener('DOMContentLoaded', async () => {
           <button id="buy-btn-pack10" class="sbtn" style="margin-top:6px;padding:6px 16px;font-size:12px" onclick="buyCredits('pack10')">Comprar</button>
         </div>
       </div>
-
-      <!-- Pack 30 -->
       <div style="display:flex;align-items:center;justify-content:space-between;border:1.5px solid var(--blue);border-radius:var(--r-sm);padding:14px 16px;background:#f0f8ff;position:relative">
         <div style="position:absolute;top:-10px;left:16px;background:var(--blue);color:white;font-size:10px;font-weight:700;padding:2px 8px;border-radius:100px">POPULAR</div>
         <div>
@@ -1109,8 +1067,6 @@ document.addEventListener('DOMContentLoaded', async () => {
           <button id="buy-btn-pack30" class="sbtn" style="margin-top:6px;padding:6px 16px;font-size:12px" onclick="buyCredits('pack30')">Comprar</button>
         </div>
       </div>
-
-      <!-- Pack 100 -->
       <div style="display:flex;align-items:center;justify-content:space-between;border:1.5px solid var(--border-light);border-radius:var(--r-sm);padding:14px 16px">
         <div>
           <div style="font-size:15px;font-weight:700">100 créditos</div>
@@ -1121,7 +1077,6 @@ document.addEventListener('DOMContentLoaded', async () => {
           <button id="buy-btn-pack100" class="sbtn" style="margin-top:6px;padding:6px 16px;font-size:12px" onclick="buyCredits('pack100')">Comprar</button>
         </div>
       </div>
-
       <p style="font-size:11px;color:var(--text3);text-align:center;margin-top:4px">Pagamento seguro via Stripe · sem assinatura</p>
     </div>
   </div>
@@ -1138,12 +1093,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   </div>
 </div>
 
-
 <!-- PLAYGROUND MODAL -->
 <div id="playground-modal" class="howto-overlay" onclick="if(event.target===this)closePlayground()" style="padding:16px">
   <div style="background:var(--white);border-radius:var(--r);width:100%;max-width:720px;max-height:90vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.25)">
-
-    <!-- Header -->
     <div style="padding:12px 16px;border-bottom:1px solid var(--border-light);display:flex;align-items:center;justify-content:space-between;flex-shrink:0">
       <div style="display:flex;align-items:center;gap:8px">
         <span style="font-size:13px;font-weight:700">⬡ Playground</span>
@@ -1155,11 +1107,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         <button onclick="closePlayground()" style="width:24px;height:24px;border-radius:50%;border:none;background:var(--bg);cursor:pointer;font-size:11px;font-family:var(--font);color:var(--text2);display:flex;align-items:center;justify-content:center">✕</button>
       </div>
     </div>
-
-    <!-- Body: 2 cols on desktop, stacked on mobile -->
     <div class="pg-body">
-
-      <!-- LEFT: controls -->
       <div class="pg-left">
         <div class="pg-ctrl">
           <div class="sb-title">Harmonia</div>
@@ -1174,11 +1122,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           <div id="pg-axis-list" class="pg-chips"></div>
         </div>
       </div>
-
-      <!-- RIGHT: grid + cores -->
       <div class="pg-right">
-
-        <!-- Grid preview -->
         <div class="pg-grid-block">
           <div id="pg-grid" class="pg-igrid"></div>
           <div>
@@ -1186,13 +1130,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             <button onclick="applyPlayground()" style="padding:9px 18px;border-radius:var(--r-sm);background:var(--text);border:none;color:white;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font)">✓ Aplicar</button>
           </div>
         </div>
-
-        <!-- Paleta + análise -->
         <div class="pg-cores-block">
           <div class="sb-title">Paleta de cores</div>
           <div id="pg-swatches" style="display:flex;flex-wrap:wrap;gap:7px;margin:6px 0 10px"></div>
-
-          <!-- Add color -->
           <div id="pg-add-panel" style="display:none;background:var(--bg);border-radius:var(--r-sm);padding:10px;margin-bottom:10px;flex-direction:column;gap:8px">
             <div style="font-size:11px;font-weight:600;color:var(--text2)" id="pg-add-title">Nova cor</div>
             <div style="display:flex;align-items:center;gap:7px">
@@ -1203,11 +1143,9 @@ document.addEventListener('DOMContentLoaded', async () => {
               <button onclick="pgCancelAdd()" style="padding:6px 9px;background:transparent;border:1.5px solid var(--border);color:var(--text2);border-radius:var(--r-sm);font-size:12px;cursor:pointer;font-family:var(--font);flex-shrink:0">✕</button>
             </div>
           </div>
-
           <div class="sb-title">Análise</div>
           <div id="pg-analysis" style="border:1px solid var(--border-light);border-radius:var(--r-sm);overflow:hidden"></div>
         </div>
-
       </div>
     </div>
   </div>
