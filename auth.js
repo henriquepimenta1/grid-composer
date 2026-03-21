@@ -59,15 +59,17 @@ async function loadCredits() {
     const res  = await fetch('/api/credits', {
       headers: { 'Authorization': 'Bearer ' + authToken }
     })
+    if (!res.ok) { console.warn('loadCredits failed:', res.status); return }
     const data = await res.json()
+    if (data.error) { console.warn('loadCredits error:', data.error); return }
     // Update cached plan in state.js
     if (typeof currentUserPlan !== 'undefined') currentUserPlan = data.plan || 'free'
-    updateCreditsUI(data.credits, data.plan)
-    updatePlanUI(data.plan)
+    updateCreditsUI(data.credits ?? 0, data.plan || 'free')
+    updatePlanUI(data.plan || 'free')
     // Show trial banner if applicable
     if (data.trial_expires_at) showTrialBanner(data.trial_expires_at, data.plan)
     else hideTrialBanner()
-  } catch {}
+  } catch(e) { console.warn('loadCredits exception:', e) }
 }
 
 function updatePlanUI(plan) {

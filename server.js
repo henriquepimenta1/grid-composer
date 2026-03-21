@@ -107,13 +107,25 @@ async function checkTrialExpiry(userId, userData) {
   if (!userData.trial_expires_at) return userData;
   const expires = new Date(userData.trial_expires_at).getTime();
   if (Date.now() > expires) {
-    // Trial expired — revert to free
     await sb.from('users')
       .update({ plan: 'free', trial_expires_at: null })
       .eq('id', userId);
     return { ...userData, plan: 'free', trial_expires_at: null };
   }
   return userData;
+}
+
+// ── Safe user fetch (handles missing columns gracefully) ──
+async function fetchUserData(userId) {
+  // Try full schema first (after migration)
+  let { data, error } = await sb
+    .from('users').select('credits, plan, trial_expires_at, used_coupons').eq('id', userId).single();
+  if (!error && data) return data;
+  // Fallback: basic columns only (before migration)
+  const fb = await sb
+    .from('users').select('credits, plan').eq('id', userId).single();
+  if (fb.error || !fb.data) return null;
+  return { ...fb.data, trial_expires_at: null, used_coupons: [] };
 }
 
 // ── Inject env vars ─────────────────────────────────
@@ -147,12 +159,9 @@ async function requireAuth(req, res, next) {
 
 // ── GET /api/credits ────────────────────────────────
 app.get('/api/credits', requireAuth, async (req, res) => {
-  const { data, error } = await sb
-    .from('users').select('credits, plan, trial_expires_at').eq('id', req.user.id).single();
-  if (error) return res.status(500).json({ error: error.message });
+  let userData = await fetchUserData(req.user.id);
+  if (!userData) return res.status(500).json({ error: 'Usuário não encontrado.' });
 
-  // Check trial expiry
-  let userData = data || { credits: 0, plan: 'free' };
   userData = await checkTrialExpiry(req.user.id, userData);
 
   res.json({
@@ -180,8 +189,7 @@ app.post('/api/analyze', requireAuth, async (req, res) => {
       return res.status(400).json({ error: 'Modo de análise inválido.' });
     }
 
-    let { data: userData } = await sb
-      .from('users').select('credits, plan, trial_expires_at').eq('id', req.user.id).single();
+    let userData = await fetchUserData(req.user.id);
     if (!userData) {
       return res.status(402).json({ error: 'Usuário não encontrado.', code: 'NO_CREDITS' });
     }
@@ -423,10 +431,10 @@ app.post('/api/redeem-coupon', requireAuth, async (req, res) => {
     }
 
     // Check if user already used this coupon
-    const { data: userData } = await sb
-      .from('users').select('plan, used_coupons').eq('id', req.user.id).single();
+    const userData = await fetchUserData(req.user.id);
+    if (!userData) return res.status(400).json({ error: 'Usuário não encontrado.' });
 
-    const usedCoupons = userData?.used_coupons || [];
+    const usedCoupons = userData.used_coupons || [];
     if (usedCoupons.includes(coupon.id)) {
       return res.status(400).json({ error: 'Você já usou este cupom.' });
     }
@@ -434,11 +442,18 @@ app.post('/api/redeem-coupon', requireAuth, async (req, res) => {
     // Apply coupon: trial Pro for N days
     const expiresAt = new Date(Date.now() + coupon.trial_days * 24 * 60 * 60 * 1000);
 
-    await sb.from('users').update({
-      plan: coupon.plan || 'pro',
-      trial_expires_at: expiresAt.toISOString(),
-      used_coupons: [...usedCoupons, coupon.id],
-    }).eq('id', req.user.id);
+    // Update — only set columns that exist (safe before/after migration)
+    const updateData = { plan: coupon.plan || 'pro' };
+    try {
+      await sb.from('users').update({
+        ...updateData,
+        trial_expires_at: expiresAt.toISOString(),
+        used_coupons: [...usedCoupons, coupon.id],
+      }).eq('id', req.user.id);
+    } catch {
+      // If trial columns don't exist, just update plan
+      await sb.from('users').update(updateData).eq('id', req.user.id);
+    }
 
     // Increment usage
     await sb.from('coupons')
