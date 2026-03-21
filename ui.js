@@ -176,7 +176,7 @@ async function saveAnalysisToHistory(data, H) {
       method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+authToken},
       body: JSON.stringify({ plan_size:currentPlan.length, harmony:H?.id||selH, axis:selC, pattern:selP, overview:data.overview||'', harmony_note:data.harmony_note||'', palette:palette.slice(0,8), slots:slots.filter(Boolean) })
     })
-    historyCache = null  // invalidate cache so next open reloads
+    historyCache = null
   } catch(e) { console.warn('History save failed:',e.message) }
 }
 
@@ -234,6 +234,11 @@ function restoreAnalysisSettings(id) {
 }
 
 // ── Export grid ───────────────────────────────────────
+// FIX 2.4: Sanitizar filename para evitar falha em downloads
+function sanitizeFilename(str) {
+  return str.replace(/[^a-zA-Z0-9._-]/g, '').slice(0, 50) || 'grid'
+}
+
 function roundRect(ctx, x, y, w, h, r) {
   ctx.beginPath(); ctx.moveTo(x+r,y); ctx.lineTo(x+w-r,y); ctx.quadraticCurveTo(x+w,y,x+w,y+r); ctx.lineTo(x+w,y+h-r); ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h); ctx.lineTo(x+r,y+h); ctx.quadraticCurveTo(x,y+h,x,y+h-r); ctx.lineTo(x,y+r); ctx.quadraticCurveTo(x,y,x+r,y); ctx.closePath()
 }
@@ -303,9 +308,15 @@ async function exportGrid() {
   }
   ctx.fillStyle='#d0d0d0'; ctx.font='11px system-ui,sans-serif'; ctx.textAlign='center'
   ctx.fillText('grid-composer.onrender.com',TOTAL_W/2,TOTAL_H-8)
-  const handle=localStorage.getItem('gc_ig_handle')||'grid'
-  const date=new Date().toISOString().slice(0,10)
-  const link=document.createElement('a'); link.download=`${handle}-grid-${date}.jpg`; link.href=cv.toDataURL('image/jpeg',0.92); link.click()
+
+  // FIX 2.4: sanitizar handle antes de usar no filename
+  const rawHandle = localStorage.getItem('gc_ig_handle') || 'grid'
+  const handle    = sanitizeFilename(rawHandle)
+  const date      = new Date().toISOString().slice(0,10)
+  const link      = document.createElement('a')
+  link.download   = `${handle}-grid-${date}.jpg`
+  link.href       = cv.toDataURL('image/jpeg',0.92)
+  link.click()
 }
 
 // ── Buy credits modal ─────────────────────────────────

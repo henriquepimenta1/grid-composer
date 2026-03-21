@@ -3,6 +3,13 @@
 async function compose(mode = 'basic') {
   const repoPhotos = repository.filter(Boolean)
   if (repoPhotos.length < 1) return
+
+  // FIX 2.3: Validar se há fotos suficientes para o grid
+  if (repoPhotos.length < planSize) {
+    showErr(`Adicione pelo menos ${planSize} foto${planSize > 1 ? 's' : ''} para compor um grid de ${planSize}. Você tem ${repoPhotos.length}.`)
+    return
+  }
+
   const isAdvanced = mode === 'advanced'
   hideErr()
   document.getElementById('results').classList.remove('show')
@@ -43,7 +50,6 @@ async function compose(mode = 'basic') {
       })
       descContent.push({ type:'text', text:`Analise cada foto e retorne APENAS JSON sem markdown:\n{"photos":[{"id":1,"subject":"pessoa|paisagem|detalhe|grupo|animal","framing":"close|medio|aberto","energy":"estatico|dinamico","luminosity":"claro|medio|escuro","dominant_element":"descrição curta em português"}]}` })
 
-      // FIX 1.1: _mode no lugar de _creditOverride
       const descRes = await fetch('/api/analyze', {
         method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+authToken},
         body: JSON.stringify({ model:'claude-sonnet-4-20250514', max_tokens:800, messages:[{role:'user',content:descContent}], _mode:'pre-analysis' })
@@ -71,7 +77,6 @@ async function compose(mode = 'basic') {
     step(isAdvanced ? 4 : 3)
     content.push({ type:'text', text: buildPrompt(H,P,kw,kc,colorCtx+visualCtx,igCtx,planSize,repoPhotos.length,isAdvanced) })
 
-    // FIX 1.1: _mode no lugar de _creditCost — server calcula o custo
     const res = await fetch('/api/analyze', {
       method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+authToken},
       body: JSON.stringify({ model:'claude-sonnet-4-20250514', max_tokens:4000, messages:[{role:'user',content}], _mode: isAdvanced ? 'advanced' : 'basic' })
@@ -79,6 +84,7 @@ async function compose(mode = 'basic') {
     const data = await res.json()
     if (!res.ok) {
       if (data.code==='NO_CREDITS') throw new Error(t('no_credits'))
+      if (data.code==='RATE_LIMITED') throw new Error(data.error)
       throw new Error(data.error?.message || data.error || `HTTP ${res.status}`)
     }
     const raw = data.content.filter(b=>b.type==='text').map(b=>b.text).join('')

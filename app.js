@@ -91,16 +91,39 @@ function showErr(msg) {
 }
 function hideErr() { document.getElementById('err').classList.remove('show') }
 
+// FIX 2.3: Validação repo vs planSize + feedback visual
 function updateActionButtons() {
-  const hasRepo = repository.length > 0
-  const hasFeed = feedSlots.some(s => s!==null && s!==undefined)
-  const go=document.getElementById('go'), goAdv=document.getElementById('go-advanced')
-  const costEl=document.getElementById('credit-cost'), expBtn=document.getElementById('export-btn')
-  if (go)    go.disabled    = !hasRepo
-  if (goAdv) goAdv.disabled = !hasRepo
+  const repoCount = repository.length
+  const hasEnough = repoCount >= planSize
+  const hasFeed   = feedSlots.some(s => s!==null && s!==undefined)
+
+  const go    = document.getElementById('go')
+  const goAdv = document.getElementById('go-advanced')
+  const costEl = document.getElementById('credit-cost')
+  const expBtn = document.getElementById('export-btn')
+
+  // Botões de compor: só habilitam se há fotos suficientes para o grid
+  if (go)    go.disabled    = !hasEnough
+  if (goAdv) goAdv.disabled = !hasEnough
+
   if (expBtn) expBtn.style.display = (hasFeed || currentPlan.length > 0) ? 'block' : 'none'
-  if (costEl && typeof updateCreditsUI === 'undefined') {
-    costEl.textContent = 'temperatura · paleta · harmonia · 1 crédito'
+
+  // Feedback: mostrar quantas fotos faltam
+  if (costEl) {
+    if (!hasEnough && repoCount > 0) {
+      const missing = planSize - repoCount
+      costEl.textContent = `faltam ${missing} foto${missing > 1 ? 's' : ''} para grid de ${planSize}`
+      costEl.style.color = 'var(--red)'
+    } else if (!hasEnough) {
+      costEl.textContent = `adicione ${planSize} foto${planSize > 1 ? 's' : ''} para compor`
+      costEl.style.color = 'var(--text3)'
+    } else if (typeof updateCreditsUI === 'undefined') {
+      costEl.textContent = 'temperatura · paleta · harmonia · 1 crédito'
+      costEl.style.color = ''
+    } else {
+      // Se updateCreditsUI existe, ela cuida do texto — só resetar a cor
+      costEl.style.color = ''
+    }
   }
 }
 
@@ -114,6 +137,7 @@ function clearAll() {
   const expBtn=document.getElementById('export-btn')
   if (expBtn) expBtn.style.display='none'
   hideErr(); setStatus('','')
+  updateActionButtons()
 }
 
 function getGridPosition(slotNum, total) {
