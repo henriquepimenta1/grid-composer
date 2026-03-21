@@ -17,6 +17,63 @@ const sb = createClient(
   process.env.SUPABASE_SERVICE_KEY
 );
 
+// ══════════════════════════════════════════════════════
+// FIX 1.3 — Rate limiter in-memory (sem dependência)
+// 10 requests/min por usuário no /api/analyze
+// ══════════════════════════════════════════════════════
+const RATE_LIMIT   = 10;
+const RATE_WINDOW  = 60_000; // 1 minuto
+const rateLimitMap = new Map();
+
+function checkRateLimit(userId) {
+  const now  = Date.now();
+  const hits = rateLimitMap.get(userId) || [];
+  const recent = hits.filter(t => now - t < RATE_WINDOW);
+  if (recent.length >= RATE_LIMIT) return false;
+  recent.push(now);
+  rateLimitMap.set(userId, recent);
+  return true;
+}
+
+// Limpeza periódica a cada 5 min — evita memory leak de users inativos
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, hits] of rateLimitMap) {
+    const recent = hits.filter(t => now - t < RATE_WINDOW);
+    if (recent.length === 0) rateLimitMap.delete(key);
+    else rateLimitMap.set(key, recent);
+  }
+}, 300_000);
+
+// ══════════════════════════════════════════════════════
+// FIX 1.1 — Custo calculado no server, nunca do client
+// O client envia _mode ('pre-analysis'|'basic'|'advanced')
+// O server mapeia para o custo correto baseado no plano
+// ══════════════════════════════════════════════════════
+const VALID_MODES = ['pre-analysis', 'basic', 'advanced'];
+
+function calculateCreditCost(mode, plan) {
+  const isPaid = plan === 'pro' || plan === 'studio';
+
+  if (mode === 'pre-analysis') return 0;
+
+  if (mode === 'basic') {
+    return isPaid ? 0 : 1;
+  }
+
+  if (mode === 'advanced') {
+    return plan === 'studio' ? 3 : 5;
+  }
+
+  return 1;
+}
+
+// Trava max_tokens por modo — impede pre-analysis ser abusado
+function capMaxTokens(mode, requestedMax) {
+  if (mode === 'pre-analysis') return Math.min(requestedMax || 800, 800);
+  return Math.min(requestedMax || 4000, 4000);
+}
+
 // ── Inject env vars into HTML files ──────────────────
 function injectKeys(html) {
   return html
@@ -25,30 +82,22 @@ function injectKeys(html) {
     .replace('__STRIPE_PK__',         process.env.STRIPE_PUBLIC_KEY || '');
 }
 
-// ── HTML page routes ──────────────────────────────────
+// ── HTML page routes ─────────────────────────────────
 app.get('/',        (req, res) => res.redirect('/login'));
 app.get('/login',   (req, res) => res.send(injectKeys(fs.readFileSync('./login.html',   'utf8'))));
 app.get('/app',     (req, res) => res.send(injectKeys(fs.readFileSync('./index.html',   'utf8'))));
 app.get('/comprar', (req, res) => res.send(injectKeys(fs.readFileSync('./pricing.html', 'utf8'))));
 app.get('/pricing', (req, res) => res.send(injectKeys(fs.readFileSync('./pricing.html', 'utf8'))));
-
-app.get('/playground', (req, res) => res.sendFile('playground.html', { root: '.' }));
+app.get('/playground',      (req, res) => res.sendFile('playground.html', { root: '.' }));
 app.get('/playground.html', (req, res) => res.sendFile('playground.html', { root: '.' }));
-// ── Static JS files ───────────────────────────────────
-app.get('/colors.js',  (req, res) => res.sendFile('colors.js',  { root: '.' }));
-app.get('/state.js',   (req, res) => res.sendFile('state.js',   { root: '.' }));
-app.get('/feed.js',    (req, res) => res.sendFile('feed.js',    { root: '.' }));
-app.get('/compose.js', (req, res) => res.sendFile('compose.js', { root: '.' }));
-app.get('/ui.js',      (req, res) => res.sendFile('ui.js',      { root: '.' }));
-app.get('/i18n.js',  (req, res) => res.sendFile('i18n.js',  { root: '.' }));
-app.get('/app.js',   (req, res) => res.sendFile('app.js',   { root: '.' }));
-app.get('/howto.js', (req, res) => res.sendFile('howto.js', { root: '.' }));
-app.get('/auth.js',  (req, res) => res.send(injectKeys(fs.readFileSync('./auth.js', 'utf8'))));
 
-// Static files fallback
+// auth.js precisa de injectKeys — os demais .js são servidos pelo express.static
+app.get('/auth.js', (req, res) => res.send(injectKeys(fs.readFileSync('./auth.js', 'utf8'))));
+
+// Static files fallback (cobre todos os .js, .css, imagens, etc.)
 app.use(express.static('.'));
 
-// ── Auth middleware ───────────────────────────────────
+// ── Auth middleware ──────────────────────────────────
 async function requireAuth(req, res, next) {
   const token = req.headers.authorization?.replace('Bearer ', '');
   if (!token) return res.status(401).json({ error: 'Não autenticado' });
@@ -58,7 +107,7 @@ async function requireAuth(req, res, next) {
   next();
 }
 
-// ── GET /api/credits ──────────────────────────────────
+// ── GET /api/credits ────────────────────────────────
 app.get('/api/credits', requireAuth, async (req, res) => {
   const { data, error } = await sb
     .from('users').select('credits, plan').eq('id', req.user.id).single();
@@ -66,79 +115,96 @@ app.get('/api/credits', requireAuth, async (req, res) => {
   res.json({ credits: data?.credits ?? 0, plan: data?.plan ?? 'free' });
 });
 
-// ── POST /api/analyze ─────────────────────────────────
+// ══════════════════════════════════════════════════════
+// POST /api/analyze — com todos os 3 fixes aplicados
+// ══════════════════════════════════════════════════════
 app.post('/api/analyze', requireAuth, async (req, res) => {
   try {
-  const apiKey = process.env.ANTHROPIC_KEY;
-  if (!apiKey) return res.status(500).json({ error: 'API key não configurada' });
+    const apiKey = process.env.ANTHROPIC_KEY;
+    if (!apiKey) return res.status(500).json({ error: 'API key não configurada' });
 
-  const { data: userData } = await sb
-    .from('users').select('credits, plan').eq('id', req.user.id).single();
-
-  const plan        = userData?.plan || 'free'
-  const isPro       = plan === 'pro'
-  const isStudio    = plan === 'studio'
-  const isPaid      = isPro || isStudio
-  const isBasic     = req.body._creditCost === 1
-  const isAdvanced  = req.body._creditCost === 5
-
-  let creditCost = 0
-  if (isBasic && isPaid) {
-    creditCost = 0
-  } else if (isAdvanced && isStudio) {
-    creditCost = 3
-  } else {
-    creditCost = req.body._creditCost || 1
-  }
-
-  if (!userData) return res.status(402).json({ error: 'Usuário não encontrado.', code: 'NO_CREDITS' });
-  if (creditCost > 0 && userData.credits < creditCost) {
-    const names = { 1: '1 crédito', 3: '3 créditos', 5: '5 créditos' }
-    return res.status(402).json({
-      error: `Créditos insuficientes. Esta análise requer ${names[creditCost] || creditCost}.`,
-      code: 'NO_CREDITS'
-    });
-  }
-
-  const { _creditCost, _creditOverride, ...anthropicBody } = req.body;
-  const body      = JSON.stringify(anthropicBody);
-  const bodyBytes = Buffer.byteLength(body);
-  if (bodyBytes > 30 * 1024 * 1024) {
-    return res.status(413).json({
-      error: `Payload muito grande: ${Math.round(bodyBytes / 1024 / 1024)}MB. Reduza o número de fotos.`
-    });
-  }
-
-  let statusCode = 200, responseData = null;
-  await new Promise(resolve => {
-    const r = https.request({
-      hostname: 'api.anthropic.com', path: '/v1/messages', method: 'POST',
-      headers: {
-        'x-api-key': apiKey, 'anthropic-version': '2023-06-01',
-        'Content-Type': 'application/json', 'Content-Length': bodyBytes,
-      },
-    }, apiRes => {
-      let d = '';
-      apiRes.on('data', chunk => d += chunk);
-      apiRes.on('end', () => {
-        statusCode = apiRes.statusCode;
-        try { responseData = JSON.parse(d); }
-        catch { responseData = { error: 'Resposta inválida da API' }; }
-        resolve();
+    // ── FIX 1.3: Rate limit por usuário ──────────────
+    if (!checkRateLimit(req.user.id)) {
+      return res.status(429).json({
+        error: 'Muitas requisições. Aguarde 1 minuto.',
+        code: 'RATE_LIMITED'
       });
+    }
+
+    // ── FIX 1.1: Validar modo e calcular custo no server
+    const mode = req.body._mode;
+    if (!mode || !VALID_MODES.includes(mode)) {
+      return res.status(400).json({ error: 'Modo de análise inválido.' });
+    }
+
+    const { data: userData } = await sb
+      .from('users').select('credits, plan').eq('id', req.user.id).single();
+    if (!userData) {
+      return res.status(402).json({ error: 'Usuário não encontrado.', code: 'NO_CREDITS' });
+    }
+
+    const plan       = userData.plan || 'free';
+    const creditCost = calculateCreditCost(mode, plan);
+
+    // Checar saldo antes de chamar a API (fail fast)
+    if (creditCost > 0 && userData.credits < creditCost) {
+      return res.status(402).json({
+        error: `Créditos insuficientes. Esta análise requer ${creditCost} crédito${creditCost > 1 ? 's' : ''}.`,
+        code: 'NO_CREDITS'
+      });
+    }
+
+    // Limpar campos internos e aplicar cap de tokens
+    const { _mode: _, ...anthropicBody } = req.body;
+    anthropicBody.max_tokens = capMaxTokens(mode, anthropicBody.max_tokens);
+
+    const body      = JSON.stringify(anthropicBody);
+    const bodyBytes = Buffer.byteLength(body);
+    if (bodyBytes > 30 * 1024 * 1024) {
+      return res.status(413).json({
+        error: `Payload muito grande: ${Math.round(bodyBytes / 1024 / 1024)}MB. Reduza o número de fotos.`
+      });
+    }
+
+    // Chamar Anthropic API
+    let statusCode = 200, responseData = null;
+    await new Promise(resolve => {
+      const r = https.request({
+        hostname: 'api.anthropic.com', path: '/v1/messages', method: 'POST',
+        headers: {
+          'x-api-key': apiKey, 'anthropic-version': '2023-06-01',
+          'Content-Type': 'application/json', 'Content-Length': bodyBytes,
+        },
+      }, apiRes => {
+        let d = '';
+        apiRes.on('data', chunk => d += chunk);
+        apiRes.on('end', () => {
+          statusCode = apiRes.statusCode;
+          try   { responseData = JSON.parse(d); }
+          catch { responseData = { error: 'Resposta inválida da API' }; }
+          resolve();
+        });
+      });
+      r.on('error', e => { responseData = { error: e.message }; statusCode = 500; resolve(); });
+      r.write(body);
+      r.end();
     });
-    r.on('error', e => { responseData = { error: e.message }; statusCode = 500; resolve(); });
-    r.write(body);
-    r.end();
-  });
 
-  if (statusCode === 200 && creditCost > 0) {
-    await sb.from('users')
-      .update({ credits: userData.credits - creditCost })
-      .eq('id', req.user.id);
-  }
+    // ── FIX 1.2: Dedução atômica via RPC ─────────────
+    if (statusCode === 200 && creditCost > 0) {
+      const { data: rpcResult, error: rpcError } = await sb
+        .rpc('deduct_credits', { p_user_id: req.user.id, p_amount: creditCost });
 
-  res.status(statusCode).json(responseData);
+      if (rpcError) {
+        console.error('RPC deduct_credits error:', rpcError.message);
+        // Análise já feita — loga erro mas entrega resultado
+      } else if (rpcResult === -1) {
+        // Race condition: saldo caiu entre o check e a dedução
+        console.warn(`Race condition: créditos insuficientes após check — user ${req.user.id}`);
+      }
+    }
+
+    res.status(statusCode).json(responseData);
 
   } catch (err) {
     console.error('/api/analyze error:', err);
@@ -146,7 +212,7 @@ app.post('/api/analyze', requireAuth, async (req, res) => {
   }
 });
 
-// ── POST /api/checkout (Stripe) ───────────────────────
+// ── POST /api/checkout (Stripe subscription) ────────
 app.post('/api/checkout', requireAuth, async (req, res) => {
   const { plan, interval } = req.body;
 
@@ -180,7 +246,7 @@ app.post('/api/checkout', requireAuth, async (req, res) => {
   res.json({ url: result.url });
 });
 
-// ── POST /api/portal (manage subscription) ────────────
+// ── POST /api/portal (manage subscription) ──────────
 app.post('/api/portal', requireAuth, async (req, res) => {
   const origin = req.headers.origin || `https://${req.headers.host}`;
   const { data: userData } = await sb
@@ -200,7 +266,12 @@ app.post('/api/portal', requireAuth, async (req, res) => {
   res.json({ url: result.url });
 });
 
-// ── POST /api/webhook/stripe ──────────────────────────
+// ══════════════════════════════════════════════════════
+// Webhook Stripe — corrigido:
+// - checkout.session.completed unificado (era duplicado)
+// - switch/case no lugar de if/if/if
+// - add_credits via RPC atômico
+// ══════════════════════════════════════════════════════
 app.post('/api/webhook/stripe', async (req, res) => {
   const sig    = req.headers['stripe-signature'];
   const secret = process.env.STRIPE_WEBHOOK_SECRET;
@@ -213,68 +284,79 @@ app.post('/api/webhook/stripe', async (req, res) => {
   }
 
   try {
-    if (event.type === 'checkout.session.completed') {
-      const s = event.data.object;
-      const userId = s.client_reference_id;
-      const plan   = s.metadata?.plan || 'pro';
-      if (userId) {
-        await sb.from('users').update({
-          plan, credits: 9999, stripe_customer_id: s.customer,
-        }).eq('id', userId);
-        console.log(`✓ Payment: ${userId} → ${plan}`);
+    switch (event.type) {
+
+      case 'checkout.session.completed': {
+        const session = event.data.object;
+
+        if (session.mode === 'payment' && session.metadata?.credits) {
+          // ── Compra avulsa de créditos ──────────────
+          const userId  = session.metadata.user_id;
+          const credits = parseInt(session.metadata.credits);
+          if (userId && credits > 0) {
+            const { error } = await sb.rpc('add_credits', {
+              p_user_id: userId,
+              p_amount:  credits
+            });
+            if (error) console.error('add_credits error:', error.message);
+            else console.log(`✓ Credits purchased: ${userId} +${credits}`);
+          }
+
+        } else if (session.client_reference_id) {
+          // ── Nova assinatura (Pro/Studio) ───────────
+          const userId = session.client_reference_id;
+          const plan   = session.metadata?.plan || 'pro';
+          await sb.from('users').update({
+            plan, credits: 9999, stripe_customer_id: session.customer,
+          }).eq('id', userId);
+          console.log(`✓ Subscription: ${userId} → ${plan}`);
+        }
+        break;
       }
-    }
-    if (event.type === 'customer.subscription.deleted') {
-      const customerId = event.data.object.customer;
-      const { data: users } = await sb
-        .from('users').select('id').eq('stripe_customer_id', customerId);
-      if (users?.length) {
-        await sb.from('users')
-          .update({ plan: 'free', credits: 0 })
-          .eq('id', users[0].id);
-        console.log(`✓ Cancelled: ${customerId} → free`);
+
+      case 'customer.subscription.deleted': {
+        const customerId = event.data.object.customer;
+        const { data: users } = await sb
+          .from('users').select('id').eq('stripe_customer_id', customerId);
+        if (users?.length) {
+          await sb.from('users')
+            .update({ plan: 'free', credits: 0 })
+            .eq('id', users[0].id);
+          console.log(`✓ Cancelled: ${customerId} → free`);
+        }
+        break;
       }
-    }
-    if (event.type === 'checkout.session.completed') {
-      const session = event.data.object;
-      // One-time credit pack purchase
-      if (session.mode === 'payment' && session.metadata?.credits) {
-        const userId  = session.metadata.user_id;
-        const credits = parseInt(session.metadata.credits);
-        if (userId && credits > 0) {
-          const { data: u } = await sb.from('users').select('credits').eq('id', userId).single();
-          if (u) {
-            await sb.from('users').update({ credits: (u.credits || 0) + credits }).eq('id', userId);
-            console.log(`✓ Credits purchased: ${userId} +${credits}`);
+
+      case 'invoice.payment_succeeded': {
+        const customerId = event.data.object.customer;
+        const { data: users } = await sb
+          .from('users').select('id, plan, credits').eq('stripe_customer_id', customerId);
+        if (users?.length) {
+          const u = users[0];
+          const monthlyCredits = u.plan === 'studio' ? 150 : u.plan === 'pro' ? 50 : 0;
+          if (monthlyCredits > 0) {
+            const rolloverMax = u.plan === 'studio' ? 300 : 100;
+            const newCredits  = Math.min(rolloverMax, (u.credits || 0) + monthlyCredits);
+            await sb.from('users').update({ credits: newCredits }).eq('id', u.id);
+            console.log(`✓ Credits renewed: ${u.id} → +${monthlyCredits} (total: ${newCredits})`);
           }
         }
+        break;
+      }
+
+      case 'invoice.payment_failed': {
+        console.log(`⚠ Payment failed: ${event.data.object.customer}`);
+        break;
       }
     }
-    if (event.type === 'invoice.payment_succeeded') {
-      // Monthly renewal — deposit credits
-      const customerId = event.data.object.customer;
-      const { data: users } = await sb
-        .from('users').select('id, plan, credits').eq('stripe_customer_id', customerId);
-      if (users?.length) {
-        const u = users[0];
-        const monthlyCredits = u.plan === 'studio' ? 150 : u.plan === 'pro' ? 50 : 0;
-        if (monthlyCredits > 0) {
-          const rolloverMax = u.plan === 'studio' ? 300 : 100;
-          const newCredits  = Math.min(rolloverMax, (u.credits || 0) + monthlyCredits);
-          await sb.from('users').update({ credits: newCredits }).eq('id', u.id);
-          console.log(`✓ Credits renewed: ${u.id} → +${monthlyCredits} (total: ${newCredits})`);
-        }
-      }
-    }
-    if (event.type === 'invoice.payment_failed') {
-      console.log(`⚠ Payment failed: ${event.data.object.customer}`);
-    }
-  } catch (err) { console.error('Webhook handler error:', err); }
+  } catch (err) {
+    console.error('Webhook handler error:', err);
+  }
 
   res.json({ received: true });
 });
 
-// ── Stripe helpers ────────────────────────────────────
+// ── Stripe helpers ──────────────────────────────────
 function stripePost(path, formBody) {
   return new Promise(resolve => {
     const bodyBytes = Buffer.byteLength(formBody);
@@ -289,7 +371,7 @@ function stripePost(path, formBody) {
       let d = '';
       apiRes.on('data', chunk => d += chunk);
       apiRes.on('end', () => {
-        try { resolve(JSON.parse(d)); }
+        try   { resolve(JSON.parse(d)); }
         catch { resolve({ error: { message: 'Parse error' } }); }
       });
     });
@@ -320,7 +402,7 @@ function constructStripeEvent(payload, sig, secret) {
   return JSON.parse(payload.toString());
 }
 
-// ── POST /api/buy-credits (one-time credit packs) ──────
+// ── POST /api/buy-credits (one-time credit packs) ───
 app.post('/api/buy-credits', requireAuth, async (req, res) => {
   try {
     const { pack } = req.body;
@@ -332,7 +414,8 @@ app.post('/api/buy-credits', requireAuth, async (req, res) => {
     const selected = CREDIT_PACKS[pack];
     if (!selected?.price) return res.status(400).json({ error: 'Pack inválido' });
 
-    const { data: userData } = await sb.from('users').select('stripe_customer_id').eq('id', req.user.id).single();
+    const { data: userData } = await sb
+      .from('users').select('stripe_customer_id').eq('id', req.user.id).single();
 
     const params = new URLSearchParams({
       'line_items[0][price]':    selected.price,
@@ -352,13 +435,14 @@ app.post('/api/buy-credits', requireAuth, async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+
+// ── POST /api/history — save analysis ───────────────
 app.post('/api/history', requireAuth, async (req, res) => {
   try {
     const { data: userData } = await sb
       .from('users').select('plan').eq('id', req.user.id).single();
     const plan = userData?.plan || 'free';
 
-    // Enforce history limits per plan
     const limits = { free: 5, pro: 50, studio: null };
     const limit  = limits[plan];
     if (limit !== null) {
@@ -367,7 +451,6 @@ app.post('/api/history', requireAuth, async (req, res) => {
         .select('id', { count: 'exact', head: true })
         .eq('user_id', req.user.id);
       if (count >= limit) {
-        // Delete oldest to stay within limit
         const { data: oldest } = await sb
           .from('analyses')
           .select('id')
@@ -398,7 +481,7 @@ app.post('/api/history', requireAuth, async (req, res) => {
   }
 });
 
-// ── GET /api/history — list analyses ─────────────────
+// ── GET /api/history — list analyses ────────────────
 app.get('/api/history', requireAuth, async (req, res) => {
   try {
     const { data, error } = await sb
@@ -414,13 +497,13 @@ app.get('/api/history', requireAuth, async (req, res) => {
   }
 });
 
-// ── DELETE /api/history/:id ───────────────────────────
+// ── DELETE /api/history/:id ─────────────────────────
 app.delete('/api/history/:id', requireAuth, async (req, res) => {
   try {
     await sb.from('analyses')
       .delete()
       .eq('id', req.params.id)
-      .eq('user_id', req.user.id);  // RLS redundancy
+      .eq('user_id', req.user.id);
     res.json({ ok: true });
   } catch (err) {
     res.status(500).json({ error: err.message });

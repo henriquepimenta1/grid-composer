@@ -4,7 +4,6 @@ async function compose(mode = 'basic') {
   const repoPhotos = repository.filter(Boolean)
   if (repoPhotos.length < 1) return
   const isAdvanced = mode === 'advanced'
-  const creditCost = isAdvanced ? 5 : 1
   hideErr()
   document.getElementById('results').classList.remove('show')
   document.getElementById('results').innerHTML = ''
@@ -18,7 +17,6 @@ async function compose(mode = 'basic') {
     const kw = document.getElementById('kw').value
     const kc = document.getElementById('kc').value
     const colorCtx = repoPhotos.map((p,i) => {
-      // Build semantic context — AI gets perceptual features, not just raw hex
       const accentColor = p.hasAccent ? (p.colors||[]).find(c => {
         const r=parseInt(c.hex.slice(1,3),16), g=parseInt(c.hex.slice(3,5),16), b=parseInt(c.hex.slice(5,7),16)
         const max=Math.max(r,g,b), d=max-Math.min(r,g,b); if(!max||!d) return false
@@ -44,9 +42,11 @@ async function compose(mode = 'basic') {
         descContent.push({ type:'text', text:`[FOTO ${i+1}]` })
       })
       descContent.push({ type:'text', text:`Analise cada foto e retorne APENAS JSON sem markdown:\n{"photos":[{"id":1,"subject":"pessoa|paisagem|detalhe|grupo|animal","framing":"close|medio|aberto","energy":"estatico|dinamico","luminosity":"claro|medio|escuro","dominant_element":"descrição curta em português"}]}` })
+
+      // FIX 1.1: _mode no lugar de _creditOverride
       const descRes = await fetch('/api/analyze', {
         method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+authToken},
-        body: JSON.stringify({ model:'claude-sonnet-4-20250514', max_tokens:800, messages:[{role:'user',content:descContent}], _creditOverride:0 })
+        body: JSON.stringify({ model:'claude-sonnet-4-20250514', max_tokens:800, messages:[{role:'user',content:descContent}], _mode:'pre-analysis' })
       })
       if (descRes.ok) {
         const descData = await descRes.json()
@@ -70,9 +70,11 @@ async function compose(mode = 'basic') {
     })
     step(isAdvanced ? 4 : 3)
     content.push({ type:'text', text: buildPrompt(H,P,kw,kc,colorCtx+visualCtx,igCtx,planSize,repoPhotos.length,isAdvanced) })
+
+    // FIX 1.1: _mode no lugar de _creditCost — server calcula o custo
     const res = await fetch('/api/analyze', {
       method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+authToken},
-      body: JSON.stringify({ model:'claude-sonnet-4-20250514', max_tokens:4000, messages:[{role:'user',content}], _creditCost:creditCost })
+      body: JSON.stringify({ model:'claude-sonnet-4-20250514', max_tokens:4000, messages:[{role:'user',content}], _mode: isAdvanced ? 'advanced' : 'basic' })
     })
     const data = await res.json()
     if (!res.ok) {
@@ -162,10 +164,7 @@ Fotos: 1 a ${totalPhotos}`
 // Graph 2-coloring: guarantees no two same-group photos are adjacent (horiz or vert)
 // For a 3xM grid, the optimal non-adjacent assignment has a closed-form solution:
 // cell (row, col) gets group A if (row + col) is even, B if odd — exactly like a chessboard
-// This is mathematically proven to be the only valid 2-coloring for a grid graph
-function buildGridColorMap(rows) {
-  // Returns array[visualIndex] = 'A' | 'B'
-  // Visual index: left→right, top→bottom (0=top-left, 1=top-center, 2=top-right, ...)
+function graphTwoColor(rows) {
   const map = []
   for (let r = 0; r < rows; r++)
     for (let c = 0; c < 3; c++)
@@ -173,47 +172,24 @@ function buildGridColorMap(rows) {
   return map
 }
 
-// Verify no two adjacent cells have same group (debug helper)
-function verifyNoAdjacentConflict(assignment, rows) {
-  for (let r = 0; r < rows; r++) {
-    for (let c = 0; c < 3; c++) {
-      const vi = r*3 + c
-      const group = assignment[vi]
-      // Check right neighbor
-      if (c < 2 && assignment[vi+1] === group) return false
-      // Check bottom neighbor
-      if (r < rows-1 && assignment[vi+3] === group) return false
-    }
-  }
-  return true
-}
-
-// Build pattern-aware accent placement map
-// Returns array[visualIndex (left→right, top→bottom)] = 'A' | 'B'
-// Rules per pattern:
-//   checkerboard: 2 acentos/linha → laterais (col0,col2) | 1 acento/linha → centro (col1) | 0 → respiro
-//   columns:      distribui acentos em colunas — 1 col → centro | 2 cols → laterais | 3 cols → todas
-//   rows:         distribui acentos em linhas inteiras — proporcional ao ratio
-//   diagonal:     diagonal clássica (row+col)%2
+// Pattern-based mapping for how accents are distributed:
+//   checkerboard: 2 accents/row → laterais (col0+col2), 1 → centro, 0 → respiro
+//   columns:      accent columns (center, laterals, or all)
+//   rows:         accent rows (proportional)
+//   diagonal:     (row+col) % 2 alternation
 //   free:         sem mapa — ordena por score
 function buildPatternMap(rows, totalAccents, totalPhotos, pattern) {
-  const map = []  // 'A' = acento, 'B' = neutro
+  const map = []
   const ratio = totalAccents / totalPhotos
 
   if (pattern === 'checkerboard') {
-    // Distribute accents across rows:
-    // - Rows with 2 accents → laterais (col0, col2)
-    // - Rows with 1 accent  → centro (col1)
-    // - Rows with 0 accents → respiro total
-    // Priority: fill pairs first (2/row), then singles (1/row), then respiro
     let remaining = totalAccents
-    const rowPlan = []  // how many accents per row
+    const rowPlan = []
     for (let r = 0; r < rows; r++) {
       if (remaining >= 2 && r % 2 === 0) { rowPlan.push(2); remaining -= 2 }
       else if (remaining === 1)           { rowPlan.push(1); remaining -= 1 }
       else                                { rowPlan.push(0) }
     }
-    // If still remaining after first pass, fill remaining rows
     for (let r = 0; r < rows && remaining > 0; r++) {
       if (rowPlan[r] === 0) {
         if (remaining >= 2) { rowPlan[r] = 2; remaining -= 2 }
@@ -222,19 +198,17 @@ function buildPatternMap(rows, totalAccents, totalPhotos, pattern) {
     }
     for (let r = 0; r < rows; r++) {
       for (let c = 0; c < 3; c++) {
-        if (rowPlan[r] === 2) map.push(c === 1 ? 'B' : 'A')  // [A][n][A] laterais
-        else if (rowPlan[r] === 1) map.push(c === 1 ? 'A' : 'B')  // [n][A][n] centro
-        else map.push('B')  // [n][n][n] respiro
+        if (rowPlan[r] === 2) map.push(c === 1 ? 'B' : 'A')
+        else if (rowPlan[r] === 1) map.push(c === 1 ? 'A' : 'B')
+        else map.push('B')
       }
     }
   } else if (pattern === 'columns') {
-    // Quantas colunas de acento: 1=centro, 2=laterais, 3=todas
     const accentCols = ratio < 0.4 ? [1] : ratio < 0.7 ? [0, 2] : [0, 1, 2]
     for (let r = 0; r < rows; r++)
       for (let c = 0; c < 3; c++)
         map.push(accentCols.includes(c) ? 'A' : 'B')
   } else if (pattern === 'rows') {
-    // Quantas linhas de acento
     const accentRows = ratio < 0.4 ? 1 : ratio < 0.7 ? Math.ceil(rows * 0.5) : rows
     for (let r = 0; r < rows; r++)
       for (let c = 0; c < 3; c++)
@@ -244,7 +218,6 @@ function buildPatternMap(rows, totalAccents, totalPhotos, pattern) {
       for (let c = 0; c < 3; c++)
         map.push((r + c) % 2 === 0 ? 'A' : 'B')
   } else {
-    // default: graph 2-coloring
     for (let r = 0; r < rows; r++)
       for (let c = 0; c < 3; c++)
         map.push((r + c) % 2 === 0 ? 'A' : 'B')
@@ -259,12 +232,10 @@ function applyReorder(scoredPhotos) {
   const size = currentPlan.length
   const rows = Math.ceil(size / 3)
 
-  // Instagram slot order: slot 1 = top-right, fills right→left per row
-  // visualIndex: left→right, top→bottom — col0=esquerda, col1=centro, col2=direita
   const visualToSlot = []
   for (let r = 0; r < rows; r++)
     for (let c = 0; c < 3; c++) {
-      const slotNum = r*3 + (2-c) + 1  // Instagram: right→left (col2=slot1, col1=slot2, col0=slot3)
+      const slotNum = r*3 + (2-c) + 1
       if (slotNum <= size) visualToSlot.push(slotNum)
     }
 
@@ -287,8 +258,8 @@ function applyReorder(scoredPhotos) {
       let photo
       if (wantsGroup === 'A' && groupA[aiA])      photo = groupA[aiA++]
       else if (wantsGroup === 'B' && groupB[aiB]) photo = groupB[aiB++]
-      else if (groupA[aiA])                        photo = groupA[aiA++]  // overflow
-      else if (groupB[aiB])                        photo = groupB[aiB++]  // overflow
+      else if (groupA[aiA])                        photo = groupA[aiA++]
+      else if (groupB[aiB])                        photo = groupB[aiB++]
       if (!photo) return
       const item = currentPlan.find(x => x.slot === slotNum)
       if (item) item.photo = photo.repoIdx + 1
@@ -307,8 +278,6 @@ function reorderByAxis(axisId) {
     let score, group
     switch (axisId) {
       case 'temperature':
-        // Group by accent presence first — photos with warm accent (orange hat, trailer)
-        // should alternate with cold/neutral even if overall Kelvin is similar
         score = p.hasAccent ? 1000 + (10000 - p.kelvin) : p.kelvin
         group = (p.hasAccent || p.kelvin < 5000) ? 'A' : 'B'
         break
@@ -344,7 +313,6 @@ function reorderByHarmony(harmonyId) {
   let scored
   switch (harmonyId) {
     case 'complementary':
-      // Accent presence is the primary contrast — orange hat vs cold landscape
       scored = photos.map(p => {
         const ph = repository[p.repoIdx]
         const hasAccent = ph?.hasAccent || p.warm
