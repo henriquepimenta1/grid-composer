@@ -8,12 +8,13 @@ function init() {
   setupDrop()
   kUpdate()
   applyTranslations()
+  renderFeedTabs()
   renderUploadGrid()
+  updateActionButtons()
 }
 
 function renderHarmonies() {
   document.getElementById('hm-list').innerHTML = HARMONIES.map(h => {
-    const isHL = h.highlight && h.id !== selH
     return `<div class="hchip ${h.id===selH?'on':''} ${h.highlight?'hchip-hl':''}" onclick="selHarmony('${h.id}')">
       <div class="hchip-dot" style="background:${h.dot}"></div>
       <span class="hchip-name">${h.name}</span>
@@ -52,6 +53,30 @@ function selHarmony(id) { selH=id; renderHarmonies(); if (currentPlan.length>0) 
 function selPattern(id)  { selP=id; renderPatterns();  if (currentPlan.length>0) reorderByAxis(selC) }
 function selContrast(id) { selC=id; renderContrast();  if (currentPlan.length>0) reorderByAxis(id) }
 
+// ── Feed tabs — plan-gated ────────────────────────────
+function renderFeedTabs() {
+  const limits = planLimits()
+  const tabsContainer = document.getElementById('feed-tabs-main')
+  if (!tabsContainer) return
+
+  const sizes = [3, 6, 9, 12, 15, 18]
+  tabsContainer.innerHTML = sizes.map(n => {
+    const locked = n > limits.maxGrid
+    const active = n === planSize && !locked
+    if (locked) {
+      return `<button class="feed-tab feed-tab-locked" title="Disponível no ${n <= 9 ? 'Pro' : 'Studio'}" onclick="showPlanGate(${n})">
+        <span style="font-size:9px">🔒</span>
+      </button>`
+    }
+    return `<button class="feed-tab ${active?'active':''}" onclick="setPlan(${n},this)">${n}</button>`
+  }).join('')
+}
+
+function showPlanGate(size) {
+  const planName = size <= 9 ? 'Pro' : 'Studio'
+  showErr(`Grid de ${size} posts disponível no ${planName}. Faça upgrade para desbloquear.`)
+}
+
 // ── UI helpers ────────────────────────────────────────
 function kUpdate() {
   const w=document.getElementById('kw').value, c=document.getElementById('kc').value
@@ -61,14 +86,29 @@ function kUpdate() {
 }
 
 function setPlan(n, btn) {
-  planSize=n
+  const limits = planLimits()
+  if (n > limits.maxGrid) {
+    showPlanGate(n)
+    return
+  }
+  planSize = n
   feedSlots = Array(planSize).fill(null)
-  // Keep existing assignments where possible
-  document.querySelectorAll('.feed-tab').forEach(t=>t.classList.remove('active'))
-  if (btn) btn.classList.add('active')
+  renderFeedTabs()
   renderUploadGrid(); updateActionButtons()
 }
-function setPlanM(n, btn) { setPlan(n,btn) }
+function setPlanM(n, btn) {
+  const limits = planLimits()
+  if (n > limits.maxGrid) {
+    showPlanGate(n)
+    return
+  }
+  planSize = n
+  feedSlots = Array(planSize).fill(null)
+  document.querySelectorAll('.plan-tabs-mobile .plan-tab').forEach(t => t.classList.remove('active'))
+  if (btn) btn.classList.add('active')
+  renderFeedTabs()
+  renderUploadGrid(); updateActionButtons()
+}
 
 function setStatus(msg, cls) {
   const el=document.getElementById('exts'); if (!el) return
@@ -84,6 +124,7 @@ function showErr(msg) {
 function hideErr() { document.getElementById('err').classList.remove('show') }
 
 function updateActionButtons() {
+  const limits   = planLimits()
   const repoCount = repository.length
   const hasEnough = repoCount >= planSize
   const hasFeed   = feedSlots.some(s => s!==null && s!==undefined)
@@ -93,11 +134,27 @@ function updateActionButtons() {
   const costEl = document.getElementById('credit-cost')
   const expBtn = document.getElementById('export-btn')
 
-  if (go)    go.disabled    = !hasEnough
-  if (goAdv) goAdv.disabled = !hasEnough
+  // Basic: needs enough photos
+  if (go) go.disabled = !hasEnough
+
+  // Advanced: blocked for Free entirely, otherwise needs enough photos
+  if (goAdv) {
+    if (limits.advancedCost === null) {
+      goAdv.disabled = true
+      goAdv.title = 'Disponível no Pro e Studio'
+      const advSub = goAdv.querySelector('.mode-btn-sub')
+      if (advSub) advSub.textContent = '🔒 Disponível no Pro e Studio'
+    } else {
+      goAdv.disabled = !hasEnough
+      goAdv.title = ''
+      const advSub = goAdv.querySelector('.mode-btn-sub')
+      if (advSub) advSub.textContent = `leitura visual completa · ${limits.advancedCost} créditos`
+    }
+  }
 
   if (expBtn) expBtn.style.display = (hasFeed || currentPlan.length > 0) ? 'block' : 'none'
 
+  // Credit cost label with plan-aware messaging
   if (costEl) {
     if (!hasEnough && repoCount > 0) {
       const missing = planSize - repoCount
@@ -106,17 +163,67 @@ function updateActionButtons() {
     } else if (!hasEnough) {
       costEl.textContent = `adicione ${planSize} foto${planSize > 1 ? 's' : ''} para compor`
       costEl.style.color = 'var(--text3)'
-    } else if (typeof updateCreditsUI === 'undefined') {
-      costEl.textContent = 'temperatura · paleta · harmonia · 1 crédito'
+    } else if (limits.basicCost === 0) {
+      // Paid plan: unlimited basic
+      costEl.textContent = 'temperatura · paleta · harmonia · ilimitado ✦'
       costEl.style.color = ''
     } else {
+      costEl.textContent = `temperatura · paleta · harmonia · ${limits.basicCost} crédito`
       costEl.style.color = ''
     }
   }
 
-  // Update new post count display
-  const countEl = document.getElementById('new-post-count')
-  if (countEl) countEl.textContent = `${planSize} novo${planSize > 1 ? 's' : ''}`
+  // Cooldown indicator for Free
+  renderCooldownIndicator()
+}
+
+// ── Cooldown display for Free ─────────────────────────
+let cooldownInterval = null
+
+function renderCooldownIndicator() {
+  const limits = planLimits()
+  const el = document.getElementById('cooldown-indicator')
+  if (!el) return
+
+  if (limits.cooldownMs === 0 || !lastComposeTime) {
+    el.style.display = 'none'
+    if (cooldownInterval) { clearInterval(cooldownInterval); cooldownInterval = null }
+    return
+  }
+
+  const elapsed = Date.now() - lastComposeTime
+  const remaining = limits.cooldownMs - elapsed
+
+  if (remaining <= 0) {
+    el.style.display = 'none'
+    if (cooldownInterval) { clearInterval(cooldownInterval); cooldownInterval = null }
+    return
+  }
+
+  el.style.display = 'flex'
+  updateCooldownText(el, remaining)
+
+  if (!cooldownInterval) {
+    cooldownInterval = setInterval(() => {
+      const rem = limits.cooldownMs - (Date.now() - lastComposeTime)
+      if (rem <= 0) {
+        el.style.display = 'none'
+        clearInterval(cooldownInterval)
+        cooldownInterval = null
+        // Re-enable compose button
+        const go = document.getElementById('go')
+        if (go && repository.length >= planSize) go.disabled = false
+      } else {
+        updateCooldownText(el, rem)
+      }
+    }, 1000)
+  }
+}
+
+function updateCooldownText(el, remainMs) {
+  const mins = Math.floor(remainMs / 60000)
+  const secs = Math.floor((remainMs % 60000) / 1000)
+  el.innerHTML = `<span style="font-size:12px">⏱</span> Próxima composição em <strong>${mins}m${secs.toString().padStart(2,'0')}s</strong> · <a href="/comprar" style="color:var(--blue);text-decoration:none;font-weight:600">Pro sem cooldown →</a>`
 }
 
 function clearAll() {
@@ -202,6 +309,10 @@ function renderResults(data, H) {
 
   const expBtn = document.getElementById('export-btn')
   if (expBtn) expBtn.style.display = 'block'
+
+  // Track compose time for cooldown
+  lastComposeTime = Date.now()
+  renderCooldownIndicator()
 
   saveAnalysisToHistory(data, H)
 }

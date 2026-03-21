@@ -27,12 +27,65 @@ const CONTRAST_AXES = [
   { id:'saturation', icon:'🎨', name:'Saturação', sub:'Vívido vs Dessaturado', useKelvin:false, info:'Alterna entre fotos vívidas e fotos dessaturadas ou com névoa.', example:'🎨 saturado (pôr do sol) ↔ 🌫️ muted (névoa)', prompt:'Eixo SATURACAO. Alterne fotos vívidas com fotos dessaturadas.' },
 ]
 
+// ══════════════════════════════════════════════════════
+// Plan-based limits — single source of truth
+// ══════════════════════════════════════════════════════
+const PLAN_LIMITS = {
+  free: {
+    maxGrid:       6,      // max posts per grid
+    maxRepo:       7,      // max photos in repository
+    maxExisting:   0,      // existing photos (context) — blocked
+    maxHistory:    1,      // only last analysis visible
+    cooldownMs:    30 * 60 * 1000,  // 30 min cooldown between compositions
+    basicCost:     1,      // 1 credit per basic composition
+    advancedCost:  null,   // blocked
+    captionCost:   null,   // blocked
+    hasWatermark:  true,
+    hasScore:      false,
+    hasMentor:     false,
+    hasProfile:    false,
+  },
+  pro: {
+    maxGrid:       9,
+    maxRepo:       12,
+    maxExisting:   6,
+    maxHistory:    50,
+    cooldownMs:    0,      // no cooldown
+    basicCost:     0,      // unlimited
+    advancedCost:  3,
+    captionCost:   1,
+    hasWatermark:  false,
+    hasScore:      true,   // after advanced composition
+    hasMentor:     false,
+    hasProfile:    false,
+  },
+  studio: {
+    maxGrid:       18,
+    maxRepo:       30,
+    maxExisting:   6,
+    maxHistory:    null,   // unlimited
+    cooldownMs:    0,
+    basicCost:     0,
+    advancedCost:  3,
+    captionCost:   1,
+    hasWatermark:  false,
+    hasScore:      true,
+    hasMentor:     true,
+    hasProfile:    true,   // 3 cr per analysis
+  },
+}
+
+// Helper to get current plan limits
+function planLimits() {
+  return PLAN_LIMITS[currentUserPlan] || PLAN_LIMITS.free
+}
+
 // ── Global state ──────────────────────────────────────
 let selH = 'custom', selP = 'free', selC = 'combined'
-let repository      = []              // {file, dataUrl, cropUrl, compressed, colors, kelvin, hasAccent}
-let existingPhotos  = []              // {dataUrl, compressed, colors, kelvin, hasAccent} — fotos já postadas (contexto)
-let feedSlots       = [null,null,null] // indices into repository — SÓ para novos posts
-let planSize        = 3               // quantos novos posts planejar (1, 2, 3, 6, 9...)
+let repository      = []
+let existingPhotos  = []
+let feedSlots       = [null,null,null]
+let planSize        = 3
 let currentPlan     = []
 let originalPlan    = []
 let currentHarmony  = null
@@ -40,7 +93,8 @@ let isManualMode    = false
 let repoDragIdx     = null, dragSource = null
 let slotTargetIdx   = null, ugDragging = false, ugDragIdx = null
 let gridDragSlot    = null
-let currentUserPlan = 'free'  // cached from last loadCredits
+let currentUserPlan = 'free'
+let lastComposeTime = 0   // timestamp of last composition (for cooldown)
 
 // Legacy alias
 Object.defineProperty(window, 'photos', {
@@ -51,5 +105,5 @@ Object.defineProperty(window, 'photos', {
 function readFile(f) { return new Promise(r => { const fr = new FileReader(); fr.onload = e => r(e.target.result); fr.readAsDataURL(f) }) }
 function loadImg(s)  { return new Promise(r => { const i = new Image(); i.onload = () => r(i); i.src = s }) }
 
-// Max repo size by plan
-function maxRepoSize() { return currentUserPlan === 'studio' ? 30 : 12 }
+// Max repo size by plan (uses PLAN_LIMITS)
+function maxRepoSize() { return planLimits().maxRepo }

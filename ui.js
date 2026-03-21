@@ -198,6 +198,8 @@ async function loadHistory() {
 
 function renderHistoryList() {
   const list=document.getElementById('history-list')
+  const limits = planLimits()
+  const maxVisible = limits.maxHistory
   const HM={ complementary:'Complementar',analogous:'Análogo',split:'Dividido',triad:'Tríade',monochrome:'Monocromático',square:'Quadrado',shades:'Sombras',custom:'IA decide' }
   const AM={ temperature:'Temperatura',luminance:'Luminância',subject:'Sujeito',saturation:'Saturação',combined:'Combinado' }
   if (!historyCache?.length) {
@@ -205,7 +207,7 @@ function renderHistoryList() {
     return
   }
   list.innerHTML=''
-  historyCache.forEach(a => {
+  historyCache.forEach((a, idx) => {
     const date=new Date(a.created_at)
     const dateStr=date.toLocaleDateString('pt-BR',{day:'2-digit',month:'short'})
     const timeStr=date.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})
@@ -215,8 +217,24 @@ function renderHistoryList() {
       const s=slots[i]
       return s?.thumb?`<img src="${s.thumb}" style="aspect-ratio:4/5;width:100%;object-fit:cover;border-radius:2px;display:block">`:`<div style="aspect-ratio:4/5;background:var(--border-light);border-radius:2px"></div>`
     }).join('')
+
+    // Blur gate: Free users only see first entry clearly
+    const isBlurred = maxVisible !== null && idx >= maxVisible
+
     const card=document.createElement('div'); card.className='history-card'
-    card.innerHTML=`<div class="hc-header"><div><div class="hc-date">${dateStr} · ${timeStr}</div><div class="hc-tags"><span class="hc-tag">${HM[a.harmony]||a.harmony}</span><span class="hc-tag">${AM[a.axis]||a.axis}</span><span class="hc-tag">${a.plan_size} fotos</span></div></div><button class="hc-del" onclick="deleteAnalysis('${a.id}')" title="Excluir">🗑</button></div><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:2px;margin-bottom:10px">${thumbsHtml}</div>${a.overview?`<div class="hc-overview">${a.overview}</div>`:''}<button class="hc-restore" onclick="restoreAnalysisSettings('${a.id}')">↩ Restaurar configurações</button>`
+    if (isBlurred) card.style.cssText = 'position:relative;overflow:hidden'
+
+    card.innerHTML=`
+      ${isBlurred ? `<div style="position:absolute;inset:0;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);background:rgba(255,255,255,.7);z-index:5;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;border-radius:var(--r-sm)">
+        <div style="font-size:13px;font-weight:700;color:var(--text)">🔒 Análise anterior</div>
+        <div style="font-size:11px;color:var(--text2);text-align:center;max-width:200px">Upgrade para Pro para acessar até 50 análises no histórico.</div>
+        <button onclick="window.location.href='/comprar'" style="padding:6px 16px;border-radius:100px;background:var(--ig);border:none;color:white;font-size:11px;font-weight:700;cursor:pointer;font-family:var(--font)">Ver planos ✦</button>
+      </div>` : ''}
+      <div class="hc-header"><div><div class="hc-date">${dateStr} · ${timeStr}</div><div class="hc-tags"><span class="hc-tag">${HM[a.harmony]||a.harmony}</span><span class="hc-tag">${AM[a.axis]||a.axis}</span><span class="hc-tag">${a.plan_size} fotos</span></div></div>${!isBlurred?`<button class="hc-del" onclick="deleteAnalysis('${a.id}')" title="Excluir">🗑</button>`:''}</div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:2px;margin-bottom:10px">${thumbsHtml}</div>
+      ${a.overview?`<div class="hc-overview">${a.overview}</div>`:''}
+      ${!isBlurred?`<button class="hc-restore" onclick="restoreAnalysisSettings('${a.id}')">↩ Restaurar configurações</button>`:''}
+    `
     list.appendChild(card)
   })
 }
@@ -233,8 +251,7 @@ function restoreAnalysisSettings(id) {
   closeHistory(); setStatus('✓ Configurações restauradas — adicione fotos e componha novamente','ok')
 }
 
-// ── Export grid ───────────────────────────────────────
-// FIX 2.4: Sanitizar filename para evitar falha em downloads
+// ── Export grid ──────────────────────────────────────
 function sanitizeFilename(str) {
   return str.replace(/[^a-zA-Z0-9._-]/g, '').slice(0, 50) || 'grid'
 }
@@ -243,9 +260,26 @@ function roundRect(ctx, x, y, w, h, r) {
   ctx.beginPath(); ctx.moveTo(x+r,y); ctx.lineTo(x+w-r,y); ctx.quadraticCurveTo(x+w,y,x+w,y+r); ctx.lineTo(x+w,y+h-r); ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h); ctx.lineTo(x+r,y+h); ctx.quadraticCurveTo(x,y+h,x,y+h-r); ctx.lineTo(x,y+r); ctx.quadraticCurveTo(x,y,x+r,y); ctx.closePath()
 }
 
+// Diagonal watermark on a single cell
+function drawWatermark(ctx, x, y, w, h) {
+  ctx.save()
+  ctx.translate(x + w/2, y + h/2)
+  ctx.rotate(-Math.PI / 6) // ~30 degrees
+  ctx.font = 'bold 14px system-ui, sans-serif'
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.35)'
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
+  ctx.fillText('GRID COMPOSER', 0, -10)
+  ctx.font = '10px system-ui, sans-serif'
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.25)'
+  ctx.fillText('grid-composer.com', 0, 10)
+  ctx.restore()
+}
+
 async function exportGrid() {
   const slots=feedSlots.map((repoIdx,i)=>({repoIdx,photo:repoIdx!==null?repository[repoIdx]:null,plan:currentPlan.find(x=>x.slot===i+1)||null})).filter(s=>s.photo)
   if (!slots.length) { showErr('Nenhuma foto no feed para exportar.'); return }
+  const limits = planLimits()
   const COLS=3,ROWS=Math.ceil(slots.length/COLS),CELL_W=360,CELL_H=Math.round(CELL_W*5/4),INFO_H=96,PAD=12,MARGIN=24,HEADER_H=56
   const TOTAL_W=COLS*CELL_W+(COLS-1)*PAD+MARGIN*2, TOTAL_H=HEADER_H+ROWS*(CELL_H+INFO_H+PAD)+MARGIN
   const cv=document.createElement('canvas'); cv.width=TOTAL_W; cv.height=TOTAL_H
@@ -274,6 +308,12 @@ async function exportGrid() {
       const dw=img.width*scale, dh=img.height*scale
       ctx.drawImage(img,x+(CELL_W-dw)/2,y+(CELL_H-dh)/2,dw,dh); ctx.restore()
     } catch {}
+
+    // Watermark for Free users — diagonal on each photo cell
+    if (limits.hasWatermark) {
+      drawWatermark(ctx, x, y, CELL_W, CELL_H)
+    }
+
     const iy=y+CELL_H
     ctx.fillStyle='#ffffff'; ctx.fillRect(x,iy,CELL_W,INFO_H)
     const slotNum=i+1
@@ -309,7 +349,6 @@ async function exportGrid() {
   ctx.fillStyle='#d0d0d0'; ctx.font='11px system-ui,sans-serif'; ctx.textAlign='center'
   ctx.fillText('grid-composer.onrender.com',TOTAL_W/2,TOTAL_H-8)
 
-  // FIX 2.4: sanitizar handle antes de usar no filename
   const rawHandle = localStorage.getItem('gc_ig_handle') || 'grid'
   const handle    = sanitizeFilename(rawHandle)
   const date      = new Date().toISOString().slice(0,10)

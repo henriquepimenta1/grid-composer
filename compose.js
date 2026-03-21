@@ -60,17 +60,44 @@ function stopLoadingExtras() {
   if (extras) extras.style.display = 'none'
 }
 
+// ── Client-side cooldown check ────────────────────────
+function checkClientCooldown() {
+  const limits = planLimits()
+  if (limits.cooldownMs === 0 || !lastComposeTime) return null
+  const elapsed = Date.now() - lastComposeTime
+  const remaining = limits.cooldownMs - elapsed
+  if (remaining <= 0) return null
+  const mins = Math.floor(remaining / 60000)
+  const secs = Math.floor((remaining % 60000) / 1000)
+  return `Aguarde ${mins}m${secs.toString().padStart(2,'0')}s para a próxima composição. Pro não tem cooldown.`
+}
+
 // ── Compose ───────────────────────────────────────────
 async function compose(mode = 'basic') {
   const repoPhotos = repository.filter(Boolean)
   if (repoPhotos.length < 1) return
+  const limits = planLimits()
 
+  // Validate enough photos
   if (repoPhotos.length < planSize) {
     showErr(`Adicione pelo menos ${planSize} foto${planSize > 1 ? 's' : ''} para compor um grid de ${planSize}. Você tem ${repoPhotos.length}.`)
     return
   }
 
+  // Block advanced for Free
   const isAdvanced = mode === 'advanced'
+  if (isAdvanced && limits.advancedCost === null) {
+    showErr('Composição avançada disponível no Pro e Studio. Faça upgrade para desbloquear.')
+    return
+  }
+
+  // Client-side cooldown check (fast fail, server validates too)
+  const cooldownMsg = checkClientCooldown()
+  if (cooldownMsg && mode !== 'pre-analysis') {
+    showErr(cooldownMsg)
+    return
+  }
+
   hideErr()
   document.getElementById('results').classList.remove('show')
   document.getElementById('results').innerHTML = ''
@@ -101,7 +128,7 @@ async function compose(mode = 'basic') {
       return `FOTO ${i+1}: kelvin~${p.kelvin}K temp=${tempWord} lum=${lumWord} acento=${accentDesc} cores=[${(p.colors||[]).map(c=>c.hex+'('+c.pct+'%)').join(' ')}]`
     }).join('\n')
 
-    // Context from existing feed photos (replaces igPhotos)
+    // Context from existing feed photos
     const existingCtx = existingPhotos.length > 0
       ? existingPhotos.map((p,i) => {
           const tempWord = p.kelvin <= 3500 ? 'MUITO_QUENTE' : p.kelvin <= 4500 ? 'QUENTE' : p.kelvin <= 6000 ? 'NEUTRO' : p.kelvin <= 8000 ? 'FRIO' : 'MUITO_FRIO'
@@ -143,7 +170,7 @@ async function compose(mode = 'basic') {
       content.push({ type:'image', source:{ type:'base64', media_type:'image/jpeg', data:p.compressed.split(',')[1] } })
       content.push({ type:'text', text:`[FOTO ${i+1}]` })
     })
-    // Include existing photos as visual context (IA sees but doesn't assign)
+    // Include existing photos as visual context
     if (existingPhotos.length > 0) {
       content.push({ type:'text', text:'[FOTOS EXISTENTES NO FEED — CONTEXTO]' })
       existingPhotos.forEach((p,i) => {
@@ -160,8 +187,10 @@ async function compose(mode = 'basic') {
     })
     const data = await res.json()
     if (!res.ok) {
-      if (data.code==='NO_CREDITS') throw new Error(t('no_credits'))
-      if (data.code==='RATE_LIMITED') throw new Error(data.error)
+      if (data.code==='NO_CREDITS')    throw new Error(t('no_credits'))
+      if (data.code==='RATE_LIMITED')   throw new Error(data.error)
+      if (data.code==='COOLDOWN')       throw new Error(data.error)
+      if (data.code==='PLAN_REQUIRED')  throw new Error(data.error)
       throw new Error(data.error?.message || data.error || `HTTP ${res.status}`)
     }
     const raw = data.content.filter(b=>b.type==='text').map(b=>b.text).join('')
