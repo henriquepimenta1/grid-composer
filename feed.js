@@ -12,6 +12,24 @@ function setupDrop() {
 function repoDragStart(e, i) { repoDragIdx = i; dragSource = 'repo'; e.dataTransfer.setData('text/plain', String(i)); e.dataTransfer.effectAllowed = 'copy'; renderRepo() }
 function repoDragEnd(e)      { repoDragIdx = null; dragSource = null; renderRepo() }
 
+// Barra de progresso visual durante batch upload
+function setUploadProgress(current, total) {
+  const el = document.getElementById('exts')
+  if (!el) return
+  const pct = Math.round((current / total) * 100)
+  el.className = 'up-status'
+  el.innerHTML = `
+    <div style="width:100%">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+        <span style="font-size:12px;color:var(--text2)">Processando foto ${current} de ${total}...</span>
+        <span style="font-size:11px;font-weight:600;color:var(--text2)">${pct}%</span>
+      </div>
+      <div style="width:100%;height:4px;border-radius:2px;background:var(--border-light);overflow:hidden">
+        <div style="width:${pct}%;height:100%;border-radius:2px;background:var(--blue);transition:width .2s ease"></div>
+      </div>
+    </div>`
+}
+
 async function handleFiles(files) {
   const toAdd = Array.from(files).filter(f => f.type.startsWith('image/'))
   if (!toAdd.length) return
@@ -19,9 +37,8 @@ async function handleFiles(files) {
   const remaining = max - repository.length
   const batch = toAdd.slice(0, remaining)
 
-  // FIX 3.1: Progresso por foto no batch
   for (let i = 0; i < batch.length; i++) {
-    setStatus(`Processando foto ${i + 1} de ${batch.length}...`, '')
+    setUploadProgress(i + 1, batch.length)
     const file = batch[i]
     const raw = await readFile(file)
     const img = await loadImg(raw)
