@@ -286,6 +286,13 @@
         <div class="pm-label">Papel na harmonia</div>
         <div class="pm-harmony" id="pm-harmony"></div>
       </div>
+      <div class="pm-section" id="caption-section">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+          <div class="pm-label" style="margin:0">Legenda</div>
+          <button id="caption-btn" onclick="suggestCaption()" style="padding:5px 14px;border-radius:100px;border:1.5px solid var(--border);background:transparent;cursor:pointer;font-family:var(--font);font-size:11px;font-weight:600;color:var(--text2);transition:all .15s" onmouseover="this.style.borderColor='var(--blue)';this.style.color='var(--blue)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text2)'">💬 Sugerir legenda</button>
+        </div>
+        <div id="caption-result" style="display:none;background:var(--bg);border-radius:var(--r-sm);padding:10px 12px"></div>
+      </div>
       <div style="display:flex;gap:8px;margin-top:4px">
         <button class="pm-close" style="flex:1;color:var(--red);border-color:#fca5a5" onclick="removeSlotPhoto()">🗑 Remover</button>
         <button class="pm-close" style="flex:1" onclick="closePhotoModal()">Fechar</button>

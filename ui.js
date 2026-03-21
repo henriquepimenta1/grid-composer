@@ -58,6 +58,7 @@ function openPhotoModalDirect(s, p, slotIdx) {
   tempEl.textContent=iW?`🟠 Quente · ${s.kelvin}`:`🔵 Frio · ${s.kelvin}`
   tempEl.className=`pm-temp ${iW?'pr-tw':'pr-tc'}`
   renderPaletteInModal(p,slotIdx)
+  resetCaptionArea()
   document.getElementById('photo-modal').classList.add('open')
 }
 function openPhotoModalFromRepo(repoIdx, slotIdx) {
@@ -73,6 +74,7 @@ function openPhotoModalFromRepo(repoIdx, slotIdx) {
   tempEl.textContent=iW?`🟠 Quente · ${p.kelvin}K`:`🔵 Frio · ${p.kelvin}K`
   tempEl.className=`pm-temp ${iW?'pr-tw':'pr-tc'}`
   renderPaletteInModal(p,0)
+  resetCaptionArea()
   document.getElementById('photo-modal').classList.add('open')
 }
 function openPhotoModal(slotNum) {
@@ -91,6 +93,117 @@ function removeSlotPhoto() {
   closePhotoModal(); renderUploadGrid()
   document.getElementById('results').classList.remove('show')
   document.getElementById('results').innerHTML=''; currentPlan=[]
+}
+
+// ── Caption suggestion (Pro/Studio, 1 credit) ────────
+function resetCaptionArea() {
+  const result = document.getElementById('caption-result')
+  if (result) { result.style.display = 'none'; result.innerHTML = '' }
+  const btn = document.getElementById('caption-btn')
+  const limits = planLimits()
+  if (btn) {
+    if (limits.captionCost === null) {
+      btn.textContent = '🔒 Pro'
+      btn.disabled = true
+      btn.title = 'Disponível no Pro e Studio'
+    } else {
+      btn.textContent = `💬 Sugerir legenda · ${limits.captionCost} cr`
+      btn.disabled = false
+      btn.title = ''
+    }
+  }
+}
+
+async function suggestCaption() {
+  const limits = planLimits()
+  if (limits.captionCost === null) {
+    showCaptionResult('🔒 Disponível no Pro e Studio.', true)
+    return
+  }
+
+  const slotEl = document.getElementById('pm-slot')
+  if (!slotEl) return
+  const slotNum = parseInt(slotEl.textContent.replace('+', ''))
+  const s = currentPlan.find(x => x.slot === slotNum)
+  const repoIdx = s ? s.photo - 1 : null
+  const photo = repoIdx !== null ? repository[repoIdx] : null
+  if (!photo) {
+    showCaptionResult('Sem foto para analisar.', true)
+    return
+  }
+
+  const btn = document.getElementById('caption-btn')
+  if (btn) { btn.disabled = true; btn.textContent = '...' }
+  showCaptionResult('Gerando legenda...', false)
+
+  try {
+    // Build visual context from existing analysis
+    let visualDesc = ''
+    if (s) {
+      visualDesc = `Tipo: ${s.type || 'desconhecido'}\nTemperatura: ${s.temp === 'warm' ? 'quente' : 'fria'} (${s.kelvin || ''})\nPapel: ${s.harmony_role || ''}`
+    }
+
+    const content = [
+      { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: photo.compressed.split(',')[1] } },
+      { type: 'text', text: buildCaptionPrompt(visualDesc) }
+    ]
+
+    const res = await fetch('/api/analyze', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + authToken },
+      body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 500, messages: [{ role: 'user', content }], _mode: 'caption' })
+    })
+    const data = await res.json()
+    if (!res.ok) {
+      if (data.code === 'NO_CREDITS') throw new Error('Créditos insuficientes.')
+      if (data.code === 'PLAN_REQUIRED') throw new Error(data.error)
+      throw new Error(data.error?.message || data.error || 'Erro')
+    }
+
+    const raw = data.content?.filter(b => b.type === 'text').map(b => b.text).join('') || ''
+    const cleaned = raw.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim()
+    let parsed
+    try {
+      parsed = JSON.parse(cleaned.match(/\{[\s\S]*\}/)?.[0] || cleaned)
+    } catch {
+      throw new Error('Resposta inválida — tente novamente.')
+    }
+
+    if (parsed.caption) {
+      const captionArea = document.getElementById('caption-result')
+      if (captionArea) {
+        const tags = (parsed.hashtags || []).join(' ')
+        captionArea.innerHTML = `
+          <div style="font-size:13px;color:var(--text);line-height:1.6;margin-bottom:8px">${parsed.caption}</div>
+          <div style="font-size:12px;color:var(--blue);margin-bottom:10px">${tags}</div>
+          <div style="display:flex;gap:6px">
+            <button onclick="copyCaption('${encodeURIComponent(parsed.caption + '\\n\\n' + tags)}')" style="flex:1;padding:6px;border-radius:var(--r-sm);border:1.5px solid var(--border);background:transparent;cursor:pointer;font-family:var(--font);font-size:12px;font-weight:600;color:var(--text2)">📋 Copiar tudo</button>
+            <button onclick="copyCaption('${encodeURIComponent(tags)}')" style="padding:6px 12px;border-radius:var(--r-sm);border:1.5px solid var(--border);background:transparent;cursor:pointer;font-family:var(--font);font-size:12px;font-weight:600;color:var(--text2)"># Tags</button>
+          </div>`
+        captionArea.style.display = 'block'
+      }
+      loadCredits()
+    }
+  } catch (e) {
+    showCaptionResult(e.message, true)
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = '💬 Sugerir legenda' }
+  }
+}
+
+function showCaptionResult(msg, isError) {
+  const el = document.getElementById('caption-result')
+  if (!el) return
+  el.style.display = 'block'
+  el.innerHTML = `<div style="font-size:12px;color:${isError ? 'var(--red)' : 'var(--text3)'}">${msg}</div>`
+}
+
+function copyCaption(encoded) {
+  const text = decodeURIComponent(encoded)
+  navigator.clipboard?.writeText(text).then(() => {
+    const el = event?.target
+    if (el) { const orig = el.textContent; el.textContent = '✓ Copiado'; setTimeout(() => el.textContent = orig, 1500) }
+  }).catch(() => {})
 }
 document.addEventListener('keydown', e => { if (e.key==='Escape') { closePhotoModal(); closeCrop(); closePaletteModal(); closeHistory() } })
 

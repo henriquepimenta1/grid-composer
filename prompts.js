@@ -1,5 +1,4 @@
 // prompts.js — Prompt templates for AI composition
-// Existing photos (já postadas) são contexto — IA só preenche novos posts.
 
 function buildPrompt(H, P, kw, kc, colorCtx, existingCtx, size, totalPhotos, isAdvanced = false) {
   const axis = CONTRAST_AXES.find(a => a.id === selC)
@@ -18,23 +17,20 @@ function buildPrompt(H, P, kw, kc, colorCtx, existingCtx, size, totalPhotos, isA
     gridMap += `Linha ${r + 1}: ${rowSlots.join(' | ')}\n`
   }
 
-  // Seção de contexto do feed existente
-  const existingSection = existingCtx
-    ? `\nFEED EXISTENTE (contexto visual — NÃO atribuir, apenas considerar para continuidade):
+  const existingSection = existingCtx ? `
+FEED EXISTENTE (contexto visual — NÃO atribuir):
 ${existingCtx}
-As fotos existentes ficam ABAIXO dos novos posts no grid do Instagram.
-Os novos posts (slots acima) devem criar continuidade visual com essas fotos existentes.
-`
-    : ''
+Considere adjacência vertical entre último slot novo e primeiro existente.
+Atribua SOMENTE fotos candidatas (1 a ${totalPhotos}) aos slots.
+` : ''
 
   return `Especialista em color grading e grid Instagram outdoor/adventure.
 
 REGRA CRÍTICA: slot 1 = PRIMEIRO a ser postado = posição SUPERIOR DIREITA do grid.
-Novos posts ficam NO TOPO do grid. Fotos existentes ficam embaixo (contexto).
 
-MAPA DO GRID — NOVOS POSTS (${size} posts, ${rows} linha${rows > 1 ? 's' : ''}):
+MAPA DO GRID (${size} posts, ${rows} linha${rows > 1 ? 's' : ''}):
 ${gridMap}
-FOTOS CANDIDATAS (repositório) — k-means LAB:
+CORES K-MEANS LAB:
 ${colorCtx}
 ${existingSection}
 CONFIG: Harmonia=${H.name} Padrao=${P.name} ${kelvinLine} Posts=${size}
@@ -46,7 +42,6 @@ NUNCA coloque dois slots com ACENTO_* adjacentes (horizontal ou vertical).
 Alterne sempre: SEM_ACENTO · ACENTO · SEM_ACENTO · ACENTO.
 O acento é o critério primário — antes de temperatura geral, antes de tipo de sujeito.
 Fotos NEUTRO ou FRIO sem acento são os separadores naturais entre acentos quentes.
-${existingCtx ? 'Considere TAMBÉM adjacência vertical entre o último slot novo e a primeira foto existente.' : ''}
 
 REGRA DE DIVERSIDADE VISUAL:
 1. Nunca coloque dois slots com pessoa como sujeito dominante lado a lado.
@@ -59,12 +54,42 @@ RETORNE APENAS JSON SEM MARKDOWN:
 {"plan":[{"slot":1,"photo":N,"grid_position":"top-right","temp":"cool","kelvin":"7500K","contrast_role":"frio","type":"TIPO","harmony_role":"papel na harmonia","reason":"max 70 chars","preset":"ajustes PS/LR max 60 chars"}],"overview":"1 frase","harmony_note":"1 frase com eixo usado"}
 
 Slots: ${Array.from({ length: size }, (_, i) => i + 1).join(', ')}
-Fotos candidatas: 1 a ${totalPhotos}
-${existingCtx ? 'IMPORTANTE: atribua APENAS fotos candidatas (1 a ' + totalPhotos + ') aos slots. Fotos existentes são só contexto.' : ''}`
+Fotos: 1 a ${totalPhotos}`
 }
 
 // Prompt para pré-análise visual (modo advanced)
+// Inclui score de qualidade técnica 0-100
 function buildPreAnalysisPrompt() {
   return `Analise cada foto e retorne APENAS JSON sem markdown:
-{"photos":[{"id":1,"subject":"pessoa|paisagem|detalhe|grupo|animal","framing":"close|medio|aberto","energy":"estatico|dinamico","luminosity":"claro|medio|escuro","dominant_element":"descrição curta em português"}]}`
+{"photos":[{"id":1,"subject":"pessoa|paisagem|detalhe|grupo|animal","framing":"close|medio|aberto","energy":"estatico|dinamico","luminosity":"claro|medio|escuro","dominant_element":"descrição curta em português","score":85,"score_issues":["nenhum problema"]}]}
+
+SCORE (0-100): avalie a qualidade técnica de cada foto para Instagram.
+Critérios que REDUZEM o score:
+- Falta de nitidez / foco suave (-10 a -30)
+- Excesso de informação visual / composição poluída (-5 a -15)
+- Excesso de cores sem harmonia (-5 a -10)
+- Saturação excessiva / cores artificiais (-5 a -15)
+- Sombras chapadas / pretas sem detalhe (-10 a -20)
+- Superexposição / altas-luzes estouradas (-10 a -20)
+- Ruído visível / granulação (-5 a -15)
+
+Base: foto tecnicamente boa = 80-90. Foto excepcional = 90-100. Foto com problemas = 40-70.
+score_issues: lista curta dos problemas encontrados em português (ou ["nenhum problema"] se score >= 80).`
+}
+
+// Prompt para sugestão de legenda (1 crédito, Pro/Studio)
+function buildCaptionPrompt(visualDesc) {
+  return `Você é um copywriter de Instagram especializado em feeds de fotografia, natureza e aventura.
+
+${visualDesc ? `CONTEXTO VISUAL DA FOTO:\n${visualDesc}\n` : ''}
+Crie uma legenda curta e envolvente para Instagram. A legenda deve:
+- Ter no máximo 2 frases (total máximo 150 caracteres)
+- Soar natural e autêntica, não genérica
+- Capturar a emoção ou atmosfera da imagem
+- Funcionar em português brasileiro
+
+Também sugira exatamente 3 hashtags relevantes e populares.
+
+RETORNE APENAS JSON SEM MARKDOWN:
+{"caption":"sua legenda aqui","hashtags":["#hashtag1","#hashtag2","#hashtag3"]}`
 }
