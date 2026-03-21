@@ -18,8 +18,11 @@ async function handleFiles(files) {
   const max = maxRepoSize()
   const remaining = max - repository.length
   const batch = toAdd.slice(0, remaining)
-  setStatus(`Processando ${batch.length} foto(s)...`, '')
-  for (const file of batch) {
+
+  // FIX 3.1: Progresso por foto no batch
+  for (let i = 0; i < batch.length; i++) {
+    setStatus(`Processando foto ${i + 1} de ${batch.length}...`, '')
+    const file = batch[i]
     const raw = await readFile(file)
     const img = await loadImg(raw)
     const colors = extractColors(img, 5)

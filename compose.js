@@ -1,4 +1,5 @@
 // compose.js — AI composition and local reordering
+// Depende de: prompts.js (buildPrompt, buildPreAnalysisPrompt)
 
 async function compose(mode = 'basic') {
   const repoPhotos = repository.filter(Boolean)
@@ -48,7 +49,8 @@ async function compose(mode = 'basic') {
         descContent.push({ type:'image', source:{ type:'base64', media_type:'image/jpeg', data:p.compressed.split(',')[1] } })
         descContent.push({ type:'text', text:`[FOTO ${i+1}]` })
       })
-      descContent.push({ type:'text', text:`Analise cada foto e retorne APENAS JSON sem markdown:\n{"photos":[{"id":1,"subject":"pessoa|paisagem|detalhe|grupo|animal","framing":"close|medio|aberto","energy":"estatico|dinamico","luminosity":"claro|medio|escuro","dominant_element":"descrição curta em português"}]}` })
+      // FIX 3.2: usa prompt centralizado de prompts.js
+      descContent.push({ type:'text', text: buildPreAnalysisPrompt() })
 
       const descRes = await fetch('/api/analyze', {
         method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+authToken},
@@ -75,6 +77,7 @@ async function compose(mode = 'basic') {
       content.push({ type:'text', text:`[FOTO ${i+1}]` })
     })
     step(isAdvanced ? 4 : 3)
+    // FIX 3.2: usa prompt centralizado de prompts.js
     content.push({ type:'text', text: buildPrompt(H,P,kw,kc,colorCtx+visualCtx,igCtx,planSize,repoPhotos.length,isAdvanced) })
 
     const res = await fetch('/api/analyze', {
@@ -120,56 +123,8 @@ function step(n) {
   document.getElementById('ldtxt').textContent = m[n]
 }
 
-function buildPrompt(H,P,kw,kc,colorCtx,igCtx,size,totalPhotos,isAdvanced=false) {
-  const axis = CONTRAST_AXES.find(a => a.id === selC)
-  const kelvinLine = axis?.useKelvin ? `Kelvin-Q=ate${kw}K Kelvin-F=acima${kc}K` : '(Kelvin é referência mas não é o eixo principal)'
-  const rows = Math.ceil(size / 3)
-  let gridMap = ''
-  for (let r = 0; r < rows; r++) {
-    const rowSlots = []
-    for (let c = 2; c >= 0; c--) {
-      const slotNum = r*3+(2-c)+1
-      if (slotNum <= size) rowSlots.push(`col${c+1}=slot${slotNum}`)
-    }
-    gridMap += `Linha ${r+1}: ${rowSlots.join(' | ')}\n`
-  }
-  return `Especialista em color grading e grid Instagram outdoor/adventure.
-
-REGRA CRÍTICA: slot 1 = PRIMEIRO a ser postado = posição SUPERIOR DIREITA do grid.
-
-MAPA DO GRID (${size} posts, ${rows} linha${rows>1?'s':''}):
-${gridMap}
-CORES K-MEANS LAB:
-${colorCtx}${igCtx}
-
-CONFIG: Harmonia=${H.name} Padrao=${P.name} ${kelvinLine} Posts=${size}
-${axis?.prompt || ''}
-
-REGRA DE ACENTO CROMÁTICO (CRÍTICA):
-Fotos com acento=ACENTO_* têm um elemento focal quente/saturado (gorro, trailer, pôr do sol) mesmo que o fundo seja frio.
-NUNCA coloque dois slots com ACENTO_* adjacentes (horizontal ou vertical).
-Alterne sempre: SEM_ACENTO · ACENTO · SEM_ACENTO · ACENTO.
-O acento é o critério primário — antes de temperatura geral, antes de tipo de sujeito.
-Fotos NEUTRO ou FRIO sem acento são os separadores naturais entre acentos quentes.
-
-REGRA DE DIVERSIDADE VISUAL:
-1. Nunca coloque dois slots com pessoa como sujeito dominante lado a lado.
-2. Prefira intercalar: PAISAGEM · PESSOA · PAISAGEM.
-3. Grupos/multidão = "pessoa" para esta regra.
-4. Detalhes funcionam como separador.
-5. Para feeds paisagem-dominante: alterne escala (panorama vs plano fechado).
-
-RETORNE APENAS JSON SEM MARKDOWN:
-{"plan":[{"slot":1,"photo":N,"grid_position":"top-right","temp":"cool","kelvin":"7500K","contrast_role":"frio","type":"TIPO","harmony_role":"papel na harmonia","reason":"max 70 chars","preset":"ajustes PS/LR max 60 chars"}],"overview":"1 frase","harmony_note":"1 frase com eixo usado"}
-
-Slots: ${Array.from({length:size},(_,i)=>i+1).join(', ')}
-Fotos: 1 a ${totalPhotos}`
-}
-
 // ── Local reordering ──────────────────────────────────
 // Graph 2-coloring: guarantees no two same-group photos are adjacent (horiz or vert)
-// For a 3xM grid, the optimal non-adjacent assignment has a closed-form solution:
-// cell (row, col) gets group A if (row + col) is even, B if odd — exactly like a chessboard
 function graphTwoColor(rows) {
   const map = []
   for (let r = 0; r < rows; r++)
@@ -178,12 +133,7 @@ function graphTwoColor(rows) {
   return map
 }
 
-// Pattern-based mapping for how accents are distributed:
-//   checkerboard: 2 accents/row → laterais (col0+col2), 1 → centro, 0 → respiro
-//   columns:      accent columns (center, laterals, or all)
-//   rows:         accent rows (proportional)
-//   diagonal:     (row+col) % 2 alternation
-//   free:         sem mapa — ordena por score
+// Pattern-based mapping for how accents are distributed
 function buildPatternMap(rows, totalAccents, totalPhotos, pattern) {
   const map = []
   const ratio = totalAccents / totalPhotos
