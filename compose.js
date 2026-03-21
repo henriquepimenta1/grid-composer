@@ -1,11 +1,75 @@
 // compose.js — AI composition and local reordering
 // Depende de: prompts.js (buildPrompt, buildPreAnalysisPrompt)
 
+// ── Loading timer + tips ──────────────────────────────
+let loadingTimer = null
+let loadingStart = 0
+let tipInterval  = null
+
+const LOADING_TIPS = [
+  '✦ Cada foto é analisada em 5 cores dominantes via k-means LAB',
+  '🎨 O mesmo algoritmo do Adobe Color extrai a paleta real',
+  '📐 O grid Instagram lê da direita pra esquerda, de cima pra baixo',
+  '🧊 Blocos 4×4 preservam acentos pequenos como gorros e trailers',
+  '🌡️ ICtCp mede temperatura de cor melhor que o olho humano',
+  '♟️ Graph 2-coloring garante que acentos nunca fiquem adjacentes',
+  '🔬 Fotos neutras funcionam como separadores entre acentos quentes',
+  '📸 Slot +1 é sempre a primeira foto a ser postada',
+]
+
+function startLoadingExtras() {
+  loadingStart = Date.now()
+  const loading = document.getElementById('loading')
+  if (!loading) return
+
+  // Injeta container de timer + tip (se ainda não existir)
+  let extras = document.getElementById('ld-extras')
+  if (!extras) {
+    extras = document.createElement('div')
+    extras.id = 'ld-extras'
+    extras.style.cssText = 'margin-top:14px;text-align:center'
+    extras.innerHTML = `
+      <div id="ld-timer" style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:8px;font-variant-numeric:tabular-nums">⏱ 0s</div>
+      <div id="ld-tip" style="font-size:11px;color:var(--text3);line-height:1.5;min-height:18px;transition:opacity .3s"></div>`
+    loading.appendChild(extras)
+  }
+  extras.style.display = 'block'
+
+  // Timer — atualiza a cada segundo
+  const timerEl = document.getElementById('ld-timer')
+  if (timerEl) timerEl.textContent = '⏱ 0s'
+  loadingTimer = setInterval(() => {
+    const elapsed = Math.floor((Date.now() - loadingStart) / 1000)
+    if (timerEl) timerEl.textContent = `⏱ ${elapsed}s`
+  }, 1000)
+
+  // Tips rotativas — troca a cada 4s com fade
+  const tipEl = document.getElementById('ld-tip')
+  let tipIdx = Math.floor(Math.random() * LOADING_TIPS.length)
+  if (tipEl) tipEl.textContent = LOADING_TIPS[tipIdx]
+  tipInterval = setInterval(() => {
+    if (!tipEl) return
+    tipEl.style.opacity = '0'
+    setTimeout(() => {
+      tipIdx = (tipIdx + 1) % LOADING_TIPS.length
+      tipEl.textContent = LOADING_TIPS[tipIdx]
+      tipEl.style.opacity = '1'
+    }, 300)
+  }, 4000)
+}
+
+function stopLoadingExtras() {
+  if (loadingTimer) { clearInterval(loadingTimer); loadingTimer = null }
+  if (tipInterval)  { clearInterval(tipInterval);  tipInterval  = null }
+  const extras = document.getElementById('ld-extras')
+  if (extras) extras.style.display = 'none'
+}
+
+// ── Compose ───────────────────────────────────────────
 async function compose(mode = 'basic') {
   const repoPhotos = repository.filter(Boolean)
   if (repoPhotos.length < 1) return
 
-  // FIX 2.3: Validar se há fotos suficientes para o grid
   if (repoPhotos.length < planSize) {
     showErr(`Adicione pelo menos ${planSize} foto${planSize > 1 ? 's' : ''} para compor um grid de ${planSize}. Você tem ${repoPhotos.length}.`)
     return
@@ -19,6 +83,7 @@ async function compose(mode = 'basic') {
   document.getElementById('go').disabled = true
   document.getElementById('go-advanced').disabled = true
   step(1)
+  startLoadingExtras()
   try {
     const H  = HARMONIES.find(h => h.id === selH)
     const P  = PATTERNS.find(p => p.id === selP)
@@ -49,7 +114,6 @@ async function compose(mode = 'basic') {
         descContent.push({ type:'image', source:{ type:'base64', media_type:'image/jpeg', data:p.compressed.split(',')[1] } })
         descContent.push({ type:'text', text:`[FOTO ${i+1}]` })
       })
-      // FIX 3.2: usa prompt centralizado de prompts.js
       descContent.push({ type:'text', text: buildPreAnalysisPrompt() })
 
       const descRes = await fetch('/api/analyze', {
@@ -77,7 +141,6 @@ async function compose(mode = 'basic') {
       content.push({ type:'text', text:`[FOTO ${i+1}]` })
     })
     step(isAdvanced ? 4 : 3)
-    // FIX 3.2: usa prompt centralizado de prompts.js
     content.push({ type:'text', text: buildPrompt(H,P,kw,kc,colorCtx+visualCtx,igCtx,planSize,repoPhotos.length,isAdvanced) })
 
     const res = await fetch('/api/analyze', {
@@ -109,6 +172,7 @@ async function compose(mode = 'basic') {
   } catch(e) {
     showErr(e.message)
   } finally {
+    stopLoadingExtras()
     document.getElementById('loading').classList.remove('show')
     document.getElementById('go').disabled = false
     document.getElementById('go-advanced').disabled = false
@@ -124,7 +188,6 @@ function step(n) {
 }
 
 // ── Local reordering ──────────────────────────────────
-// Graph 2-coloring: guarantees no two same-group photos are adjacent (horiz or vert)
 function graphTwoColor(rows) {
   const map = []
   for (let r = 0; r < rows; r++)
@@ -133,7 +196,6 @@ function graphTwoColor(rows) {
   return map
 }
 
-// Pattern-based mapping for how accents are distributed
 function buildPatternMap(rows, totalAccents, totalPhotos, pattern) {
   const map = []
   const ratio = totalAccents / totalPhotos
