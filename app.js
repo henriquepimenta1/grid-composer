@@ -327,6 +327,9 @@ function renderDetails() {
     const palDots=(p.colors||[]).slice(0,5).map(c=>`<div class="pr-pc" style="background:${c.hex}"></div>`).join('')
     const cBadge=s.contrast_role?`<span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:100px;background:#f3f4f6;color:#374151;">${axis?.icon||''} ${s.contrast_role}</span>`:''
     const gridPos=getGridPosition(s.slot,currentPlan.length)
+    const scoreBadge = (p.photoScore != null && planLimits().hasScore)
+      ? `<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:100px;background:${p.photoScore>=70?'#d5f5e3':p.photoScore>=40?'#fef3c7':'#fce4ec'};color:${p.photoScore>=70?'#166534':p.photoScore>=40?'#92400e':'#991b1b'}" title="${(p.scoreIssues||[]).join(', ')}">${p.photoScore} pts</span>`
+      : ''
     return `<div class="post-row">
       <div class="pr-thumb"><img src="${p.cropUrl||p.dataUrl}"></div>
       <div class="pr-body">
@@ -335,9 +338,11 @@ function renderDetails() {
           <span class="pr-type">${s.type}</span>
           ${cBadge}
           <span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:100px;background:#f3f4f6;color:#6b7280;">📍 ${gridPos}</span>
+          ${scoreBadge}
           <span class="pr-temp ${iW?'pr-tw':'pr-tc'}">${iW?'Quente':'Frio'}</span>
         </div>
         <div class="pr-reason">${s.reason}</div>
+        ${(p.scoreIssues?.length && p.scoreIssues[0] !== 'nenhum problema' && planLimits().hasScore) ? `<div style="font-size:10px;color:#92400e;background:#fef3c7;padding:3px 8px;border-radius:4px;margin-bottom:4px">⚠ ${p.scoreIssues.join(' · ')}</div>` : ''}
         <div class="pr-preset">⚙ ${s.preset}</div>
         <div class="pr-pal">${palDots}</div>
       </div>

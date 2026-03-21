@@ -148,6 +148,9 @@ function renderUploadGrid() {
     if (photo) {
       const pal = (photo.colors||[]).slice(0,5).map(c=>`<div style="flex:1;background:${c.hex}"></div>`).join('')
       const hasInfo = currentPlan.length > 0
+      const scoreHtml = (photo.photoScore != null && limits.hasScore)
+        ? `<div class="photo-score photo-score-${photo.photoScore >= 70 ? 'good' : photo.photoScore >= 40 ? 'mid' : 'low'}" title="${(photo.scoreIssues||[]).join(', ') || 'Score'}">${photo.photoScore}</div>`
+        : ''
       cells.push(`
         <div class="ugslot filled" draggable="true"
           ondragstart="ugDragStart(event,${i})" ondragover="ugDragOver(event)"
@@ -155,6 +158,7 @@ function renderUploadGrid() {
           ondragend="ugDragEnd(event)">
           <img src="${photo.cropUrl || photo.dataUrl}">
           <button class="ugslot-del" onclick="event.stopPropagation();clearSlot(${i})" title="Remover">✕</button>
+          ${scoreHtml}
           <div class="slot-actions">
             <button class="slot-act" onclick="event.stopPropagation();openCrop(${repoIdx})" title="Recortar">✂</button>
             <button class="slot-act ${hasInfo?'':'slot-act-dim'}" onclick="event.stopPropagation();openSlotInfo(${i})" title="${hasInfo?'Ver informações':'Sem análise ainda'}">ℹ</button>

@@ -148,7 +148,7 @@ async function compose(mode = 'basic') {
 
       const descRes = await fetch('/api/analyze', {
         method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+authToken},
-        body: JSON.stringify({ model:'claude-sonnet-4-20250514', max_tokens:800, messages:[{role:'user',content:descContent}], _mode:'pre-analysis' })
+        body: JSON.stringify({ model:'claude-sonnet-4-20250514', max_tokens:1200, messages:[{role:'user',content:descContent}], _mode:'pre-analysis' })
       })
       if (descRes.ok) {
         const descData = await descRes.json()
@@ -160,6 +160,16 @@ async function compose(mode = 'basic') {
             visualCtx = '\nANÁLISE VISUAL DAS FOTOS:\n' + parsed.photos.map(ph =>
               `FOTO ${ph.id}: sujeito=${ph.subject} plano=${ph.framing} energia=${ph.energy} luminosidade=${ph.luminosity} elemento="${ph.dominant_element}"`
             ).join('\n')
+            // Store score on repository photos (Pro/Studio only)
+            if (planLimits().hasScore) {
+              parsed.photos.forEach(ph => {
+                const idx = (ph.id || 1) - 1
+                if (repository[idx]) {
+                  repository[idx].photoScore = typeof ph.score === 'number' ? Math.round(ph.score) : null
+                  repository[idx].scoreIssues = Array.isArray(ph.score_issues) ? ph.score_issues : []
+                }
+              })
+            }
           }
         } catch {}
       }

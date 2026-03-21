@@ -171,6 +171,12 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
 .existing-add-btn{width:100%;padding:8px;border-radius:var(--r-sm);border:1.5px dashed var(--border);background:transparent;cursor:pointer;font-size:12px;font-weight:600;color:var(--text2);transition:all .15s;font-family:var(--font)}
 .existing-add-btn:hover{border-color:var(--blue);color:var(--blue);background:#f0f8ff}
 
+/* Photo score badge */
+.photo-score{position:absolute;top:4px;left:4px;font-size:10px;font-weight:800;padding:2px 6px;border-radius:4px;z-index:3;line-height:1.3;font-family:var(--font);backdrop-filter:blur(4px)}
+.photo-score-good{background:rgba(39,174,96,.85);color:white}
+.photo-score-mid{background:rgba(243,156,18,.85);color:white}
+.photo-score-low{background:rgba(231,76,60,.85);color:white}
+
 /* Slot actions */
 .slot-actions{position:absolute;bottom:6px;right:6px;display:none;gap:4px;align-items:center;z-index:3}
 .ugslot.filled:hover .slot-actions{display:flex}
