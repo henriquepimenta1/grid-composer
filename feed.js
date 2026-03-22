@@ -203,7 +203,7 @@ function renderUploadGrid() {
         ? `<button class="existing-add-btn" onclick="addNewRow()" style="flex:1">+ Adicionar linha</button>`
         : `<button class="existing-add-btn" style="flex:1;opacity:.4;cursor:not-allowed" title="Máximo ${limits.maxGrid} posts no plano ${currentUserPlan}">+ Máx ${limits.maxGrid} posts</button>`
       }
-      ${canRemove ? `<button class="existing-add-btn" onclick="removeLastRow()" style="flex:0 0 auto;color:var(--red);border-color:#fca5a5">− Remover</button>` : ''}
+      ${canRemove ? `<button class="existing-add-btn" onclick="removeLastRow()" style="flex:0 0 auto;min-width:90px;color:var(--red);border-color:#fca5a5">− Remover linha</button>` : ''}
     </div>`)
 
   // ── Separator ───────────────────────────────────────

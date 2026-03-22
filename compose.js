@@ -377,19 +377,62 @@ function reorderByHarmony(harmonyId) {
     let hue=0
     if (d>0) { if (max===r) hue=((g-b)/d+(g<b?6:0))*60; else if (max===g) hue=((b-r)/d+2)*60; else hue=((r-g)/d+4)*60 }
     const warm=p.kelvin<5000, L=hexToL(hex), sat=estimateSaturation(p.colors)
-    return { repoIdx, hue, warm, L, sat, kelvin:p.kelvin }
+    const lab=hexToLab(hex)
+    return { repoIdx, hue, warm, L, sat, kelvin:p.kelvin, lab }
   }).filter(Boolean)
+
+  // ΔE2000-based harmony: find anchor (most saturated photo),
+  // compute target poles by rotating hue, assign by perceptual proximity
+  const anchor = photos.reduce((best,p) => p.sat > best.sat ? p : best, photos[0])
+
   let scored
   switch (harmonyId) {
-    case 'complementary':
+    case 'complementary': {
+      const compLab = rotateHueLab(anchor.lab, 180)
       scored = photos.map(p => {
-        const ph = repository[p.repoIdx]
-        const hasAccent = ph?.hasAccent || p.warm
-        return { ...p, score: hasAccent ? 100 - p.kelvin/100 : p.kelvin/100, group: hasAccent ? 'A' : 'B' }
+        const dA=deltaE2000(p.lab, anchor.lab), dB=deltaE2000(p.lab, compLab)
+        const group=dA<=dB?'A':'B'
+        return { ...p, score: group==='A' ? 100-dA : 100-dB, group }
       })
       break
-    case 'analogous':     scored=photos.map(p=>({...p,score:p.hue,group:p.hue<180?'A':'B'})); break
-    case 'split': case 'triad': case 'square': scored=photos.map(p=>({...p,score:p.hue,group:Math.floor(p.hue/120)%2===0?'A':'B'})); break
+    }
+    case 'analogous': {
+      // Analogous = within ±30° of anchor; score by closest of the 3 analog poles
+      const sub1=rotateHueLab(anchor.lab,-30), sub2=rotateHueLab(anchor.lab,30)
+      scored = photos.map(p => {
+        const minD=Math.min(deltaE2000(p.lab,anchor.lab),deltaE2000(p.lab,sub1),deltaE2000(p.lab,sub2))
+        return { ...p, score: 100-minD, group: minD<18?'A':'B' }
+      })
+      break
+    }
+    case 'split': {
+      // Split-complementary: anchor + its two split complements (±150°)
+      const sp1=rotateHueLab(anchor.lab,150), sp2=rotateHueLab(anchor.lab,210)
+      scored = photos.map(p => {
+        const dA=deltaE2000(p.lab,anchor.lab), dB=Math.min(deltaE2000(p.lab,sp1),deltaE2000(p.lab,sp2))
+        const group=dA<=dB?'A':'B'
+        return { ...p, score: group==='A' ? 100-dA : 100-dB, group }
+      })
+      break
+    }
+    case 'triad': {
+      const t1=rotateHueLab(anchor.lab,120), t2=rotateHueLab(anchor.lab,240)
+      scored = photos.map(p => {
+        const dA=deltaE2000(p.lab,anchor.lab), dB=Math.min(deltaE2000(p.lab,t1),deltaE2000(p.lab,t2))
+        const group=dA<=dB?'A':'B'
+        return { ...p, score: group==='A' ? 100-dA : 100-dB, group }
+      })
+      break
+    }
+    case 'square': {
+      const sq1=rotateHueLab(anchor.lab,90), sq2=rotateHueLab(anchor.lab,180), sq3=rotateHueLab(anchor.lab,270)
+      scored = photos.map(p => {
+        const dA=deltaE2000(p.lab,anchor.lab), dB=Math.min(deltaE2000(p.lab,sq1),deltaE2000(p.lab,sq2),deltaE2000(p.lab,sq3))
+        const group=dA<=dB?'A':'B'
+        return { ...p, score: group==='A' ? 100-dA : 100-dB, group }
+      })
+      break
+    }
     case 'monochrome': scored=photos.map(p=>({...p,score:p.L,group:p.L>55?'A':'B'})); break
     case 'shades':     scored=photos.map(p=>({...p,score:p.L,group:p.L<35?'A':'B'})); break
     case 'custom': default: reorderByAxis(selC); return

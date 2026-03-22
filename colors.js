@@ -239,6 +239,54 @@ function hexToL(hex) {
   return 116*fy - 16
 }
 
+function hexToLab(hex) {
+  const r = parseInt(hex.slice(1,3), 16)
+  const g = parseInt(hex.slice(3,5), 16)
+  const b = parseInt(hex.slice(5,7), 16)
+  return rgbToLab(r, g, b)
+}
+
+// CIEDE2000 — perceptually uniform color distance
+// More accurate than euclidean LAB for harmony classification
+function deltaE2000(lab1, lab2) {
+  const [L1,a1,b1] = lab1, [L2,a2,b2] = lab2
+  const C1=Math.sqrt(a1*a1+b1*b1), C2=Math.sqrt(a2*a2+b2*b2)
+  const Cb=(C1+C2)/2, Cb7=Math.pow(Cb,7), p25_7=Math.pow(25,7)
+  const G=0.5*(1-Math.sqrt(Cb7/(Cb7+p25_7)))
+  const a1p=a1*(1+G), a2p=a2*(1+G)
+  const C1p=Math.sqrt(a1p*a1p+b1*b1), C2p=Math.sqrt(a2p*a2p+b2*b2)
+  const h1p=b1===0&&a1p===0?0:(Math.atan2(b1,a1p)*180/Math.PI+360)%360
+  const h2p=b2===0&&a2p===0?0:(Math.atan2(b2,a2p)*180/Math.PI+360)%360
+  const dLp=L2-L1, dCp=C2p-C1p
+  let dhp=0
+  if (C1p*C2p!==0) { const d=h2p-h1p; dhp=Math.abs(d)<=180?d:d>180?d-360:d+360 }
+  const dHp=2*Math.sqrt(C1p*C2p)*Math.sin(dhp*Math.PI/360)
+  const Lbp=(L1+L2)/2, Cbp=(C1p+C2p)/2
+  let hbp=h1p+h2p
+  if (C1p*C2p!==0) {
+    const d=Math.abs(h1p-h2p)
+    hbp=d<=180?(h1p+h2p)/2:h1p+h2p<360?(h1p+h2p+360)/2:(h1p+h2p-360)/2
+  }
+  const T=1-0.17*Math.cos((hbp-30)*Math.PI/180)+0.24*Math.cos(2*hbp*Math.PI/180)
+         +0.32*Math.cos((3*hbp+6)*Math.PI/180)-0.20*Math.cos((4*hbp-63)*Math.PI/180)
+  const dT=30*Math.exp(-Math.pow((hbp-275)/25,2))
+  const Cbp7=Math.pow(Cbp,7), RC=2*Math.sqrt(Cbp7/(Cbp7+p25_7))
+  const Lb50sq=Math.pow(Lbp-50,2)
+  const SL=1+0.015*Lb50sq/Math.sqrt(20+Lb50sq), SC=1+0.045*Cbp, SH=1+0.015*Cbp*T
+  const RT=-Math.sin(2*dT*Math.PI/180)*RC
+  return Math.sqrt((dLp/SL)**2+(dCp/SC)**2+(dHp/SH)**2+RT*(dCp/SC)*(dHp/SH))
+}
+
+// Rotate hue of a LAB color by N degrees (via HSL intermediate)
+function rgbToHsl(r,g,b){r/=255;g/=255;b/=255;const max=Math.max(r,g,b),min=Math.min(r,g,b),d=max-min,l=(max+min)/2;if(!d)return[0,0,l];const s=l>0.5?d/(2-max-min):d/(max+min);let h;if(max===r)h=((g-b)/d+(g<b?6:0))/6;else if(max===g)h=((b-r)/d+2)/6;else h=((r-g)/d+4)/6;return[h*360,s,l]}
+function hslToRgb(h,s,l){h/=360;const q=l<0.5?l*(1+s):l+s-l*s,p=2*l-q,f=(p,q,t)=>{if(t<0)t+=1;if(t>1)t-=1;if(t<1/6)return p+(q-p)*6*t;if(t<1/2)return q;if(t<2/3)return p+(q-p)*(2/3-t)*6;return p};return[Math.round(f(p,q,h+1/3)*255),Math.round(f(p,q,h)*255),Math.round(f(p,q,h-1/3)*255)]}
+function rotateHueLab(lab, degrees) {
+  const [r,g,b]=labToRgb(lab[0],lab[1],lab[2])
+  const [h,s,l]=rgbToHsl(r,g,b)
+  const [r2,g2,b2]=hslToRgb((h+degrees+360)%360,s,l)
+  return rgbToLab(r2,g2,b2)
+}
+
 function estimateSaturation(colors) {
   if (!colors?.length) return 0
   const hex = colors[0].hex
