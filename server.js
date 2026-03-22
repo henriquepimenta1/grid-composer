@@ -70,7 +70,7 @@ function calculateCreditCost(mode, plan) {
 }
 
 function capMaxTokens(mode, requestedMax) {
-  if (mode === 'pre-analysis') return Math.min(requestedMax || 800, 800);
+  if (mode === 'pre-analysis') return Math.min(requestedMax || 1200, 1200);
   if (mode === 'caption')      return Math.min(requestedMax || 500, 500);
   if (mode === 'profile')      return Math.min(requestedMax || 4000, 4000);
   return Math.min(requestedMax || 4000, 4000);

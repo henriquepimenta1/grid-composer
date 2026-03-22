@@ -58,6 +58,7 @@ function openPhotoModalDirect(s, p, slotIdx) {
   tempEl.textContent=iW?`🟠 Quente · ${s.kelvin}`:`🔵 Frio · ${s.kelvin}`
   tempEl.className=`pm-temp ${iW?'pr-tw':'pr-tc'}`
   renderPaletteInModal(p,slotIdx)
+  renderScoreInModal(p)
   resetCaptionArea()
   document.getElementById('photo-modal').classList.add('open')
 }
@@ -74,6 +75,7 @@ function openPhotoModalFromRepo(repoIdx, slotIdx) {
   tempEl.textContent=iW?`🟠 Quente · ${p.kelvin}K`:`🔵 Frio · ${p.kelvin}K`
   tempEl.className=`pm-temp ${iW?'pr-tw':'pr-tc'}`
   renderPaletteInModal(p,0)
+  renderScoreInModal(p)
   resetCaptionArea()
   document.getElementById('photo-modal').classList.add('open')
 }
@@ -93,6 +95,59 @@ function removeSlotPhoto() {
   closePhotoModal(); renderUploadGrid()
   document.getElementById('results').classList.remove('show')
   document.getElementById('results').innerHTML=''; currentPlan=[]
+}
+
+// ── Score display in photo modal ──────────────────────
+function renderScoreInModal(p) {
+  const container = document.getElementById('pm-score-section')
+  if (!container) return
+  const limits = planLimits()
+
+  if (!limits.hasScore) {
+    container.innerHTML = `
+      <div class="pm-label">Score de qualidade</div>
+      <div style="font-size:12px;color:var(--text3);background:var(--bg);border-radius:var(--r-sm);padding:10px 12px">
+        🔒 Disponível no Pro e Studio após composição avançada.
+      </div>`
+    container.style.display = 'block'
+    return
+  }
+
+  if (p.photoScore == null) {
+    container.innerHTML = `
+      <div class="pm-label">Score de qualidade</div>
+      <div style="font-size:12px;color:var(--text3);background:var(--bg);border-radius:var(--r-sm);padding:10px 12px">
+        Use composição avançada (✦✦) para obter o score técnico desta foto.
+      </div>`
+    container.style.display = 'block'
+    return
+  }
+
+  const score = p.photoScore
+  const issues = p.scoreIssues || []
+  const isGood = score >= 70
+  const isMid = score >= 40 && score < 70
+  const color = isGood ? '#166534' : isMid ? '#92400e' : '#991b1b'
+  const bg = isGood ? '#d5f5e3' : isMid ? '#fef3c7' : '#fce4ec'
+  const barColor = isGood ? '#27ae60' : isMid ? '#f39c12' : '#e74c3c'
+  const label = isGood ? 'Boa qualidade' : isMid ? 'Qualidade média' : 'Qualidade baixa'
+  const hasIssues = issues.length > 0 && issues[0] !== 'nenhum problema'
+
+  container.innerHTML = `
+    <div class="pm-label">Score de qualidade técnica</div>
+    <div style="background:var(--bg);border-radius:var(--r-sm);padding:12px">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+        <div style="font-size:28px;font-weight:800;color:${color}">${score}</div>
+        <div style="flex:1">
+          <div style="font-size:12px;font-weight:600;color:${color};margin-bottom:4px">${label}</div>
+          <div style="height:4px;border-radius:2px;background:var(--border-light);overflow:hidden">
+            <div style="width:${score}%;height:100%;border-radius:2px;background:${barColor}"></div>
+          </div>
+        </div>
+      </div>
+      ${hasIssues ? `<div style="font-size:11px;color:#92400e;background:#fef3c7;padding:6px 8px;border-radius:4px;line-height:1.5">⚠ ${issues.join(' · ')}</div>` : `<div style="font-size:11px;color:#166534;background:#d5f5e3;padding:6px 8px;border-radius:4px">✓ Nenhum problema técnico detectado</div>`}
+    </div>`
+  container.style.display = 'block'
 }
 
 // ── Caption suggestion (Pro/Studio, 1 credit) ────────
