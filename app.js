@@ -238,6 +238,8 @@ function clearAll() {
   hideErr(); setStatus('','')
   const mentorPanel = document.getElementById('mentor-panel')
   if (mentorPanel) mentorPanel.style.display = 'none'
+  const diagPanel = document.getElementById('diagnosis-panel')
+  if (diagPanel) diagPanel.style.display = 'none'
   updateActionButtons()
 }
 
@@ -318,6 +320,7 @@ function renderResults(data, H) {
 
   saveAnalysisToHistory(data, H)
   renderMentor()
+  renderDiagnosis(data.diagnosis || null)
 }
 
 function renderDetails() {
@@ -482,6 +485,86 @@ function analyzeFeed() {
   }
 
   return tips.slice(0, 5) // max 5 tips
+}
+
+// ── Profile Diagnosis (Studio only, embutido na avançada) ──
+function renderDiagnosis(diag) {
+  const panel = document.getElementById('diagnosis-panel')
+  if (!panel) return
+
+  if (!diag || !planLimits().hasProfile) {
+    panel.style.display = 'none'
+    return
+  }
+
+  const score = diag.consistency_score ?? 0
+  const scoreColor = score >= 70 ? '#166534' : score >= 40 ? '#92400e' : '#991b1b'
+  const scoreBg    = score >= 70 ? '#d5f5e3' : score >= 40 ? '#fef3c7' : '#fce4ec'
+  const scoreBar   = score >= 70 ? '#27ae60' : score >= 40 ? '#f39c12' : '#e74c3c'
+  const scoreLabel = score >= 70 ? 'Feed consistente' : score >= 40 ? 'Consistência média' : 'Feed inconsistente'
+
+  const paletteHtml = (diag.dominant_palette || []).map(hex =>
+    `<div style="width:32px;height:32px;border-radius:6px;background:${hex};border:1px solid var(--border-light)"></div>`
+  ).join('')
+
+  const tempMapHtml = (diag.temperature_map || []).map(t =>
+    `<div style="flex:1;height:24px;border-radius:3px;background:${t === 'warm' ? 'linear-gradient(135deg,#f59e0b,#e8920a)' : 'linear-gradient(135deg,#60a5fa,#3b82f6)'}"></div>`
+  ).join('')
+
+  const balance  = diag.balance || {}
+  const warmPct  = balance.warm_pct ?? 50
+  const coolPct  = balance.cool_pct ?? 50
+
+  const issuesHtml = (diag.issues || []).map(issue =>
+    `<div style="display:flex;gap:6px;align-items:flex-start;font-size:11px;color:#92400e;line-height:1.5"><span style="flex-shrink:0">⚠</span><span>${issue}</span></div>`
+  ).join('')
+
+  panel.style.display = 'block'
+  panel.innerHTML = `
+    <div class="diag-header">
+      <span style="font-size:16px">📊</span>
+      <span class="diag-title">Diagnóstico do perfil</span>
+      <span class="diag-badge">Studio</span>
+    </div>
+    <div class="diag-body">
+      <div class="diag-row">
+        <div class="diag-card">
+          <div class="diag-card-label">Harmonia detectada</div>
+          <div class="diag-card-value">${diag.detected_harmony || '—'}</div>
+        </div>
+        <div class="diag-card">
+          <div class="diag-card-label">Consistência</div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="font-size:22px;font-weight:800;color:${scoreColor}">${score}</span>
+            <div style="flex:1">
+              <div style="font-size:10px;color:${scoreColor};font-weight:600;margin-bottom:3px">${scoreLabel}</div>
+              <div style="height:4px;border-radius:2px;background:var(--border-light);overflow:hidden">
+                <div style="width:${score}%;height:100%;border-radius:2px;background:${scoreBar}"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="diag-section">
+        <div class="diag-section-label">Mapa de temperatura do feed</div>
+        <div style="display:flex;gap:2px;margin-bottom:4px">${tempMapHtml}</div>
+        <div style="display:flex;justify-content:space-between;font-size:10px">
+          <span style="color:var(--warm);font-weight:600">🟠 ${warmPct}% quente</span>
+          <span style="color:var(--cool);font-weight:600">🔵 ${coolPct}% frio</span>
+        </div>
+      </div>
+      <div class="diag-section">
+        <div class="diag-section-label">Paleta dominante do feed</div>
+        <div style="display:flex;gap:6px">${paletteHtml}</div>
+      </div>
+      ${issuesHtml ? `<div class="diag-section"><div class="diag-section-label">Problemas detectados</div><div style="display:flex;flex-direction:column;gap:4px;background:#fef3c7;border-radius:var(--r-sm);padding:8px 10px">${issuesHtml}</div></div>` : ''}
+      <div class="diag-section">
+        <div class="diag-section-label">Próxima foto recomendada</div>
+        <div style="font-size:12px;color:var(--text);line-height:1.6;background:#f0f9ff;border:1px solid #bae6fd;border-radius:var(--r-sm);padding:10px 12px">
+          📸 ${diag.next_photo || 'Faça uma composição avançada com fotos existentes para obter recomendação.'}
+        </div>
+      </div>
+    </div>`
 }
 
 // Legacy no-op

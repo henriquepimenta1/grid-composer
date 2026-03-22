@@ -189,7 +189,9 @@ async function compose(mode = 'basic') {
       })
     }
     step(isAdvanced ? 4 : 3)
-    content.push({ type:'text', text: buildPrompt(H,P,kw,kc,colorCtx+visualCtx,existingCtx,planSize,repoPhotos.length,isAdvanced) })
+    // Studio + advanced + existing photos = include profile diagnosis
+    const hasDiagnosis = isAdvanced && planLimits().hasProfile && existingPhotos.length > 0
+    content.push({ type:'text', text: buildPrompt(H,P,kw,kc,colorCtx+visualCtx,existingCtx,planSize,repoPhotos.length,isAdvanced,hasDiagnosis) })
 
     const res = await fetch('/api/analyze', {
       method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+authToken},

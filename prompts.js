@@ -1,6 +1,6 @@
 // prompts.js — Prompt templates for AI composition
 
-function buildPrompt(H, P, kw, kc, colorCtx, existingCtx, size, totalPhotos, isAdvanced = false) {
+function buildPrompt(H, P, kw, kc, colorCtx, existingCtx, size, totalPhotos, isAdvanced = false, hasDiagnosis = false) {
   const axis = CONTRAST_AXES.find(a => a.id === selC)
   const kelvinLine = axis?.useKelvin
     ? `Kelvin-Q=ate${kw}K Kelvin-F=acima${kc}K`
@@ -23,6 +23,24 @@ ${existingCtx}
 Considere adjacência vertical entre último slot novo e primeiro existente.
 Atribua SOMENTE fotos candidatas (1 a ${totalPhotos}) aos slots.
 ` : ''
+
+  const diagnosisSection = hasDiagnosis ? `
+DIAGNÓSTICO DO PERFIL (OBRIGATÓRIO — inclua no JSON):
+Analise as FOTOS EXISTENTES do feed e retorne dentro do JSON:
+"diagnosis": {
+  "detected_harmony": "nome da harmonia mais próxima (Complementar|Análogo|Split|Tríade|Monocromático|Quadrado|Sombras)",
+  "consistency_score": 0-100 (regularidade de temperatura, distribuição de acentos, coerência de paleta),
+  "temperature_map": ["warm","cool","warm",...] (uma string por foto existente, na ordem),
+  "dominant_palette": ["#hex1","#hex2","#hex3"] (3 cores dominantes do feed existente),
+  "balance": {"warm_pct": 40, "cool_pct": 60},
+  "issues": ["problema 1 em português","problema 2"],
+  "next_photo": "descrição da foto ideal para postar em seguida — tipo, temperatura, tom, enquadramento"
+}
+` : ''
+
+  const diagnosisJsonHint = hasDiagnosis
+    ? ',"diagnosis":{"detected_harmony":"...","consistency_score":N,"temperature_map":["warm","cool",...],"dominant_palette":["#hex1","#hex2","#hex3"],"balance":{"warm_pct":N,"cool_pct":N},"issues":["..."],"next_photo":"descrição"}'
+    : ''
 
   return `Especialista em color grading e grid Instagram outdoor/adventure.
 
@@ -49,9 +67,9 @@ REGRA DE DIVERSIDADE VISUAL:
 3. Grupos/multidão = "pessoa" para esta regra.
 4. Detalhes funcionam como separador.
 5. Para feeds paisagem-dominante: alterne escala (panorama vs plano fechado).
-
+${diagnosisSection}
 RETORNE APENAS JSON SEM MARKDOWN:
-{"plan":[{"slot":1,"photo":N,"grid_position":"top-right","temp":"cool","kelvin":"7500K","contrast_role":"frio","type":"TIPO","harmony_role":"papel na harmonia","reason":"max 70 chars","preset":"ajustes PS/LR max 60 chars"}],"overview":"1 frase","harmony_note":"1 frase com eixo usado"}
+{"plan":[{"slot":1,"photo":N,"grid_position":"top-right","temp":"cool","kelvin":"7500K","contrast_role":"frio","type":"TIPO","harmony_role":"papel na harmonia","reason":"max 70 chars","preset":"ajustes PS/LR max 60 chars"}],"overview":"1 frase","harmony_note":"1 frase com eixo usado"${diagnosisJsonHint}}
 
 Slots: ${Array.from({ length: size }, (_, i) => i + 1).join(', ')}
 Fotos: 1 a ${totalPhotos}`
