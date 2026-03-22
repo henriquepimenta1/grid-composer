@@ -65,7 +65,7 @@ function renderFeedTabs() {
     const active = n === planSize && !locked
     if (locked) {
       return `<button class="feed-tab feed-tab-locked" title="Disponível no ${n <= 9 ? 'Pro' : 'Studio'}" onclick="showPlanGate(${n})">
-        <span style="font-size:9px">🔒</span>
+        <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
       </button>`
     }
     return `<button class="feed-tab ${active?'active':''}" onclick="setPlan(${n},this)">${n}</button>`
@@ -143,7 +143,7 @@ function updateActionButtons() {
       goAdv.disabled = true
       goAdv.title = 'Disponível no Pro e Studio'
       const advSub = goAdv.querySelector('.mode-btn-sub')
-      if (advSub) advSub.textContent = '🔒 Disponível no Pro e Studio'
+      if (advSub) advSub.innerHTML = '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="display:inline;vertical-align:middle;margin-right:3px"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>Disponível no Pro e Studio'
     } else {
       goAdv.disabled = !hasEnough
       goAdv.title = ''

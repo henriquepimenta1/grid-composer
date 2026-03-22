@@ -473,5 +473,49 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
 .diag-section{display:flex;flex-direction:column;gap:6px}
 .diag-section-label{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em}
 
+/* ── ACCESSIBILITY + MICROINTERACTIONS ── */
+
+/* Focus ring: visível só no teclado, nunca no mouse */
+:focus-visible{outline:2px solid var(--blue);outline-offset:2px;border-radius:3px}
+:focus:not(:focus-visible){outline:none}
+
+/* Cursor pointer em elementos clicáveis que faltavam */
+.pm-close,.palette-swatch,.hc-del,.hc-restore,.history-hdr-close{cursor:pointer}
+
+/* Chips: ease-out sente mais instantâneo */
+.hchip,.pchip,.cchip{transition:border-color .15s ease-out,background .15s ease-out,color .15s ease-out,box-shadow .15s ease-out}
+.hchip:hover,.pchip:hover,.cchip:hover{box-shadow:0 1px 4px rgba(0,0,0,.08)}
+
+/* Press feedback nos botões de ação */
+.mode-btn:not(:disabled):active{transform:scale(.98);transition:transform .08s ease-out}
+.repo-thumb:active{transform:scale(.93)!important}
+.feed-tab:not(.feed-tab-locked):active{transform:scale(.92)}
+.sbtn:not(:disabled):active{transform:scale(.97)}
+.howto-btn:active{transform:scale(.96)}
+
+/* Entrada dos cards de resultado */
+@keyframes slideUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.results.show .plan-post-summary{animation:slideUp .2s ease-out both}
+.results.show .detail-panel{animation:slideUp .2s ease-out .07s both}
+.results.show .mentor-panel{animation:slideUp .2s ease-out .12s both}
+.results.show .diagnosis-panel{animation:slideUp .2s ease-out .16s both}
+
+/* Hover nas linhas de detalhe */
+.post-row{transition:background .12s}
+.post-row:hover{background:var(--bg)}
+
+/* Mentor tips hover */
+.mentor-tip{transition:background .12s}
+.mentor-tip:hover{background:var(--bg)}
+
+/* Transição suave no error panel */
+.err-panel{transition:opacity .15s ease-out}
+
+/* Prefers-reduced-motion: desativa todas as animações */
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
+  .ld-fill{animation:none;width:60%;background:var(--blue)}
+}
+
 canvas{display:none}
 #fin{display:none}
