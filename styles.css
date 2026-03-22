@@ -248,7 +248,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
 /* ── ERROR ── */
 .err-panel{display:none;background:#fff5f5;border:1.5px solid #fca5a5;border-left:4px solid var(--red);border-radius:var(--r);padding:14px 16px}
 .err-panel.show{display:flex;gap:10px;align-items:flex-start}
-.err-icon{font-size:18px;flex-shrink:0;margin-top:1px}
+.err-icon{flex-shrink:0;margin-top:1px;color:var(--red);display:flex}
 .err-title{font-size:13px;font-weight:700;color:var(--red);margin-bottom:3px}
 .err-msg{font-size:12px;color:#c0392b;line-height:1.5;font-family:monospace;background:#fee2e2;padding:6px 8px;border-radius:4px;margin-top:4px;word-break:break-all}
 
