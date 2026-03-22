@@ -11,14 +11,25 @@ function init() {
   renderFeedTabs()
   renderUploadGrid()
   updateActionButtons()
+  // Mobile: abre sidebar por padrão
+  if (window.innerWidth <= 768) {
+    const sidebar = document.getElementById('sidebar')
+    const btn = document.getElementById('sb-toggle-btn')
+    if (sidebar) sidebar.classList.add('sb-open')
+    if (btn) btn.setAttribute('aria-expanded', 'true')
+  }
 }
 
 function toggleSidebar() {
-  const sidebar = document.querySelector('.sidebar')
-  const btn = document.getElementById('sidebar-toggle-btn')
+  const sidebar = document.getElementById('sidebar')
+  const btn = document.getElementById('sb-toggle-btn')
   if (!sidebar) return
-  sidebar.classList.toggle('open')
-  if (btn) btn.setAttribute('aria-expanded', sidebar.classList.contains('open'))
+  const isOpen = sidebar.classList.toggle('sb-open')
+  if (btn) {
+    btn.setAttribute('aria-expanded', isOpen)
+    const chevron = btn.querySelector('.sb-chevron')
+    if (chevron) chevron.style.transform = isOpen ? '' : 'rotate(180deg)'
+  }
 }
 
 function renderHarmonies() {

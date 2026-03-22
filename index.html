@@ -75,7 +75,11 @@
 <div class="app-body" id="app-body" style="visibility:hidden">
 
   <!-- SIDEBAR -->
-  <aside class="sidebar">
+  <aside class="sidebar" id="sidebar">
+    <button class="sb-mobile-toggle" onclick="toggleSidebar()" aria-expanded="true" id="sb-toggle-btn">
+      <span>Harmonia · Padrão · Contraste</span>
+      <svg class="sb-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="18 15 12 9 6 15"/></svg>
+    </button>
     <div class="sb-section">
       <div class="sb-title" data-i18n="harmony">Harmonia</div>
       <div class="h-chips" id="hm-list"></div>

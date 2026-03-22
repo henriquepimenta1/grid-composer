@@ -484,15 +484,16 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
 .mentor-tip-action{font-size:11px;color:var(--text2);line-height:1.5;font-style:italic}
 
 /* ── MOBILE ── */
+/* plan-tabs-mobile sempre escondido — feed-tabs no painel do Feed cobre isso */
+.plan-tabs-mobile{display:none!important}
+
 @media(max-width:768px){
   html,body{height:auto;overflow:auto}
   .app-body{flex-direction:column;overflow:visible}
   .sidebar{width:100%;border-right:none;border-bottom:1px solid var(--border-light)}
-  .main{overflow:visible;padding:16px}
+  .main{overflow:visible;padding:12px}
   .topbar-center{display:none}
-  .plan-tabs-mobile{display:flex!important;gap:6px;padding:12px 16px;border-bottom:1px solid var(--border-light);overflow-x:auto}
 }
-.plan-tabs-mobile{display:none}
 
 /* ── DIAGNOSIS ── */
 .diagnosis-panel{max-width:480px;width:100%;background:var(--white);border:1px solid var(--border-light);border-radius:var(--r);box-shadow:var(--shadow);overflow:hidden}
@@ -553,8 +554,8 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
 }
 
 /* ── LAYOUT: MAIN-LEFT / MAIN-RIGHT ── */
-.main{overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:16px;flex:1;min-height:0}
-.main-left{display:flex;flex-direction:column;gap:16px}
+.main{overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:14px;flex:1;min-height:0}
+.main-left{display:flex;flex-direction:column;gap:14px}
 .main-right{display:flex;flex-direction:column;gap:14px}
 
 /* Desktop ≥1024px: 2 colunas */
@@ -564,16 +565,27 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
   .main-right{flex:1;overflow-y:auto;max-height:calc(100vh - var(--topbar) - 40px)}
 }
 
-/* Botão toggle sidebar (mobile) */
-.sidebar-toggle{display:none;position:fixed;bottom:20px;right:20px;z-index:200;width:48px;height:48px;border-radius:50%;background:var(--text);border:none;color:white;cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,.2);align-items:center;justify-content:center;font-family:var(--font);transition:transform .15s,box-shadow .15s}
-.sidebar-toggle:active{transform:scale(.93)}
+/* FAB toggle — desativado */
+.sidebar-toggle{display:none!important}
+
+/* ── SIDEBAR MOBILE TOGGLE ── */
+.sb-mobile-toggle{display:none}
 @media(max-width:768px){
-  .sidebar-toggle{display:flex}
-  .sidebar{max-height:0;overflow:hidden;transition:max-height .3s ease}
-  .sidebar.open{max-height:600px;overflow:visible}
-}
-@media(prefers-reduced-motion:reduce){
-  .sidebar{transition:none}
+  /* Botão de colapso inline */
+  .sb-mobile-toggle{
+    display:flex;align-items:center;justify-content:space-between;
+    width:100%;padding:12px 16px;
+    background:var(--white);border:none;border-bottom:1px solid var(--border-light);
+    font-family:var(--font);font-size:12px;font-weight:600;color:var(--text2);
+    cursor:pointer;text-align:left
+  }
+  .sb-mobile-toggle:active{background:var(--bg)}
+  .sb-chevron{transition:transform .2s ease;flex-shrink:0}
+  /* Seções da sidebar colapsam quando não tem .sb-open */
+  .sidebar:not(.sb-open) .sb-section{display:none}
+  /* Por padrão: aberta */
+  .sidebar.sb-open .sb-section{display:block}
+  .sidebar{border-bottom:1px solid var(--border-light)}
 }
 
 canvas{display:none}
