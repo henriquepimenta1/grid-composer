@@ -11,6 +11,7 @@ function init() {
   renderFeedTabs()
   renderUploadGrid()
   updateActionButtons()
+  syncThemeIcon()
   // Mobile: abre sidebar por padrão
   if (window.innerWidth <= 768) {
     const sidebar = document.getElementById('sidebar')
@@ -18,6 +19,20 @@ function init() {
     if (sidebar) sidebar.classList.add('sb-open')
     if (btn) btn.setAttribute('aria-expanded', 'true')
   }
+}
+
+function toggleTheme() {
+  const isDark = document.documentElement.classList.toggle('dark')
+  localStorage.setItem('gc-theme', isDark ? 'dark' : 'light')
+  syncThemeIcon()
+}
+
+function syncThemeIcon() {
+  const isDark = document.documentElement.classList.contains('dark')
+  const sun  = document.getElementById('theme-sun')
+  const moon = document.getElementById('theme-moon')
+  if (sun)  sun.style.display  = isDark ? 'block' : 'none'
+  if (moon) moon.style.display = isDark ? 'none'  : 'block'
 }
 
 function toggleSidebar() {
