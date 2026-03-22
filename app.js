@@ -13,6 +13,14 @@ function init() {
   updateActionButtons()
 }
 
+function toggleSidebar() {
+  const sidebar = document.querySelector('.sidebar')
+  const btn = document.getElementById('sidebar-toggle-btn')
+  if (!sidebar) return
+  sidebar.classList.toggle('open')
+  if (btn) btn.setAttribute('aria-expanded', sidebar.classList.contains('open'))
+}
+
 function renderHarmonies() {
   document.getElementById('hm-list').innerHTML = HARMONIES.map(h => {
     return `<div class="hchip ${h.id===selH?'on':''} ${h.highlight?'hchip-hl':''}" onclick="selHarmony('${h.id}')">
@@ -309,7 +317,14 @@ function renderResults(data, H) {
     </div>`
   renderDetails()
   results.classList.add('show')
-  document.querySelector('.main').scrollTo({top:0,behavior:'smooth'})
+  // Desktop: scroll results panel to top; Mobile: scroll window to results
+  if (window.innerWidth >= 1024) {
+    const rightPanel = document.getElementById('main-right')
+    if (rightPanel) rightPanel.scrollTo({top:0,behavior:'smooth'})
+  } else {
+    const rightPanel = document.getElementById('main-right')
+    if (rightPanel) rightPanel.scrollIntoView({behavior:'smooth',block:'start'})
+  }
 
   const expBtn = document.getElementById('export-btn')
   if (expBtn) expBtn.style.display = 'block'

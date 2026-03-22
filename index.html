@@ -66,6 +66,11 @@
   <button class="plan-tab" onclick="setPlanM(9,this)">Próximos 9</button>
 </div>
 
+<!-- MOBILE SIDEBAR TOGGLE -->
+<button class="sidebar-toggle" onclick="toggleSidebar()" id="sidebar-toggle-btn" aria-label="Mostrar/ocultar opções" title="Opções">
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+</button>
+
 <!-- APP BODY -->
 <div class="app-body" id="app-body" style="visibility:hidden">
 
@@ -128,106 +133,109 @@
   <!-- MAIN -->
   <main class="main">
 
-    <!-- REPOSITÓRIO -->
-    <div class="upload-panel">
-      <div class="up-hdr">
-        <span class="up-title">Repositório</span>
-        <div class="up-meta">
-          <span class="up-cnt" id="pcnt">0 / 12</span>
-          <button class="up-clear" onclick="clearAll()">Limpar tudo</button>
-        </div>
-      </div>
-      <div class="up-body">
-        <div class="repo-grid" id="repo-grid">
-          <div class="repo-add" id="repo-add" onclick="document.getElementById('fin').click()">
-            <span style="font-size:22px;color:var(--text3)">+</span>
-            <span style="font-size:11px;color:var(--text3);margin-top:2px">Adicionar</span>
+    <!-- COLUNA ESQUERDA: controles -->
+    <div class="main-left">
+
+      <!-- REPOSITÓRIO -->
+      <div class="upload-panel">
+        <div class="up-hdr">
+          <span class="up-title">Repositório</span>
+          <div class="up-meta">
+            <span class="up-cnt" id="pcnt">0 / 12</span>
+            <button class="up-clear" onclick="clearAll()">Limpar tudo</button>
           </div>
         </div>
-        <input type="file" id="fin" accept="image/*" multiple onchange="handleFiles(this.files)">
-        <canvas id="cv"></canvas>
-        <div class="up-status" id="exts"></div>
-      </div>
-    </div>
-
-    <!-- FEED -->
-    <div class="upload-panel feed-panel">
-      <div class="up-hdr">
-        <span class="up-title">Feed</span>
-        <div class="up-meta">
-          <div class="feed-tabs" id="feed-tabs-main"></div>
-          <span style="font-size:11px;color:var(--text3)" id="feed-hint">novos posts · arraste do repositório</span>
+        <div class="up-body">
+          <div class="repo-grid" id="repo-grid">
+            <div class="repo-add" id="repo-add" onclick="document.getElementById('fin').click()">
+              <span style="font-size:22px;color:var(--text3)">+</span>
+              <span style="font-size:11px;color:var(--text3);margin-top:2px">Adicionar</span>
+            </div>
+          </div>
+          <input type="file" id="fin" accept="image/*" multiple onchange="handleFiles(this.files)">
+          <canvas id="cv"></canvas>
+          <div class="up-status" id="exts"></div>
         </div>
       </div>
-      <div class="up-body" style="padding-bottom:10px">
-        <div class="upload-grid" id="upload-grid"></div>
-        <input type="file" id="slot-fin" accept="image/*" style="display:none" onchange="handleSlotFile(this.files)">
-        <input type="file" id="existing-fin" accept="image/*" multiple style="display:none" onchange="handleExistingFiles(this.files)">
-        <button id="export-btn" onclick="exportGrid()" title="Exportar grid como imagem"
-          style="display:none;width:100%;margin-top:8px;padding:8px;border-radius:var(--r-sm);
-          border:1.5px solid var(--border);background:transparent;cursor:pointer;
-          font-family:var(--font);font-size:12px;font-weight:700;color:var(--text2);transition:all .15s"
-          onmouseover="this.style.borderColor='var(--text)';this.style.color='var(--text)'"
-          onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text2)'">
-          ↓ Exportar grid
-        </button>
-      </div>
-    </div>
 
-    <!-- COOLDOWN INDICATOR -->
-    <div id="cooldown-indicator" style="display:none;align-items:center;gap:6px;padding:10px 14px;background:#fff5f5;border:1.5px solid #fca5a5;border-radius:var(--r-sm);font-size:12px;color:#c0392b;max-width:480px;width:100%"></div>
-
-    <!-- ORGANIZAR O FEED -->
-    <div class="mode-panel" id="mode-panel">
-      <div class="mode-hint">Organizar o feed</div>
-      <div class="mode-btns">
-        <button class="mode-btn mode-btn-ai" id="go" onclick="compose('basic')" disabled>
-          <span class="mode-btn-icon">✦</span>
-          <div>
-            <div class="mode-btn-title">Compor por cores</div>
-            <div class="mode-btn-sub" id="credit-cost">temperatura · paleta · harmonia · 1 crédito</div>
+      <!-- FEED -->
+      <div class="upload-panel feed-panel">
+        <div class="up-hdr">
+          <span class="up-title">Feed</span>
+          <div class="up-meta">
+            <div class="feed-tabs" id="feed-tabs-main"></div>
+            <span style="font-size:11px;color:var(--text3)" id="feed-hint">novos posts · arraste do repositório</span>
           </div>
-        </button>
-        <button class="mode-btn mode-btn-advanced" id="go-advanced" onclick="compose('advanced')" disabled>
-          <span class="mode-btn-icon">✦✦</span>
-          <div>
-            <div class="mode-btn-title">Composição avançada</div>
-            <div class="mode-btn-sub">leitura visual completa · 3 créditos</div>
-          </div>
-        </button>
+        </div>
+        <div class="up-body" style="padding-bottom:10px">
+          <div class="upload-grid" id="upload-grid"></div>
+          <input type="file" id="slot-fin" accept="image/*" style="display:none" onchange="handleSlotFile(this.files)">
+          <input type="file" id="existing-fin" accept="image/*" multiple style="display:none" onchange="handleExistingFiles(this.files)">
+          <button id="export-btn" onclick="exportGrid()" title="Exportar grid como imagem"
+            style="display:none;width:100%;margin-top:8px;padding:8px;border-radius:var(--r-sm);
+            border:1.5px solid var(--border);background:transparent;cursor:pointer;
+            font-family:var(--font);font-size:12px;font-weight:700;color:var(--text2);transition:all .15s"
+            onmouseover="this.style.borderColor='var(--text)';this.style.color='var(--text)'"
+            onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text2)'">
+            ↓ Exportar grid
+          </button>
+        </div>
       </div>
+
+      <!-- COOLDOWN INDICATOR -->
+      <div id="cooldown-indicator" style="display:none;align-items:center;gap:6px;padding:10px 14px;background:#fff5f5;border:1.5px solid #fca5a5;border-radius:var(--r-sm);font-size:12px;color:#c0392b;width:100%"></div>
+
+      <!-- ORGANIZAR O FEED -->
+      <div class="mode-panel" id="mode-panel">
+        <div class="mode-hint">Organizar o feed</div>
+        <div class="mode-btns">
+          <button class="mode-btn mode-btn-ai" id="go" onclick="compose('basic')" disabled>
+            <span class="mode-btn-icon">✦</span>
+            <div>
+              <div class="mode-btn-title">Compor por cores</div>
+              <div class="mode-btn-sub" id="credit-cost">temperatura · paleta · harmonia · 1 crédito</div>
+            </div>
+          </button>
+          <button class="mode-btn mode-btn-advanced" id="go-advanced" onclick="compose('advanced')" disabled>
+            <span class="mode-btn-icon">✦✦</span>
+            <div>
+              <div class="mode-btn-title">Composição avançada</div>
+              <div class="mode-btn-sub">leitura visual completa · 3 créditos</div>
+            </div>
+          </button>
+        </div>
+      </div>
+
+      <!-- ERROR -->
+      <div class="err-panel" id="err">
+        <div class="err-icon">⚠️</div>
+        <div class="err-body">
+          <div class="err-title" data-i18n="error_title">Erro</div>
+          <div class="err-msg" id="err-msg"></div>
+        </div>
+      </div>
+
+      <!-- LOADING -->
+      <div class="loading" id="loading">
+        <div class="ld-t" id="ldtxt">Analisando...</div>
+        <div class="ld-bar"><div class="ld-fill"></div></div>
+        <div class="ld-steps">
+          <div class="ld-s now" id="s1"><div class="ld-dot"></div>Extraindo cores</div>
+          <div class="ld-s"     id="s2"><div class="ld-dot"></div>Analisando</div>
+          <div class="ld-s"     id="s3"><div class="ld-dot"></div>Combinando</div>
+          <div class="ld-s"     id="s4"><div class="ld-dot"></div>Montando plano</div>
+        </div>
+      </div>
+
+    </div><!-- /main-left -->
+
+    <!-- COLUNA DIREITA: resultados -->
+    <div class="main-right" id="main-right">
+      <div class="results" id="results"></div>
+      <div id="mentor-panel" class="mentor-panel" style="display:none"></div>
+      <div id="diagnosis-panel" class="diagnosis-panel" style="display:none"></div>
     </div>
 
-    <!-- ERROR -->
-    <div class="err-panel" id="err">
-      <div class="err-icon">⚠️</div>
-      <div class="err-body">
-        <div class="err-title" data-i18n="error_title">Erro</div>
-        <div class="err-msg" id="err-msg"></div>
-      </div>
-    </div>
-
-    <!-- LOADING -->
-    <div class="loading" id="loading">
-      <div class="ld-t" id="ldtxt">Analisando...</div>
-      <div class="ld-bar"><div class="ld-fill"></div></div>
-      <div class="ld-steps">
-        <div class="ld-s now" id="s1"><div class="ld-dot"></div>Extraindo cores</div>
-        <div class="ld-s"     id="s2"><div class="ld-dot"></div>Analisando</div>
-        <div class="ld-s"     id="s3"><div class="ld-dot"></div>Combinando</div>
-        <div class="ld-s"     id="s4"><div class="ld-dot"></div>Montando plano</div>
-      </div>
-    </div>
-
-    <!-- RESULT -->
-    <!-- RESULT -->
-    <div class="results" id="results"></div>
-
-    <!-- MENTOR VISUAL (Studio) -->
-    <div id="mentor-panel" class="mentor-panel" style="display:none"></div>
-
-    <!-- DIAGNÓSTICO DO PERFIL (Studio, avançada + existentes) -->
-    <div id="diagnosis-panel" class="diagnosis-panel" style="display:none"></div>
   </main>
 </div>
 
