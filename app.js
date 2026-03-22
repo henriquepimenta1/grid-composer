@@ -262,6 +262,7 @@ function updateCooldownText(el, remainMs) {
 
 function clearAll() {
   repository=[]; feedSlots=Array(planSize).fill(null); existingPhotos=[]; isManualMode=false
+  clearColorCache()
   renderRepo(); renderUploadGrid()
   document.getElementById('fin').value=''
   document.getElementById('results').classList.remove('show')

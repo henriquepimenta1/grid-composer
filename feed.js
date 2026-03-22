@@ -41,18 +41,28 @@ async function handleFiles(files) {
     return
   }
   const batch = toAdd.slice(0, remaining)
-  for (let i = 0; i < batch.length; i++) {
-    setUploadProgress(i + 1, batch.length)
-    const file = batch[i]
+  setUploadProgress(0, batch.length)
+  let done = 0
+
+  // Todas as fotos em paralelo: cor+kelvin+accent (Worker) + compressão simultâneos
+  const results = await Promise.all(batch.map(async file => {
     const raw = await readFile(file)
     const img = await loadImg(raw)
-    const colors = extractColors(img, 5)
-    const kelvin = estimateKelvin(colors)
-    const hasAccent = detectAccent(colors)
-    const compressed = await compressImage(raw, 800, 0.75)
-    repository.push({ file, dataUrl: raw, compressed, colors, kelvin, hasAccent })
-    renderRepo()
-  }
+    const cacheKey = `${file.name}_${file.size}_${file.lastModified}`
+    const [colorResult, compressed] = await Promise.all([
+      extractColorsAsync(img, cacheKey),
+      compressImage(raw, 800, 0.75)
+    ])
+    done++
+    setUploadProgress(done, batch.length)
+    return { file, dataUrl: raw, compressed, ...colorResult }
+  }))
+
+  results.forEach(r => repository.push({
+    file: r.file, dataUrl: r.dataUrl, compressed: r.compressed,
+    colors: r.colors, kelvin: r.kelvin, hasAccent: r.hasAccent
+  }))
+  renderRepo()
   setStatus(`✓ ${repository.length} foto(s) no repositório`, 'ok')
   updateActionButtons()
 }
@@ -87,20 +97,26 @@ function removeFromRepo(i) {
 // ── Existing photos (feed context) ────────────────────
 async function handleExistingFiles(files) {
   const limits = planLimits()
-  if (limits.maxExisting === 0) return // blocked for Free (UI shouldn't allow, but safety check)
+  if (limits.maxExisting === 0) return
   const toAdd = Array.from(files).filter(f => f.type.startsWith('image/'))
   if (!toAdd.length) return
-  const remaining = limits.maxExisting - existingPhotos.length
-  const batch = toAdd.slice(0, remaining)
-  for (const file of batch) {
+  const batch = toAdd.slice(0, limits.maxExisting - existingPhotos.length)
+
+  const results = await Promise.all(batch.map(async file => {
     const raw = await readFile(file)
     const img = await loadImg(raw)
-    const colors = extractColors(img, 5)
-    const kelvin = estimateKelvin(colors)
-    const hasAccent = detectAccent(colors)
-    const compressed = await compressImage(raw, 800, 0.75)
-    existingPhotos.push({ dataUrl: raw, compressed, colors, kelvin, hasAccent })
-  }
+    const cacheKey = `existing_${file.name}_${file.size}_${file.lastModified}`
+    const [colorResult, compressed] = await Promise.all([
+      extractColorsAsync(img, cacheKey),
+      compressImage(raw, 800, 0.75)
+    ])
+    return { dataUrl: raw, compressed, ...colorResult }
+  }))
+
+  results.forEach(r => existingPhotos.push({
+    dataUrl: r.dataUrl, compressed: r.compressed,
+    colors: r.colors, kelvin: r.kelvin, hasAccent: r.hasAccent
+  }))
   renderUploadGrid(); updateActionButtons()
 }
 

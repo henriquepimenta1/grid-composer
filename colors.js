@@ -1,4 +1,76 @@
 // colors.js — Color Engine (k-means LAB, Kelvin, compression)
+// extractColors() permanece para uso síncrono em reorder/sort
+// extractColorsAsync() usa Web Worker + cache para uploads
+
+// ── Worker pool + cache ───────────────────────────────
+let   _worker      = null
+let   _workerReady = false
+const _pending     = new Map()   // id → { resolve, reject }
+let   _wid         = 0
+const _cache       = new Map()   // cacheKey → { colors, kelvin, hasAccent }
+
+function _getWorker() {
+  if (_worker) return _worker
+  try {
+    _worker = new Worker('/color-worker.js')
+    _worker.onmessage = ({ data }) => {
+      const p = _pending.get(data.id)
+      if (!p) return
+      _pending.delete(data.id)
+      data.error ? p.reject(new Error(data.error)) : p.resolve(data)
+    }
+    _worker.onerror = () => {
+      // Worker falhou (CSP, browser antigo) — fallback síncrono
+      _pending.forEach(p => p.reject(new Error('worker unavailable')))
+      _pending.clear()
+      _worker = null
+    }
+    _workerReady = true
+  } catch { _workerReady = false }
+  return _worker
+}
+
+// Chave de cache: file identity quando disponível, fallback no prefixo do dataUrl
+function _cacheKey(cacheHint) { return cacheHint || null }
+
+async function extractColorsAsync(img, cacheHint, k=5) {
+  const key = _cacheKey(cacheHint)
+  if (key && _cache.has(key)) return _cache.get(key)
+
+  // Canvas operations ficam na main thread (sem DOM no worker)
+  const cv  = document.getElementById('cv')
+  const MAX = 80
+  let w=img.width, h=img.height
+  if (w>MAX||h>MAX) { const r=Math.min(MAX/w,MAX/h); w=Math.round(w*r); h=Math.round(h*r) }
+  cv.width=w; cv.height=h
+  cv.getContext('2d').drawImage(img, 0, 0, w, h)
+  const imageData = cv.getContext('2d').getImageData(0, 0, w, h)
+
+  let result
+  const worker = _getWorker()
+  if (worker) {
+    // Transfere buffer (zero-copy) para o worker
+    const buf = imageData.data.buffer.slice(0)
+    result = await new Promise((resolve, reject) => {
+      const id = ++_wid
+      _pending.set(id, { resolve, reject })
+      worker.postMessage({ id, pixels: buf, width: w, height: h, k }, [buf])
+    }).catch(() => null)  // worker error → fallback
+  }
+
+  if (!result) {
+    // Fallback síncrono (mesmo algoritmo, na main thread)
+    const colors    = extractColors(img, k)
+    const kelvin    = estimateKelvin(colors)
+    const hasAccent = detectAccent(colors)
+    result = { colors, kelvin, hasAccent }
+  }
+
+  if (key) _cache.set(key, result)
+  return result
+}
+
+function clearColorCache() { _cache.clear() }
 
 function rgbToLab(r,g,b){let R=r/255,G=g/255,B=b/255;R=R>.04045?Math.pow((R+.055)/1.055,2.4):R/12.92;G=G>.04045?Math.pow((G+.055)/1.055,2.4):G/12.92;B=B>.04045?Math.pow((B+.055)/1.055,2.4):B/12.92;let X=R*.4124564+G*.3575761+B*.1804375,Y=R*.2126729+G*.7151522+B*.072175,Z=R*.0193339+G*.119192+B*.9503041;X/=.95047;Z/=1.08883;const f=v=>v>.008856?Math.cbrt(v):(7.787*v)+16/116;return[116*f(Y)-16,500*(f(X)-f(Y)),200*(f(Y)-f(Z))]}
 function labToRgb(L,a,b){let Y=(L+16)/116,X=a/500+Y,Z=Y-b/200;X=(Math.pow(X,3)>.008856?Math.pow(X,3):(X-16/116)/7.787)*.95047;Y=(Math.pow(Y,3)>.008856?Math.pow(Y,3):(Y-16/116)/7.787);Z=(Math.pow(Z,3)>.008856?Math.pow(Z,3):(Z-16/116)/7.787)*1.08883;let R=X*3.2404542+Y*-1.5371385+Z*-.4985314,G=X*-.969266+Y*1.8760108+Z*.041556,B=X*.0556434+Y*-.2040259+Z*1.0572252;R=R>.0031308?1.055*Math.pow(R,1/2.4)-.055:12.92*R;G=G>.0031308?1.055*Math.pow(G,1/2.4)-.055:12.92*G;B=B>.0031308?1.055*Math.pow(B,1/2.4)-.055:12.92*B;return[Math.round(Math.max(0,Math.min(255,R*255))),Math.round(Math.max(0,Math.min(255,G*255))),Math.round(Math.max(0,Math.min(255,B*255)))]}
