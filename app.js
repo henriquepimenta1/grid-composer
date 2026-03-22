@@ -236,6 +236,8 @@ function clearAll() {
   const expBtn=document.getElementById('export-btn')
   if (expBtn) expBtn.style.display='none'
   hideErr(); setStatus('','')
+  const mentorPanel = document.getElementById('mentor-panel')
+  if (mentorPanel) mentorPanel.style.display = 'none'
   updateActionButtons()
 }
 
@@ -315,6 +317,7 @@ function renderResults(data, H) {
   renderCooldownIndicator()
 
   saveAnalysisToHistory(data, H)
+  renderMentor()
 }
 
 function renderDetails() {
@@ -348,6 +351,137 @@ function renderDetails() {
       </div>
     </div>`
   }).join('')
+}
+
+// ── Mentor Visual (Studio only, 100% local) ───────────
+function renderMentor() {
+  const panel = document.getElementById('mentor-panel')
+  if (!panel) return
+  const limits = planLimits()
+
+  // Gate: only Studio
+  if (!limits.hasMentor) {
+    if (currentPlan.length > 0) {
+      panel.style.display = 'block'
+      panel.innerHTML = `
+        <div class="mentor-header">
+          <span class="mentor-icon">🧠</span>
+          <span class="mentor-title">Mentor visual</span>
+          <span class="mentor-badge-lock">Studio</span>
+        </div>
+        <div class="mentor-locked">
+          Sugestões inteligentes baseadas no seu grid. Disponível no plano Studio.
+          <a href="/comprar" style="color:var(--blue);font-weight:600;text-decoration:none;margin-left:4px">Ver planos →</a>
+        </div>`
+    } else {
+      panel.style.display = 'none'
+    }
+    return
+  }
+
+  if (!currentPlan.length) { panel.style.display = 'none'; return }
+
+  const tips = analyzeFeed()
+  if (!tips.length) { panel.style.display = 'none'; return }
+
+  panel.style.display = 'block'
+  panel.innerHTML = `
+    <div class="mentor-header">
+      <span class="mentor-icon">🧠</span>
+      <span class="mentor-title">Mentor visual</span>
+      <span class="mentor-badge">${tips.length} sugestão${tips.length > 1 ? 'ões' : ''}</span>
+    </div>
+    <div class="mentor-tips">
+      ${tips.map(t => `
+        <div class="mentor-tip">
+          <span class="mentor-tip-icon">${t.icon}</span>
+          <div class="mentor-tip-body">
+            <div class="mentor-tip-text">${t.text}</div>
+            ${t.action ? `<div class="mentor-tip-action">${t.action}</div>` : ''}
+          </div>
+        </div>`).join('')}
+    </div>`
+}
+
+function analyzeFeed() {
+  const tips = []
+  const sorted = [...currentPlan].sort((a, b) => a.slot - b.slot)
+  const photos = sorted.map(s => ({
+    ...s,
+    repo: repository[s.photo - 1] || null,
+  })).filter(s => s.repo)
+
+  if (photos.length < 3) return tips
+
+  // 1. Temperature streak — too many cold or warm in a row
+  let warmStreak = 0, coldStreak = 0, maxWarm = 0, maxCold = 0
+  photos.forEach(p => {
+    if (p.temp === 'warm') { warmStreak++; coldStreak = 0 }
+    else { coldStreak++; warmStreak = 0 }
+    maxWarm = Math.max(maxWarm, warmStreak)
+    maxCold = Math.max(maxCold, coldStreak)
+  })
+  if (maxCold >= 4) {
+    tips.push({ icon: '🧊', text: `${maxCold} fotos frias seguidas. Seu feed pode parecer monótono.`, action: 'Tente inserir um retrato ou detalhe com tons quentes para quebrar a sequência.' })
+  }
+  if (maxWarm >= 4) {
+    tips.push({ icon: '🔥', text: `${maxWarm} fotos quentes seguidas. O contraste visual diminui.`, action: 'Adicione uma paisagem fria ou foto com tons azulados para criar ritmo.' })
+  }
+
+  // 2. Subject repetition — consecutive same type
+  for (let i = 0; i < photos.length - 2; i++) {
+    const t1 = (photos[i].type || '').toLowerCase()
+    const t2 = (photos[i + 1].type || '').toLowerCase()
+    const t3 = (photos[i + 2].type || '').toLowerCase()
+    if (t1 && t1 === t2 && t2 === t3) {
+      const typeLabel = t1.includes('paisagem') ? 'paisagens' : t1.includes('pessoa') || t1.includes('retrato') ? 'retratos' : t1.includes('detalhe') ? 'detalhes' : `"${t1}"`
+      tips.push({ icon: '🔄', text: `3 ${typeLabel} consecutivos (slots ${photos[i].slot}-${photos[i + 2].slot}).`, action: 'Diversifique com outro tipo de enquadramento para manter o feed dinâmico.' })
+      break // only report first occurrence
+    }
+  }
+
+  // 3. Accent clustering — accents too close together
+  const accentSlots = photos.filter(p => p.repo?.hasAccent).map(p => p.slot)
+  for (let i = 0; i < accentSlots.length - 1; i++) {
+    if (Math.abs(accentSlots[i] - accentSlots[i + 1]) === 1) {
+      tips.push({ icon: '🎯', text: `Acentos quentes adjacentes nos slots ${accentSlots[i]} e ${accentSlots[i + 1]}.`, action: 'Separe acentos com pelo menos uma foto neutra ou fria entre eles.' })
+      break
+    }
+  }
+
+  // 4. Temperature balance
+  const warmCount = photos.filter(p => p.temp === 'warm').length
+  const coolCount = photos.filter(p => p.temp !== 'warm').length
+  const ratio = warmCount / photos.length
+  if (ratio > 0.8) {
+    tips.push({ icon: '🌡️', text: `${Math.round(ratio * 100)}% do grid é quente. Falta contraste térmico.`, action: 'Considere uma foto com tons azuis, cinzas ou teal para equilibrar.' })
+  } else if (ratio < 0.2) {
+    tips.push({ icon: '🌡️', text: `${Math.round((1 - ratio) * 100)}% do grid é frio. Falta calor visual.`, action: 'Uma foto com dourado, laranja ou pôr do sol daria vida ao feed.' })
+  }
+
+  // 5. Low score photos (if score exists)
+  const lowScores = photos.filter(p => p.repo?.photoScore != null && p.repo.photoScore < 50)
+  if (lowScores.length > 0) {
+    const slots = lowScores.map(p => `+${p.slot}`).join(', ')
+    tips.push({ icon: '📸', text: `Foto${lowScores.length > 1 ? 's' : ''} com score baixo: ${slots}.`, action: 'Considere substituir por versões com melhor nitidez ou exposição.' })
+  }
+
+  // 6. Existing feed continuity
+  if (existingPhotos.length > 0 && photos.length > 0) {
+    const lastNew = photos[photos.length - 1]
+    const firstExisting = existingPhotos[0]
+    if (lastNew.temp === 'warm' && firstExisting.kelvin < 5000) {
+      tips.push({ icon: '📌', text: 'A última foto nova e a primeira do feed existente são ambas quentes.', action: 'A transição entre novo e existente fica melhor com contraste de temperatura.' })
+    }
+  }
+
+  // 7. Missing variety hint
+  const types = new Set(photos.map(p => (p.type || '').toLowerCase()).filter(Boolean))
+  if (types.size === 1 && photos.length >= 6) {
+    tips.push({ icon: '🎭', text: `Todas as ${photos.length} fotos são do mesmo tipo.`, action: 'Feeds variados (paisagem + retrato + detalhe) geram mais engagement.' })
+  }
+
+  return tips.slice(0, 5) // max 5 tips
 }
 
 // Legacy no-op

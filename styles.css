@@ -431,6 +431,23 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
   .pg-cores-block{order:1}
 }
 
+/* ── MENTOR VISUAL ── */
+.mentor-panel{max-width:480px;width:100%;background:var(--white);border:1px solid var(--border-light);border-radius:var(--r);box-shadow:var(--shadow);overflow:hidden}
+@media(max-width:768px){.mentor-panel{max-width:100%}}
+.mentor-header{padding:12px 16px;border-bottom:1px solid var(--border-light);display:flex;align-items:center;gap:8px}
+.mentor-icon{font-size:16px;line-height:1}
+.mentor-title{font-size:13px;font-weight:700;flex:1}
+.mentor-badge{font-size:10px;font-weight:700;padding:2px 10px;border-radius:100px;background:#faf5ff;border:1px solid #ddd6fe;color:#7c3aed}
+.mentor-badge-lock{font-size:10px;font-weight:700;padding:2px 10px;border-radius:100px;background:var(--bg);border:1px solid var(--border);color:var(--text3)}
+.mentor-locked{padding:14px 16px;font-size:12px;color:var(--text3);line-height:1.6}
+.mentor-tips{padding:4px 0}
+.mentor-tip{display:flex;gap:10px;padding:10px 16px;border-bottom:1px solid var(--border-light);align-items:flex-start}
+.mentor-tip:last-child{border-bottom:none}
+.mentor-tip-icon{font-size:14px;line-height:1;flex-shrink:0;margin-top:1px}
+.mentor-tip-body{flex:1;min-width:0}
+.mentor-tip-text{font-size:12px;font-weight:600;color:var(--text);line-height:1.5;margin-bottom:3px}
+.mentor-tip-action{font-size:11px;color:var(--text2);line-height:1.5;font-style:italic}
+
 /* ── MOBILE ── */
 @media(max-width:768px){
   html,body{height:auto;overflow:auto}
