@@ -10,6 +10,41 @@
   --r:10px;--r-sm:7px;--font:'Plus Jakarta Sans',sans-serif;
   --sidebar:280px;--topbar:52px;
 }
+/* ── DARK MODE ── */
+@media(prefers-color-scheme:dark){
+  :root{
+    --bg:#121212;--white:#1e1e1e;--border:#333;--border-light:#2a2a2a;
+    --text:#f0f0f0;--text2:#a0a0a0;--text3:#606060;
+    --blue:#4db3ff;--blue-d:#2299ee;--green:#4ade80;--red:#f87171;
+    --warm:#f59e0b;--cool:#60a5fa;
+    --shadow:0 1px 3px rgba(0,0,0,.4);--shadow-md:0 4px 16px rgba(0,0,0,.5);
+  }
+  /* Inputs e áreas de texto */
+  input[type=text],input[type=email],input[type=password],.sinput,.ig-handle-input{
+    background:var(--bg);color:var(--text);border-color:var(--border)
+  }
+  input[type=range]{filter:invert(.85) hue-rotate(180deg)}
+  /* Crop modal */
+  .crop-modal{background:rgba(0,0,0,.92)}
+  /* Overlays */
+  .howto-overlay,.modal-overlay,.history-modal,.palette-modal,.photo-modal{background:rgba(0,0,0,.65)}
+  /* Sidebar toggle FAB */
+  .sidebar-toggle{background:#e0e0e0;color:#111}
+  /* Credits badge */
+  #credits-badge{background:#2a2a2a;border-color:var(--border);color:var(--text2)}
+  /* Loading bar */
+  .ld-bar{background:var(--border-light)}
+  /* Plan tab active */
+  .plan-tab.active{background:var(--text);color:#111}
+  /* Mode buttons */
+  .mode-btn-ai,.mode-btn-advanced{border-color:var(--border)}
+  /* Error panel */
+  #cooldown-indicator{background:#2a0a0a;border-color:#7f1d1d}
+  /* Sbtn */
+  .sbtn{background:var(--text);color:#111}
+  .sbtn-outline{background:transparent;color:var(--text);border-color:var(--border)}
+}
+
 html,body{height:100%;overflow:hidden}
 body{background:var(--bg);color:var(--text);font-family:var(--font);-webkit-font-smoothing:antialiased;display:flex;flex-direction:column}
 
